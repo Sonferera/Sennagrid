@@ -245,8 +245,8 @@ export interface OptimizationOutput {
 - **Row-Normalized Mobility Matrix $W \in \mathbb{R}^{N \times N}$** (disimpan sebagai `Float64Array` berukuran $N^2$):
   $$W_{ii} = 1 - m_{\text{out}}, \qquad W_{ij} = m_{\text{out}} \frac{G_{ij}}{\sum_{k \neq i} G_{ik}} \quad (i \neq j)$$
   Default $m_{\text{out}} = 0.18$. Guard: jika $N = 1$, $W_{00} = 1$.
-- **Hub Centrality Index** ($\text{HubIndex}_i$):
-  $$\text{HubIndex}_i = \sum_{j \neq i} W_{ij} \frac{N_j}{N_{\text{avg}}}, \qquad N_{\text{avg}} = \frac{1}{N} \sum_{k=0}^{N-1} N_k$$
+- **Hub Centrality Index** ($\text{HubIndex}_i$, arus komuter masuk berbobot populasi):
+  $$\text{HubIndex}_i = \sum_{j \neq i} W_{ji} \frac{N_j}{N_{\text{avg}}}, \qquad N_{\text{avg}} = \frac{1}{N} \sum_{k=0}^{N-1} N_k$$
 
 ### 3.3 Climate Modulation (`src/engine/climate.ts`)
 - $\phi_T(T) = \max\left(0.15, \exp\left(-\frac{(T - 29.0)^2}{2 \cdot 6.5^2}\right)\right)$

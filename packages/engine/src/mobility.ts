@@ -107,16 +107,21 @@ export function buildMobilityModel(
 
     weights[i * n + i] = 1 - outflow;
     const invRowSum = outflow / rowSum;
-    let centrality = 0;
 
     for (let j = 0; j < n; j++) {
       if (i === j) continue;
-      const w = rowGravity[j]! * invRowSum;
-      weights[i * n + j] = w;
-      centrality += w * (Math.max(0, districts[j]!.population) / meanPop);
+      weights[i * n + j] = rowGravity[j]! * invRowSum;
     }
+  }
 
-    hubCentrality[i] = centrality;
+  // Incoming population-weighted commuter flow into district i (column sum excluding diagonal).
+  for (let i = 0; i < n; i++) {
+    let inflowCentrality = 0;
+    for (let j = 0; j < n; j++) {
+      if (j === i) continue;
+      inflowCentrality += weights[j * n + i]! * (Math.max(0, districts[j]!.population) / meanPop);
+    }
+    hubCentrality[i] = inflowCentrality;
   }
 
   return { n, distancesKm, weights, hubCentrality };
