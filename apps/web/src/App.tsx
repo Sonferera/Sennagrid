@@ -1,3 +1,5 @@
+import { DEFAULT_SIMULATION_PARAMS } from '@sennagrid/engine';
+
 export default function App() {
   return (
     <div className="min-h-screen bg-[#090d16] text-slate-100">
@@ -9,11 +11,18 @@ export default function App() {
       </header>
       <main className="mx-auto max-w-5xl px-6 py-10">
         <section className="rounded-lg border border-slate-800 bg-[#0f172a] p-6">
-          <h2 className="text-base font-medium text-slate-100">Workspace Initialized</h2>
+          <h2 className="text-base font-medium text-slate-100">Monorepo Workspace Ready</h2>
           <p className="mt-2 text-sm text-slate-300">
-            Phase 1 foundation is active. Core engine contracts, gravity mobility matrix, and
-            climate modulation modules are verified in Vitest. Simulator map, solver, and optimizer
-            views are scheduled next.
+            Connected to <code className="font-mono text-cyan-400">@sennagrid/engine</code> with
+            default horizon{' '}
+            <span className="font-mono tabular-nums text-slate-100">
+              {DEFAULT_SIMULATION_PARAMS.horizonDays} days
+            </span>{' '}
+            and weekly budget ratio{' '}
+            <span className="font-mono tabular-nums text-slate-100">
+              {Math.round(DEFAULT_SIMULATION_PARAMS.budgetRatio * 100)}%
+            </span>
+            .
           </p>
         </section>
       </main>

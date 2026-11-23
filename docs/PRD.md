@@ -133,7 +133,7 @@ Untuk menjaga fokus dan keandalan dalam sisa waktu ~8 hari, item berikut **tidak
 
 ## 7. Team Execution Plan (23 Nov – 1 Des 2026)
 
-Pembagian kerja paralel untuk 2 mahasiswa (**Owner A: Engine, Data & Worker** | **Owner B: UI, MapLibre, Visualisasi & Submission**):
+Pembagian kerja paralel untuk 2 mahasiswa dalam monorepo (**Owner A: `packages/engine` + Data & Worker** | **Owner B: `apps/web/src/components` + UI, MapLibre & Submission**):
 
 | Hari | Tanggal | Owner A (Math & Data) | Owner B (UI & Visualisasi) | Milestone Verifikasi |
 | :--- | :--- | :--- | :--- | :--- |

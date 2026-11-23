@@ -21,64 +21,78 @@ Dokumen ini mengunci seluruh keputusan arsitektur, struktur file, kontrak tipe d
 
 ---
 
-## 2. Directory & Module Structure
+## 2. Directory & Module Structure (npm Workspaces Monorepo)
 
 ```text
-code-for-change-global/
+Sennagrid/
+├── package.json                        # Root workspaces orchestrator (dev, build, test, typecheck)
+├── tsconfig.base.json                  # Shared strict TypeScript compiler options
+├── vercel.json                         # Static deploy config (apps/web/dist)
 ├── docs/
 │   ├── PRD.md
 │   └── BLUEPRINT.md
-├── index.html
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
-├── src/
-│   ├── main.tsx
-│   ├── App.tsx
-│   ├── index.css
-│   ├── engine/                         # PURE TypeScript (ZERO React/DOM/browser imports)
-│   │   ├── types.ts                    # Kontrak data, parameter, state, hasil, gates
-│   │   ├── mobility.ts                 # Haversine distance, Gravity Matrix W, HubIndex
-│   │   ├── climate.ts                  # phi_T(T), phi_R(R_rain), ekstensi musiman 91 hari
-│   │   ├── solver.ts                   # RK4 Float64Array integrator (SEIR-SEI & SEIR) + checkpoint
-│   │   ├── optimizer.ts                # Reactive Baseline + Stage 1 + Stage 2 (1-Swap) + Tagging
-│   │   ├── gates.ts                    # 5 Deterministic Policy & Integrity Gates
-│   │   └── __tests__/
-│   │       ├── mobility.test.ts
-│   │       ├── climate.test.ts
-│   │       ├── solver.test.ts
-│   │       ├── optimizer.test.ts
-│   │       └── gates.test.ts
-│   ├── workers/
-│   │   └── optimizer.worker.ts         # Native Web Worker wrapper + stale-run handling
-│   ├── data/
-│   │   └── regions/
-│   │       ├── index.ts                # Registry preset wilayah
-│   │       ├── metroTropica.ts         # 18 distrik (Basin Tropis, Dengue-focused)
-│   │       └── harborCorridor.ts       # 16 distrik (Koridor Pesisir, Respiratory-focused)
-│   ├── services/
-│   │   ├── weather.ts                  # Open-Meteo client (timeout 3s) + fallback klimatologi
-│   │   └── export.ts                   # Generator CSV Dispatch Plan & JSON Full Run
-│   ├── store/
-│   │   └── useSimulationStore.ts       # Zustand store + orkestrasi worker requestId
-│   └── components/
-│       ├── layout/
-│       │   ├── ControlBar.tsx          # Header controls, preset, mode, budget slider, Run button
-│       │   └── TabNav.tsx              # Simulator | Dispatch Schedule | Methodology & Math
-│       ├── simulator/
-│       │   ├── KpiStrip.tsx            # 4 KPI comparison cards + weather pill
-│       │   ├── SplitMapView.tsx        # Dual synchronized MapLibre GL maps + District Inspector
-│       │   ├── TimelinePlayer.tsx      # Play/pause, 1x/2x/4x, Day 0-91 scrubber
-│       │   ├── EpidemicCharts.tsx      # Active Infections + ICU Demand vs Capacity + Impact Radar
-│       │   └── DistrictInspector.tsx   # Side-by-side comparison tooltip/drawer saat klik distrik
-│       ├── schedule/
-│       │   ├── DispatchSchedule.tsx    # Tabel intervensi Weeks 1-13 + filter + tombol export
-│       │   └── SwapTracePanel.tsx      # Log evolusi jadwal Stage 2 (diadaptasi dari pola mutation trace)
-│       ├── methodology/
-│       │   ├── MethodologyView.tsx     # Persamaan matematika + parameter aktif
-│       │   └── PolicyGatesPanel.tsx    # 5 Policy & Integrity Gates (PASS/REVIEW/FAIL)
-│       └── onboarding/
-│           └── InteractiveTour.tsx     # 4-step walkthrough modal/spotlight untuk juri
+├── packages/
+│   └── engine/                         # @sennagrid/engine — PURE TypeScript (ZERO React/DOM)
+│       ├── package.json
+│       ├── tsconfig.json
+│       ├── vitest.config.ts
+│       └── src/
+│           ├── index.ts                # Public barrel export
+│           ├── types.ts                # Kontrak data, parameter, state, hasil, gates
+│           ├── mobility.ts             # Haversine distance, Gravity Matrix W, HubIndex
+│           ├── climate.ts              # phi_T(T), phi_R(R_rain), ekstensi musiman 91 hari
+│           ├── solver.ts               # RK4 Float64Array integrator (SEIR-SEI & SEIR) + checkpoint
+│           ├── optimizer.ts            # Reactive Baseline + Stage 1 + Stage 2 (1-Swap) + Tagging
+│           ├── gates.ts                # 5 Deterministic Policy & Integrity Gates
+│           └── __tests__/
+│               ├── mobility.test.ts
+│               ├── climate.test.ts
+│               ├── solver.test.ts
+│               ├── optimizer.test.ts
+│               └── gates.test.ts
+├── apps/
+│   └── web/                            # @sennagrid/web — Vite + React 19 + MapLibre + Recharts
+│       ├── package.json
+│       ├── tsconfig.json
+│       ├── tsconfig.app.json
+│       ├── tsconfig.node.json
+│       ├── vite.config.ts
+│       ├── index.html
+│       └── src/
+│           ├── main.tsx
+│           ├── App.tsx
+│           ├── index.css
+│           ├── vite-env.d.ts
+│           ├── workers/
+│           │   └── optimizer.worker.ts # Native Web Worker wrapper + stale-run handling
+│           ├── data/
+│           │   └── regions/
+│           │       ├── index.ts        # Registry preset wilayah
+│           │       ├── metroTropica.ts # 18 distrik (Basin Tropis, Dengue-focused)
+│           │       └── harborCorridor.ts # 16 distrik (Koridor Pesisir, Respiratory-focused)
+│           ├── services/
+│           │   ├── weather.ts          # Open-Meteo client (timeout 3s) + fallback klimatologi
+│           │   └── export.ts           # Generator CSV Dispatch Plan & JSON Full Run
+│           ├── store/
+│           │   └── useSimulationStore.ts # Zustand store + orkestrasi worker requestId
+│           └── components/
+│               ├── layout/
+│               │   ├── ControlBar.tsx
+│               │   └── TabNav.tsx
+│               ├── simulator/
+│               │   ├── KpiStrip.tsx
+│               │   ├── SplitMapView.tsx
+│               │   ├── TimelinePlayer.tsx
+│               │   ├── EpidemicCharts.tsx
+│               │   └── DistrictInspector.tsx
+│               ├── schedule/
+│               │   ├── DispatchSchedule.tsx
+│               │   └── SwapTracePanel.tsx
+│               ├── methodology/
+│               │   ├── MethodologyView.tsx
+│               │   └── PolicyGatesPanel.tsx
+│               └── onboarding/
+│                   └── InteractiveTour.tsx
 └── README.md
 ```
 
