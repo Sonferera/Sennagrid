@@ -2,7 +2,7 @@
 
 > **Status:** Locked Specification for Implementation  
 > **Companion Document:** [PRD.md](./PRD.md)  
-> **Origin Spec:** [gemini-code-1795430416191.md](../gemini-code-1795430416191.md)
+> **Docs Index:** [README.md](./README.md)
 
 Dokumen ini mengunci seluruh keputusan arsitektur, struktur file, kontrak tipe data, konstanta matematis yang sebelumnya belum didefinisikan, protokol Web Worker, serta rencana pengujian untuk implementasi **SennaGrid**.
 
@@ -288,15 +288,12 @@ Untuk setiap distrik $i$:
 - **Strategi 1 — Reactive Baseline:**
   Di awal minggu $w \in \{0 \dots 12\}$, urutkan distrik menurut $I_i(7w)$ menurun (tie-break: `icuRatio` menurun, lalu indeks distrik), pilih top $K$ distrik untuk $u_i(w) = 1$.
 - **Strategi 2 — SennaGrid Predictive Optimizer:**
-  1. **Stage 1 (Receding Horizon Predictive Initialization):**
-     Di setiap minggu $w \in \{0 \dots 12\}$, jalankan proyeksi 14-hari tanpa intervensi (`u = 0`) dari state di hari `7w` untuk memperoleh $\Delta \hat{I}_i^{\text{14d}} = \max(0, \hat{I}_i(7w + 14) - I_i(7w))$. Hitung skor komposit dengan konstanta terkunci $\lambda_{\text{hub}} = 0.85$ dan $\lambda_{\text{icu}} = 1.50$:
-     $$\text{Score}_i(w) = \left(\Delta \hat{I}_i^{\text{14d}} + 0.25 \cdot I_i(7w)\right) \cdot \left(1 + 0.85 \cdot \text{HubIndex}_i\right) \cdot \left(1 + 1.50 \cdot \frac{H_i(7w)}{C_{\text{ICU}, i} + 1}\right)$$
-     Pilih top $K$ distrik untuk menyusun $U^{(0)}$.
-  2. **Stage 2 (Checkpointed 1-Swap Coordinate Descent):**
-     - Bandingkan $J(U_{\text{reactive}})$ dan $J(U^{(0)})$; inisialisasi $U_{\text{best}}$ ke jadwal dengan biaya terkecil (menjamin dominasi ketat $\le$ baseline).
-     - Cache `checkpoints[0..12]` dan `prefixCost[0..12]` milik $U_{\text{best}}$.
-     - Lakukan hingga **250 evaluasi swap** di minggu $w \in \{0..10\}$ (menukar 1 distrik aktif $d_{\text{out}}$ dengan 1 distrik non-aktif $d_{\text{in}}$ yang memiliki proyeksi risiko tinggi atau sentralitas tinggi), dengan batas waktu maksimal **1.150 ms** (*hard guard* agar total waktu worker selalu `< 1.500 ms`).
-     - Setiap kali $J(U_{\text{cand}}) < J(U_{\text{best}})$: perbarui $U_{\text{best}}$, perbarui checkpoint dari minggu $w$ ke depan, dan catat ke `swapTrace`.
+  1. **Stage 1 (Multi-Seed Receding Horizon Predictive Initialization):**
+     Di setiap minggu $w \in \{0 \dots 12\}$, jalankan proyeksi tanpa intervensi (`u = 0`) selama 14–28 hari dari state di hari `7w` untuk memperoleh $\Delta \hat{I}_i$. Evaluasi 4 profil *seed* prediktif (kombinasi bobot deplesi $(S_i/N_i)^p$, amplifikasi hub $\text{HubIndex}_i$, dan urgensi overflow ICU) dan pilih kandidat terbaik yang **tidak melampaui total overflow maupun hari kolaps *Reactive Baseline*** (*Hospital Safety Guardrail*).
+  2. **Stage 2 (Checkpointed Hybrid Block-Swap & 1-Swap Coordinate Descent):**
+     - Cache `checkpoints[0..12]`, `prefixCost[0..12]`, `prefixOverflow[0..12]`, dan `prefixCollapseDays[0..12]` milik $U_{\text{best}}$.
+     - Lakukan hingga **250 evaluasi swap** di minggu $w \in \{0..10\}$ dalam 2 tahap: *2-week sustained block swaps* diikuti *1-week swaps*, dengan batas waktu maksimal **1.150 ms** (*hard guard* agar total waktu worker selalu `< 1.500 ms`).
+     - Terima swap hanya jika $J(U_{\text{cand}}) < J(U_{\text{best}})$ **dan** memenuhi *Hospital Safety Guardrail* (`totalOverflow <= reactiveOverflow` dan `collapseDays <= reactiveCollapseDays`). Perbarui checkpoint dari minggu $w$ ke depan dan catat ke `swapTrace`.
   3. **Deterministic Explainability Tagging:**
      Untuk tiap penugasan `(w, i)` pada jadwal final $U_{\text{best}}$, hitung 3 rasio terukur di minggu $w$:
      - `icuStress = H_i(7w) / (C_ICU_i + 1)`

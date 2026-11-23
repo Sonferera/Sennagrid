@@ -22,6 +22,3 @@ npm-debug.log*
 Thumbs.db
 .vscode/*
 !.vscode/extensions.json
-
-# Scratch / prompt drafts kept locally only
-gemini-code-*.md
