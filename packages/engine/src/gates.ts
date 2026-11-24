@@ -7,9 +7,43 @@ export interface PolicyGateInput {
   weeklyQuotaK: number;
 }
 
+export interface HubCoverageResult {
+  topQuartileCount: number;
+  coveredHubs: number;
+  hubCoverageRatio: number;
+  topHubIndices: number[];
+}
+
+export function computeHubCoverage(
+  hubCentrality: readonly number[],
+  schedule: ReadonlyArray<ArrayLike<number>>,
+): HubCoverageResult {
+  const n = hubCentrality.length;
+  const rankedHubs = hubCentrality
+    .map((centrality, idx) => ({ idx, centrality }))
+    .sort((a, b) => b.centrality - a.centrality);
+  const topQuartileCount = Math.max(1, Math.ceil(n * 0.25));
+  const topHubIndices = rankedHubs.slice(0, topQuartileCount).map((h) => h.idx);
+
+  const earlyWeeks = Math.min(4, schedule.length);
+  let coveredHubs = 0;
+  for (const idx of topHubIndices) {
+    let treatedEarly = false;
+    for (let w = 0; w < earlyWeeks; w++) {
+      if ((schedule[w]?.[idx] ?? 0) > 0) {
+        treatedEarly = true;
+        break;
+      }
+    }
+    if (treatedEarly) coveredHubs++;
+  }
+  const hubCoverageRatio = topQuartileCount > 0 ? coveredHubs / topQuartileCount : 1;
+
+  return { topQuartileCount, coveredHubs, hubCoverageRatio, topHubIndices };
+}
+
 export function evaluatePolicyGates(input: PolicyGateInput): PolicyGateSummary {
   const { reactive, sennagrid, hubCentrality, weeklyQuotaK } = input;
-  const n = hubCentrality.length;
 
   const maxErr = Math.max(reactive.maxMassConservationError, sennagrid.maxMassConservationError);
   const hasNaN = reactive.hasNaN || sennagrid.hasNaN;
@@ -37,26 +71,7 @@ export function evaluatePolicyGates(input: PolicyGateInput): PolicyGateSummary {
     reactiveCollapse > 0 ? (reactiveCollapse - optCollapse) / reactiveCollapse : optCollapse === 0 ? 1 : 0;
   const icuMitigationPassed = optCollapse === 0 || collapseReductionRatio >= 0.4;
 
-  // Evaluate top-quartile hub centrality coverage during the first 4 weeks.
-  const rankedHubs = hubCentrality
-    .map((centrality, idx) => ({ idx, centrality }))
-    .sort((a, b) => b.centrality - a.centrality);
-  const topQuartileCount = Math.max(1, Math.ceil(n * 0.25));
-  const topHubIndices = rankedHubs.slice(0, topQuartileCount).map((h) => h.idx);
-
-  const earlyWeeks = Math.min(4, sennagrid.schedule.length);
-  let coveredHubs = 0;
-  for (const idx of topHubIndices) {
-    let treatedEarly = false;
-    for (let w = 0; w < earlyWeeks; w++) {
-      if ((sennagrid.schedule[w]?.[idx] ?? 0) > 0) {
-        treatedEarly = true;
-        break;
-      }
-    }
-    if (treatedEarly) coveredHubs++;
-  }
-  const hubCoverageRatio = topQuartileCount > 0 ? coveredHubs / topQuartileCount : 1;
+  const { topQuartileCount, coveredHubs, hubCoverageRatio } = computeHubCoverage(hubCentrality, sennagrid.schedule);
   const hubPassed = hubCoverageRatio >= 0.5;
 
   const gates: PolicyGateResult[] = [

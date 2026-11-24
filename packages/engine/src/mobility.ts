@@ -54,8 +54,9 @@ export function buildMobilityModel(
     return { n, distancesKm, weights, hubCentrality };
   }
 
-  const rawOutflow = options.outflow ?? DEFAULT_OUTFLOW;
-  const outflow = Math.max(0, Math.min(1, rawOutflow));
+  const outflow = options.outflow === undefined || !Number.isFinite(options.outflow)
+    ? DEFAULT_OUTFLOW
+    : Math.max(0, Math.min(1, options.outflow));
   const alpha = options.alpha ?? DEFAULT_ALPHA;
   const beta = options.beta ?? DEFAULT_BETA;
   const gamma = options.gamma ?? DEFAULT_GAMMA;

@@ -66,10 +66,14 @@ describe('weather and export services', () => {
       product: string;
       assignments: unknown[];
       dailyCurves: { reactiveActive: number[]; sennagridActive: number[] };
+      impactSummary: unknown;
+      impactRadar: unknown;
     };
     expect(parsed.product).toBe('SennaGrid');
     expect(parsed.assignments.length).toBe(output.assignments.length);
     expect(parsed.dailyCurves.reactiveActive).toHaveLength(92);
     expect(parsed.dailyCurves.sennagridActive).toHaveLength(92);
+    expect(parsed.impactSummary).toEqual(output.impactSummary);
+    expect(parsed.impactRadar).toEqual(output.impactRadar);
   });
 });
