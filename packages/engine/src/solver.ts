@@ -38,6 +38,7 @@ export interface SolverContext {
   vecHazard: Float64Array;
   presentInfected: Float64Array;
   infFraction: Float64Array;
+  interventionEfficacy: number;
 }
 
 export function createSolverContext(
@@ -56,6 +57,16 @@ export function createSolverContext(
     populations[i] = Math.max(1, districts[i]!.population);
     icuCapacities[i] = Math.max(0, districts[i]!.icuBeds);
   }
+
+  const icuRate = Number.isFinite(params.icuRate) && params.icuRate >= 0 ? params.icuRate : 0;
+
+  const modeDefault = params.diseaseMode === 'vector_seir_sei'
+    ? EPIDEMIC_CONSTANTS.vector.etaVec
+    : EPIDEMIC_CONSTANTS.direct.etaInt;
+  const requestedEfficacy = params.interventionEfficacy;
+  const interventionEfficacy = requestedEfficacy === undefined || !Number.isFinite(requestedEfficacy)
+    ? modeDefault
+    : Math.max(0, Math.min(1, requestedEfficacy));
 
   // Denominator of lambda_{v,i}: sum_k W_{ki} * N_k is constant in time.
   const effectivePresentPop = new Float64Array(n);
@@ -79,7 +90,7 @@ export function createSolverContext(
     weeks,
     dt,
     substepsPerDay,
-    icuRate: params.icuRate,
+    icuRate,
     populations,
     icuCapacities,
     effectivePresentPop,
@@ -93,6 +104,7 @@ export function createSolverContext(
     vecHazard: new Float64Array(n),
     presentInfected: new Float64Array(n),
     infFraction: new Float64Array(n),
+    interventionEfficacy,
   };
 }
 
@@ -157,7 +169,7 @@ function evaluateDerivatives(
   const { n, stride, mode, weights, populations, effectivePresentPop, climateMultipliers } = ctx;
 
   if (mode === 'vector_seir_sei') {
-    const { b0, betaVh, betaHv, m0, etaVec, sigmaH, gammaH, sigmaV, muV } =
+    const { b0, betaVh, betaHv, m0, sigmaH, gammaH, sigmaV, muV } =
       EPIDEMIC_CONSTANTS.vector;
     const clampedDay = Math.min(climateMultipliers.phiT.length - 1, Math.max(0, dayIdx));
     const phiT = climateMultipliers.phiT[clampedDay]!;
@@ -165,13 +177,13 @@ function evaluateDerivatives(
     const bitingRate = b0 * phiT;
     const baseVecDensity = m0 * phiR;
 
-    const { vecHazard, presentInfected } = ctx;
+    const { interventionEfficacy, vecHazard, presentInfected } = ctx;
     presentInfected.fill(0);
 
     for (let j = 0; j < n; j++) {
       const base = j * stride;
       const u = intervention[j] ?? 0;
-      const mEff = baseVecDensity * (1 - etaVec * u);
+      const mEff = baseVecDensity * (1 - interventionEfficacy * u);
       vecHazard[j] = bitingRate * betaVh * mEff * state[base + 6]!;
       const infJ = state[base + 2]!;
       if (infJ > 0) {
@@ -214,8 +226,8 @@ function evaluateDerivatives(
       out[base + 6] = sigmaV * ev - muV * iv;
     }
   } else {
-    const { beta0, etaInt, sigmaH, gammaH } = EPIDEMIC_CONSTANTS.direct;
-    const { infFraction } = ctx;
+    const { beta0, sigmaH, gammaH } = EPIDEMIC_CONSTANTS.direct;
+    const { infFraction, interventionEfficacy } = ctx;
 
     for (let j = 0; j < n; j++) {
       infFraction[j] = state[j * stride + 2]! / populations[j]!;
@@ -230,7 +242,7 @@ function evaluateDerivatives(
       }
 
       const u = intervention[i] ?? 0;
-      const lambdaH = beta0 * (1 - etaInt * u) * weightedPrev;
+      const lambdaH = beta0 * (1 - interventionEfficacy * u) * weightedPrev;
 
       const S = state[base]!;
       const E = state[base + 1]!;

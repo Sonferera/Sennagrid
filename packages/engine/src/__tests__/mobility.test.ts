@@ -41,6 +41,20 @@ const SAMPLE_DISTRICTS: DistrictProperties[] = [
   },
 ];
 
+function expectRowStochastic(model: ReturnType<typeof buildMobilityModel>, expectedDiagonal: number): void {
+  for (let i = 0; i < model.n; i++) {
+    expect(getMobilityWeight(model, i, i)).toBeCloseTo(expectedDiagonal, 12);
+    let rowSum = 0;
+    for (let j = 0; j < model.n; j++) {
+      const weight = getMobilityWeight(model, i, j);
+      expect(Number.isFinite(weight)).toBe(true);
+      expect(weight).toBeGreaterThanOrEqual(0);
+      rowSum += weight;
+    }
+    expect(rowSum).toBeCloseTo(1, 12);
+  }
+}
+
 describe('mobility engine', () => {
   it('computes symmetric Haversine distances accurately', () => {
     const a: [number, number] = [106.8456, -6.2088];
@@ -91,5 +105,16 @@ describe('mobility engine', () => {
     expect(single.n).toBe(1);
     expect(getMobilityWeight(single, 0, 0)).toBe(1);
     expect(single.hubCentrality[0]).toBe(0);
+  });
+
+  it('uses the default outflow for non-finite values', () => {
+    for (const outflow of [NaN, Infinity, -Infinity]) {
+      expectRowStochastic(buildMobilityModel(SAMPLE_DISTRICTS, { outflow }), 0.82);
+    }
+  });
+
+  it('keeps the matrix row-stochastic at outflow boundaries 0 and 1', () => {
+    expectRowStochastic(buildMobilityModel(SAMPLE_DISTRICTS, { outflow: 0 }), 1);
+    expectRowStochastic(buildMobilityModel(SAMPLE_DISTRICTS, { outflow: 1 }), 0);
   });
 });

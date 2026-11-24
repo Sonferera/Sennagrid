@@ -1,4 +1,4 @@
-import { evaluatePolicyGates } from './gates';
+import { computeHubCoverage, evaluatePolicyGates } from './gates';
 import { buildMobilityModel } from './mobility';
 import {
   computeDayObjective,
@@ -14,7 +14,10 @@ import {
   EPIDEMIC_CONSTANTS,
   type ClimateSeries,
   type DispatchAssignment,
+  type DistrictImpactSummary,
   type DistrictProperties,
+  type ImpactRadar,
+  type ImpactSummary,
   type MobilityModel,
   type OptimizationOutput,
   type RationaleTag,
@@ -24,7 +27,7 @@ import {
 } from './types';
 
 function nowMs(): number {
-  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+  return Date.now();
 }
 
 export function computeWeeklyQuota(districtCount: number, budgetRatio: number): number {
@@ -208,6 +211,99 @@ function classifyRationaleTag(
   return 'Pre-emptive Surge Intercept';
 }
 
+function clamp0to100(value: number): number {
+  return Math.max(0, Math.min(100, value));
+}
+
+function relativeReductionPct(reactiveValue: number, optimizedValue: number): number {
+  if (reactiveValue === 0) {
+    return optimizedValue <= 0 ? 100 : 0;
+  }
+  const reduction = (reactiveValue - optimizedValue) / reactiveValue;
+  return clamp0to100(reduction * 100);
+}
+
+function computePeakFromFlat(flat: Float64Array, n: number, idx: number): number {
+  const days = flat.length / n;
+  let peak = 0;
+  for (let d = 0; d < days; d++) {
+    const v = flat[d * n + idx]!;
+    if (v > peak) peak = v;
+  }
+  return peak;
+}
+
+function computeImpactSummary(
+  reactive: ReturnType<typeof simulateFullSchedule>['result'],
+  sennagrid: ReturnType<typeof simulateFullSchedule>['result'],
+  districts: readonly DistrictProperties[],
+): ImpactSummary {
+  const casesAverted = reactive.cumulativeCases - sennagrid.cumulativeCases;
+  const casesAvertedPct = reactive.cumulativeCases > 0 ? (casesAverted / reactive.cumulativeCases) * 100 : 0;
+  const peakIcuOverflowPrevented = reactive.peakIcuOverflow - sennagrid.peakIcuOverflow;
+  const collapseDaysSaved = reactive.icuCollapseDays - sennagrid.icuCollapseDays;
+  const costReductionPct = reactive.totalCostJ > 0 ? ((reactive.totalCostJ - sennagrid.totalCostJ) / reactive.totalCostJ) * 100 : 0;
+
+  const n = districts.length;
+  const districtImpacts: DistrictImpactSummary[] = districts.map((district, idx) => {
+    const reactivePeakActive = reactive.districtActive ? computePeakFromFlat(reactive.districtActive, n, idx) : 0;
+    const optimizedPeakActive = sennagrid.districtActive ? computePeakFromFlat(sennagrid.districtActive, n, idx) : 0;
+    const reactivePeakIcu = reactive.districtIcuDemand ? computePeakFromFlat(reactive.districtIcuDemand, n, idx) : 0;
+    const optimizedPeakIcu = sennagrid.districtIcuDemand ? computePeakFromFlat(sennagrid.districtIcuDemand, n, idx) : 0;
+    const reactivePeakOverflow = Math.max(0, reactivePeakIcu - district.icuBeds);
+    const optimizedPeakOverflow = Math.max(0, optimizedPeakIcu - district.icuBeds);
+
+    let interventionWeeks = 0;
+    for (const weekRow of sennagrid.schedule) {
+      if (weekRow[idx] === 1) interventionWeeks++;
+    }
+
+    return {
+      districtId: district.id,
+      districtName: district.name,
+      reactivePeakActiveInfections: Number(reactivePeakActive.toFixed(1)),
+      optimizedPeakActiveInfections: Number(optimizedPeakActive.toFixed(1)),
+      reactivePeakIcuDemand: Number(reactivePeakIcu.toFixed(1)),
+      optimizedPeakIcuDemand: Number(optimizedPeakIcu.toFixed(1)),
+      reactivePeakIcuOverflow: Number(reactivePeakOverflow.toFixed(1)),
+      optimizedPeakIcuOverflow: Number(optimizedPeakOverflow.toFixed(1)),
+      interventionWeeks,
+    };
+  });
+
+  return {
+    casesAverted: Number(casesAverted.toFixed(1)),
+    casesAvertedPct: Number(casesAvertedPct.toFixed(2)),
+    peakIcuOverflowPrevented: Number(peakIcuOverflowPrevented.toFixed(1)),
+    collapseDaysSaved,
+    costReductionPct: Number(costReductionPct.toFixed(2)),
+    districtImpacts,
+  };
+}
+
+function computeImpactRadar(
+  reactive: ReturnType<typeof simulateFullSchedule>['result'],
+  sennagrid: ReturnType<typeof simulateFullSchedule>['result'],
+  hubCentrality: number[],
+  schedule: WeeklySchedule,
+): ImpactRadar {
+  const casesControl = relativeReductionPct(reactive.cumulativeCases, sennagrid.cumulativeCases);
+  const peakIcuSafety = relativeReductionPct(reactive.peakIcuOverflow, sennagrid.peakIcuOverflow);
+  const collapsePrevention = relativeReductionPct(reactive.icuCollapseDays, sennagrid.icuCollapseDays);
+  const budgetEfficiency = relativeReductionPct(reactive.totalCostJ, sennagrid.totalCostJ);
+
+  const { hubCoverageRatio } = computeHubCoverage(hubCentrality, schedule);
+  const hubContainment = clamp0to100(hubCoverageRatio * 100);
+
+  return {
+    casesControl: Number(casesControl.toFixed(1)),
+    peakIcuSafety: Number(peakIcuSafety.toFixed(1)),
+    collapsePrevention: Number(collapsePrevention.toFixed(1)),
+    hubContainment: Number(hubContainment.toFixed(1)),
+    budgetEfficiency: Number(budgetEfficiency.toFixed(1)),
+  };
+}
+
 function buildDispatchAssignments(
   districts: readonly DistrictProperties[],
   schedule: WeeklySchedule,
@@ -304,20 +400,29 @@ export function optimizeResourceAllocation(
 
   let evaluationsCount = 0;
 
-  // Strategy 1: Reactive baseline (status quo)
   const reactiveSchedule = buildReactiveSchedule(initialState, weeklyQuotaK, ctx);
   const reactiveFull = simulateFullSchedule('reactive', reactiveSchedule, initialState, ctx);
   evaluationsCount++;
 
-  // Hospital safety ceiling: never accept a plan that worsens ICU overflow or collapse days above reactive.
   const maxAllowedOverflow = reactiveFull.result.totalIcuOverflowCost + 1e-6;
   const maxAllowedCollapseDays = reactiveFull.result.icuCollapseDays;
 
   let bestSchedule = cloneSchedule(reactiveSchedule);
   let bestFull = reactiveFull;
 
-  // Stage 1: Receding-horizon predictive candidate schedules
-  for (const profile of STAGE1_PROFILES) {
+  const stage1Profiles = [...STAGE1_PROFILES];
+
+  if (params.diseaseMode === 'direct_seir') {
+    stage1Profiles.push({
+      susPow: 1.0,
+      hubW: 1.2,
+      icuW: 15.0,
+      overflowBoost: 20,
+      lookaheadDays: 21,
+    });
+  }
+
+  for (const profile of stage1Profiles) {
     const candSched = buildPredictiveSeedSchedule(
       initialState,
       weeklyQuotaK,
@@ -345,7 +450,10 @@ export function optimizeResourceAllocation(
   const prefixOverflowBeforeWeek = new Float64Array(bestFull.prefixOverflowBeforeWeek);
   const prefixCollapseDaysBeforeWeek = new Int32Array(bestFull.prefixCollapseDaysBeforeWeek);
 
-  // Stage 2: Checkpointed coordinate descent (2-week sustained block swaps followed by 1-week swaps)
+  // Track the best cost-dominating schedule as the ICU-first fallback.
+  let bestCostDomSchedule = cloneSchedule(bestSchedule);
+  let bestCostDomCost = bestCost;
+
   const { maxSwapEvaluations, timeBudgetMs } = EPIDEMIC_CONSTANTS.optimizer;
   const maxSwapWeek = Math.min(10, ctx.weeks - 1);
   const swapTrace: SwapTraceEntry[] = [];
@@ -353,130 +461,162 @@ export function optimizeResourceAllocation(
 
   if (weeklyQuotaK > 0 && weeklyQuotaK < n) {
     const blockLengths = [2, 1];
+    let passHadImprovement = true;
 
-    for (const blockLen of blockLengths) {
-      for (let w = 0; w <= maxSwapWeek - (blockLen - 1); w++) {
-        if (swapEvals >= maxSwapEvaluations || nowMs() - startedAt >= timeBudgetMs) {
-          break;
-        }
+    for (let pass = 0; passHadImprovement && swapEvals < maxSwapEvaluations && nowMs() - startedAt < timeBudgetMs; pass++) {
+      passHadImprovement = false;
 
-        const weekRow = bestSchedule[w]!;
-        const stateAtWeek = weeklyCheckpoints[w]!;
-        const delta21 = projectUnmitigatedGrowth14d(stateAtWeek, w * 7, ctx, 21);
-        const treated: number[] = [];
-        const untreated: number[] = [];
+      for (const blockLen of blockLengths) {
+        for (let w = 0; w <= maxSwapWeek - (blockLen - 1); w++) {
+          if (swapEvals >= maxSwapEvaluations || nowMs() - startedAt >= timeBudgetMs) {
+            break;
+          }
 
-        for (let i = 0; i < n; i++) {
-          if (weekRow[i] === 1) treated.push(i);
-          else untreated.push(i);
-        }
+          const weekRow = bestSchedule[w]!;
+          const stateAtWeek = weeklyCheckpoints[w]!;
+          const delta21 = projectUnmitigatedGrowth14d(stateAtWeek, w * 7, ctx, 21);
+          const treated: number[] = [];
+          const untreated: number[] = [];
 
-        const priorityScore = (idx: number): number => {
-          const active = stateAtWeek[idx * ctx.stride + 2]!;
-          const growth = delta21[idx]!;
-          const projectedH = ctx.icuRate * (active + growth);
-          const cap = ctx.icuCapacities[idx]!;
-          const projOverflow = Math.max(0, projectedH - cap);
-          const icuStress = projectedH / (cap + 1);
-          const hub = mobility.hubCentrality[idx]!;
-          return (
-            (10 * EPIDEMIC_CONSTANTS.objective.wIcu * projOverflow + growth + 0.25 * active + 1) *
-            (1 + 1.8 * hub) *
-            (1 + 2.2 * icuStress)
-          );
-        };
+          for (let i = 0; i < n; i++) {
+            if (weekRow[i] === 1) treated.push(i);
+            else untreated.push(i);
+          }
 
-        treated.sort((a, b) => priorityScore(a) - priorityScore(b));
-        untreated.sort((a, b) => priorityScore(b) - priorityScore(a));
+          const priorityScore = (idx: number): number => {
+            const active = stateAtWeek[idx * ctx.stride + 2]!;
+            const growth = delta21[idx]!;
+            const projectedH = ctx.icuRate * (active + growth);
+            const cap = ctx.icuCapacities[idx]!;
+            const projOverflow = Math.max(0, projectedH - cap);
+            const icuStress = projectedH / (cap + 1);
+            const hub = mobility.hubCentrality[idx]!;
+            return (
+              (10 * EPIDEMIC_CONSTANTS.objective.wIcu * projOverflow + growth + 0.25 * active + 1) *
+              (1 + 1.8 * hub) *
+              (1 + 2.2 * icuStress)
+            );
+          };
 
-        const maxTreatedToTest = Math.min(treated.length, 3);
-        const maxUntreatedToTest = Math.min(untreated.length, blockLen === 2 ? 6 : 7);
+          treated.sort((a, b) => priorityScore(a) - priorityScore(b));
+          untreated.sort((a, b) => priorityScore(b) - priorityScore(a));
 
-        for (let ti = 0; ti < maxTreatedToTest; ti++) {
-          const dOut = treated[ti]!;
-          let swappedThisOut = false;
+          const maxTreatedToTest = Math.min(treated.length, 3);
+          const maxUntreatedToTest = Math.min(untreated.length, blockLen === 2 ? 6 : 7);
 
-          for (let ui = 0; ui < maxUntreatedToTest; ui++) {
-            if (swapEvals >= maxSwapEvaluations || nowMs() - startedAt >= timeBudgetMs) {
-              break;
-            }
+          for (let ti = 0; ti < maxTreatedToTest; ti++) {
+            const dOut = treated[ti]!;
+            let swappedThisOut = false;
 
-            const dIn = untreated[ui]!;
-            let blockFeasible = true;
-            for (let b = 0; b < blockLen; b++) {
-              const rw = bestSchedule[w + b]!;
-              if (rw[dOut] !== 1 || rw[dIn] !== 0) {
-                blockFeasible = false;
+            for (let ui = 0; ui < maxUntreatedToTest; ui++) {
+              if (swapEvals >= maxSwapEvaluations || nowMs() - startedAt >= timeBudgetMs) {
                 break;
               }
-            }
-            if (!blockFeasible) continue;
 
-            for (let b = 0; b < blockLen; b++) {
-              bestSchedule[w + b]![dOut] = 0;
-              bestSchedule[w + b]![dIn] = 1;
-            }
+              const dIn = untreated[ui]!;
+              let blockFeasible = true;
+              for (let b = 0; b < blockLen; b++) {
+                const rw = bestSchedule[w + b]!;
+                if (rw[dOut] !== 1 || rw[dIn] !== 0) {
+                  blockFeasible = false;
+                  break;
+                }
+              }
+              if (!blockFeasible) continue;
 
-            const cand = evaluateCostFromWeekCheckpoint(
-              w,
-              weeklyCheckpoints[w]!,
-              prefixCostBeforeWeek[w]!,
-              prefixOverflowBeforeWeek[w]!,
-              prefixCollapseDaysBeforeWeek[w]!,
-              bestSchedule,
-              ctx,
-            );
-            swapEvals++;
-            evaluationsCount++;
+              for (let b = 0; b < blockLen; b++) {
+                bestSchedule[w + b]![dOut] = 0;
+                bestSchedule[w + b]![dIn] = 1;
+              }
 
-            if (
-              cand.totalOverflow <= maxAllowedOverflow &&
-              cand.collapseDays <= maxAllowedCollapseDays &&
-              cand.totalCostJ < bestCost - 1e-6
-            ) {
-              const costBefore = bestCost;
-              const overflowBefore = bestOverflow;
-              bestCost = cand.totalCostJ;
-              bestOverflow = cand.totalOverflow;
-              swappedThisOut = true;
-
-              swapTrace.push({
-                iteration: evaluationsCount,
-                week: w + 1,
-                removedDistrictId: districts[dOut]!.id,
-                removedDistrictName: districts[dOut]!.name,
-                addedDistrictId: districts[dIn]!.id,
-                addedDistrictName: districts[dIn]!.name,
-                costBefore: Number(costBefore.toFixed(1)),
-                costAfter: Number(bestCost.toFixed(1)),
-                costDelta: Number((costBefore - bestCost).toFixed(1)),
-                overflowSaved: Number(Math.max(0, overflowBefore - bestOverflow).toFixed(1)),
-              });
-
-              refreshCheckpointsFromWeek(
+              const cand = evaluateCostFromWeekCheckpoint(
                 w,
+                weeklyCheckpoints[w]!,
+                prefixCostBeforeWeek[w]!,
+                prefixOverflowBeforeWeek[w]!,
+                prefixCollapseDaysBeforeWeek[w]!,
                 bestSchedule,
-                weeklyCheckpoints,
-                prefixCostBeforeWeek,
-                prefixOverflowBeforeWeek,
-                prefixCollapseDaysBeforeWeek,
                 ctx,
               );
-              break;
-            } else {
+              swapEvals++;
+              evaluationsCount++;
+
+              const overflowImproved = cand.totalOverflow < bestOverflow - 1e-9;
+              const overflowEqual = Math.abs(cand.totalOverflow - bestOverflow) <= 1e-9;
+              const costImproved = cand.totalCostJ < bestCost - 1e-6;
+              const costDominates = cand.totalCostJ < reactiveFull.result.totalCostJ - 1e-6;
+
+              // Prefer lower ICU overflow; use objective cost only to break equal-overflow ties.
+              const icuFirstAccept = overflowImproved || (overflowEqual && costImproved);
+              if (
+                cand.totalOverflow <= maxAllowedOverflow &&
+                cand.collapseDays <= maxAllowedCollapseDays &&
+                icuFirstAccept
+              ) {
+                const costBefore = bestCost;
+                const overflowBefore = bestOverflow;
+                bestCost = cand.totalCostJ;
+                bestOverflow = cand.totalOverflow;
+                swappedThisOut = true;
+                passHadImprovement = true;
+
+                const overflowDelta = Number((overflowBefore - bestOverflow).toFixed(6));
+                swapTrace.push({
+                  iteration: evaluationsCount,
+                  week: w + 1,
+                  pass: pass + 1,
+                  removedDistrictId: districts[dOut]!.id,
+                  removedDistrictName: districts[dOut]!.name,
+                  addedDistrictId: districts[dIn]!.id,
+                  addedDistrictName: districts[dIn]!.name,
+                  costBefore: Number(costBefore.toFixed(1)),
+                  costAfter: Number(bestCost.toFixed(1)),
+                  costDelta: Number((costBefore - bestCost).toFixed(1)),
+                  overflowSaved: Number(Math.max(0, overflowBefore - bestOverflow).toFixed(1)),
+                  overflowDelta,
+                });
+
+                refreshCheckpointsFromWeek(
+                  w,
+                  bestSchedule,
+                  weeklyCheckpoints,
+                  prefixCostBeforeWeek,
+                  prefixOverflowBeforeWeek,
+                  prefixCollapseDaysBeforeWeek,
+                  ctx,
+                );
+
+                if (costDominates && cand.totalCostJ < bestCostDomCost) {
+                  bestCostDomCost = cand.totalCostJ;
+                  bestCostDomSchedule = cloneSchedule(bestSchedule);
+                }
+                break;
+              }
+
+              // Keep cost-dominating candidates even when ICU-first rejects them.
+              if (costDominates && cand.totalCostJ < bestCostDomCost) {
+                bestCostDomCost = cand.totalCostJ;
+                bestCostDomSchedule = cloneSchedule(bestSchedule);
+              }
+
               for (let b = 0; b < blockLen; b++) {
                 bestSchedule[w + b]![dOut] = 1;
                 bestSchedule[w + b]![dIn] = 0;
               }
             }
-          }
 
-          if (swappedThisOut) {
-            break;
+            if (swappedThisOut) {
+              break;
+            }
           }
         }
       }
     }
+  }
+
+  // Use the best cost-dominating schedule if ICU-first ends above Reactive cost.
+  if (bestCost >= reactiveFull.result.totalCostJ) {
+    bestSchedule = bestCostDomSchedule;
   }
 
   const finalFull = simulateFullSchedule('sennagrid', bestSchedule, initialState, ctx);
@@ -502,6 +642,9 @@ export function optimizeResourceAllocation(
         100
       : 0;
 
+  const impactSummary = computeImpactSummary(reactiveFull.result, finalFull.result, districts);
+  const impactRadar = computeImpactRadar(reactiveFull.result, finalFull.result, hubCentralityArr, bestSchedule);
+
   const solveTimeMs = Number((nowMs() - startedAt).toFixed(1));
 
   return {
@@ -516,6 +659,8 @@ export function optimizeResourceAllocation(
     assignments,
     swapTrace,
     gates,
+    impactSummary,
+    impactRadar,
     evaluationsCount,
     solveTimeMs,
     improvementPct: Number(improvementPct.toFixed(2)),

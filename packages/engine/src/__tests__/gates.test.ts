@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluatePolicyGates } from '../gates';
+import { computeHubCoverage, evaluatePolicyGates } from '../gates';
 import type { StrategySimulationResult } from '../types';
 
 function makeMockResult(overrides: Partial<StrategySimulationResult>): StrategySimulationResult {
@@ -88,5 +88,24 @@ describe('policy and integrity gates', () => {
     expect(summary.overallStatus).toBe('FAIL');
     const massGate = summary.gates.find((g) => g.id === 'MASS_CONSERVATION');
     expect(massGate?.passed).toBe(false);
+  });
+
+  it('shares top-quartile early hub coverage with the HUB_COVERAGE gate', () => {
+    const schedule = Array.from({ length: 13 }, () => [0, 0, 0, 0]);
+    schedule[0]![0] = 1;
+    const hubCentrality = [0.4, 0.3, 0.2, 0.1];
+
+    const coverage = computeHubCoverage(hubCentrality, schedule);
+    expect(coverage.topQuartileCount).toBe(1);
+    expect(coverage.coveredHubs).toBe(1);
+    expect(coverage.hubCoverageRatio).toBe(1);
+
+    const summary = evaluatePolicyGates({
+      reactive: makeMockResult({ name: 'reactive', totalCostJ: 12000 }),
+      sennagrid: makeMockResult({ name: 'sennagrid', totalCostJ: 8000, schedule }),
+      hubCentrality,
+      weeklyQuotaK: 1,
+    });
+    expect(summary.gates.find((gate) => gate.id === 'HUB_COVERAGE')?.passed).toBe(true);
   });
 });

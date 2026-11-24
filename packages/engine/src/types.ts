@@ -42,6 +42,7 @@ export interface SimulationParams {
   budgetRatio: number; // 0.10..0.40
   icuRate: number;
   mobilityOutflow: number;
+  interventionEfficacy?: number; // 0..1; omitted uses the disease-mode default
   horizonDays: number;
   dt: number;
 }
@@ -141,6 +142,7 @@ export interface DispatchAssignment {
 export interface SwapTraceEntry {
   iteration: number;
   week: number; // 1..13
+  pass: number; // 1-based pass number in multi-pass Stage 2
   removedDistrictId: string;
   removedDistrictName: string;
   addedDistrictId: string;
@@ -148,7 +150,8 @@ export interface SwapTraceEntry {
   costBefore: number;
   costAfter: number;
   costDelta: number;
-  overflowSaved: number;
+  overflowSaved: number; // non-negative overflow reduction, 1 decimal place
+  overflowDelta: number; // signed overflowBefore - overflowAfter, 6 decimal places
 }
 
 export type PolicyGateId =
@@ -174,6 +177,35 @@ export interface PolicyGateSummary {
   gates: PolicyGateResult[];
 }
 
+export interface DistrictImpactSummary {
+  districtId: string;
+  districtName: string;
+  reactivePeakActiveInfections: number;
+  optimizedPeakActiveInfections: number;
+  reactivePeakIcuDemand: number;
+  optimizedPeakIcuDemand: number;
+  reactivePeakIcuOverflow: number;
+  optimizedPeakIcuOverflow: number;
+  interventionWeeks: number;
+}
+
+export interface ImpactSummary {
+  casesAverted: number;
+  casesAvertedPct: number;
+  peakIcuOverflowPrevented: number;
+  collapseDaysSaved: number;
+  costReductionPct: number;
+  districtImpacts: DistrictImpactSummary[];
+}
+
+export interface ImpactRadar {
+  casesControl: number;
+  peakIcuSafety: number;
+  collapsePrevention: number;
+  hubContainment: number;
+  budgetEfficiency: number;
+}
+
 export interface OptimizationOutput {
   params: SimulationParams;
   climate: ClimateSeries;
@@ -186,6 +218,8 @@ export interface OptimizationOutput {
   assignments: DispatchAssignment[];
   swapTrace: SwapTraceEntry[];
   gates: PolicyGateSummary;
+  impactSummary: ImpactSummary;
+  impactRadar: ImpactRadar;
   evaluationsCount: number;
   solveTimeMs: number;
   improvementPct: number;

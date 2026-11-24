@@ -82,6 +82,8 @@ export function generateFullRunJson(output: OptimizationOutput): string {
         maxMassConservationError: output.sennagrid.maxMassConservationError,
       },
     },
+    impactSummary: output.impactSummary,
+    impactRadar: output.impactRadar,
     districts: output.districts,
     hubCentrality: output.hubCentrality,
     assignments: output.assignments,

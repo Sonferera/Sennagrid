@@ -10,7 +10,7 @@ SennaGrid is a client-side urban epidemic simulator and mathematical resource al
 
 During urban disease outbreaks such as dengue or acute respiratory waves, district health offices rarely have the staffing or supply budget to intervene everywhere at once. Standard reactive policy prioritizes whichever districts report the highest current active cases. Because commuter networks couple districts together and hospital ICU capacities are uneven across cities, reactive allocation often lags behind transmission hubs and allows under-bedded wards to overflow.
 
-SennaGrid runs a deterministic 91-day (13-week) compartmental ODE simulation inside a browser Web Worker to show visually and quantitatively how predictive, mobility-aware allocation reduces infections and prevents hospital ICU collapse under the identical budget.
+SennaGrid runs a deterministic 91-day (13-week) compartmental ODE simulation inside a browser Web Worker so teams can compare standard reactive dispatch with network-aware predictive optimization under the same operational budget, with results focused on disease burden, cost, and hospital pressure.
 
 ---
 
@@ -21,7 +21,7 @@ SennaGrid runs a deterministic 91-day (13-week) compartmental ODE simulation ins
   - **Vector-Borne SEIR-SEI (Default):** Climate-modulated dengue/arbovirus transmission driven by daily temperature and 7-day rolling rainfall from the free Open-Meteo API, with silent fallback to bundled seasonal climatology.
   - **Direct-Contact SEIR:** Mobility-coupled respiratory transmission with targeted vaccination suppression.
 - **Gravity Mobility Network:** Row-normalized Haversine commuter matrix $W \in \mathbb{R}^{N \times N}$ with incoming commuter hub centrality scoring.
-- **Constrained Predictive Optimizer:** Combines receding-horizon multi-seed initialization with checkpointed coordinate descent (2-week sustained block swaps and 1-week swaps), a Hospital Safety Guardrail that never worsens ICU overflow above the reactive baseline, deterministic rationale tagging, and an auditable swap trace.
+- **Constrained Predictive Optimizer:** Combines receding-horizon multi-seed initialization with bounded multi-pass checkpointed coordinate descent (2-week sustained block swaps and 1-week swaps), ICU-overflow-first acceptance with objective-cost tie-breaking, a Hospital Safety Guardrail that never worsens ICU overflow above the reactive baseline, deterministic rationale tagging, an auditable swap trace, and engine-owned impact KPIs plus a five-axis radar.
 - **5 Deterministic Policy & Integrity Gates:** Automated run verification covering ODE mass conservation (`< 1e-9`), weekly budget compliance, objective dominance, ICU collapse mitigation, and early mobility hub coverage.
 - **Two Contiguous Urban Presets:** `Metro Tropica` (18 districts, tropical urban basin) and `Harbor Corridor` (16 districts, linear coastal corridor) with non-overlapping GeoJSON geometries.
 - **Operational Exports:** Structured 13-week dispatch plans in RFC-4180 CSV and complete simulation runs in JSON.
@@ -85,14 +85,16 @@ git config core.hooksPath .githooks
 
 ## Verified Engine Benchmarks (Default Presets)
 
-Measured directly via Vitest and Node verification on bundled fallback climatology (23/23 tests passing):
+Measured directly via Vitest and Node verification on bundled fallback climatology:
 
-| Preset & Mode | Budget | Solve Time | Cases Averted | ICU Overflow (Bed-Days) | Collapse Days | Policy Gates |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Metro Tropica** (`SEIR-SEI`) | 20% | `256 ms` | `1,731` (`+4.14%` cost) | `16.8 -> 0.8` (`-95.2%`) | `5d -> 1d` (`-80%`) | `PASS (5/5, 100/100)` |
-| **Metro Tropica** (`SEIR-SEI`) | 15% | `178 ms` | `559` (`+2.18%` cost) | `208.3 -> 115.3` (`-44.6%`) | `13d -> 13d` | `PASS (4/5, 80/100)` |
-| **Harbor Corridor** (`Direct SEIR`) | 20% | `59 ms` | `17,299` (`+3.58%` cost) | `292.4 -> 288.7` | `17d -> 17d` | `PASS (4/5, 80/100)` |
-| **Harbor Corridor** (`Direct SEIR`) | 30% | `68 ms` | `20,194` (`+4.46%` cost) | `18.1 -> 7.2` (`-60.2%`) | `7d -> 6d` | `PASS (4/5, 83/100)` |
+| Preset & Mode | Budget | Solve Time | Cumulative Cases | ICU Overflow (Bed-Days) | Collapse Days | Cost Reduction | Policy Gates |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Metro Tropica** (`SEIR-SEI`) | 20% | `597 ms` | `51,110 -> 51,341` (`+0.45%`) | `16.8 -> 0.0` (`-100%`) | `5d -> 0d` | `0.33%` | `PASS (5/5, 100/100)` |
+| **Metro Tropica** (`SEIR-SEI`) | 15% | `499 ms` | `70,541 -> 71,089` (`+0.78%`) | `208.3 -> 82.1` (`-60.6%`) | `13d -> 8d` | `1.20%` | `PASS (4/5, 88/100)` |
+| **Harbor Corridor** (`Direct SEIR`) | 20% | `213 ms` | `557,073 -> 551,690` (`-0.97%`) | `292.4 -> 112.8` (`-61.4%`) | `17d -> 15d` | `1.56%` | `PASS (4/5, 82/100)` |
+| **Harbor Corridor** (`Direct SEIR`) | 30% | `214 ms` | `529,634 -> 518,427` (`-2.12%`) | `18.1 -> 2.2` (`-87.7%`) | `7d -> 4d` | `2.86%` | `PASS (5/5, 100/100)` |
+
+A positive cumulative-case percentage denotes an increase. ICU-first search can trade a small case increase for materially lower ICU pressure while still reducing objective cost.
 
 ---
 

@@ -11,10 +11,21 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) dan wa
 - Structured documentation governance system (`docs/README.md`, `docs/CHANGELOG.md`, `docs/HANDOFF.md`, `docs/SUBMISSION_CHECKLIST.md`, `docs/updates/TEMPLATE.md`).
 - Automated docs check script (`scripts/check-docs.mjs` via `npm run check:docs`), local Git pre-commit hook (`.githooks/pre-commit`), GitHub Actions CI (`.github/workflows/ci.yml`), PR template, `CONTRIBUTING.md`, `AGENTS.md`, `LICENSE` (MIT), and `.gitattributes`.
 - Dated milestone update notes in `docs/updates/`.
+- Optional `SimulationParams.interventionEfficacy` with mode-specific defaults and bounded parameter normalization.
+- Engine-owned `ImpactSummary`, `ImpactRadar`, and per-district peak comparisons in `OptimizationOutput`, including full-run JSON export coverage.
+- Deterministic worker-client lifecycle tests covering overlapping requests, stale responses, successful latest responses, termination, and late messages.
 
 ### Changed
 - Rewrote root `README.md` into the public SennaGrid project overview with verified benchmarks, quick start, and architecture documentation.
-- Synchronized `docs/BLUEPRINT.md` with the implemented multi-seed Stage 1, hybrid block-swap/1-swap Stage 2 optimizer, and Hospital Safety Guardrail.
+- Synchronized `docs/BLUEPRINT.md` with the implemented multi-seed Stage 1, ICU-overflow-first hybrid block-swap/1-swap Stage 2 optimizer, objective-cost tie-break, cost-dominance fallback, and Hospital Safety Guardrail.
+- Stage 2 now uses bounded multi-pass local search that retains accepted checkpoints and shares the existing evaluation and time budgets across passes.
+- The optimizer swap trace now records the 1-based Stage 2 pass and a signed overflow delta so multi-pass ICU-first decisions remain directly auditable.
+- Harbor Corridor Direct SEIR at 20% budget now reaches 112.8 ICU overflow bed-days, below the 231.0 bed-day acceptance target, while retaining cost dominance, weekly quota compliance, and no-worse collapse days.
+- Updated the public benchmark table to report signed case changes from ICU-first search, including the small Metro Vector case increase paired with substantially lower ICU pressure.
+
+### Fixed
+- Restored pure TypeScript engine typechecking by removing the optimizer's dependency on the browser-only `performance` global.
+- Added a scoped timeout to the aggregate 12-scenario preset calibration test so its default Vitest run completes without changing global test timeouts.
 
 ### Removed
 - Removed unused pre-rename draft specification file (`gemini-code-1795430416191.md`) and its stale references.
