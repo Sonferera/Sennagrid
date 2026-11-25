@@ -17,9 +17,11 @@ import {
   formatInt,
   type DailyChartPoint,
 } from '../../lib/viewModels';
+import type { ThemeMode } from '../../store/useSimulationStore';
 
 interface EpidemicChartsProps {
   output: OptimizationOutput | null;
+  theme: ThemeMode;
   currentDay: number;
   onSelectDay: (day: number) => void;
 }
@@ -36,28 +38,28 @@ function CustomLineTooltip({ active, payload, mode }: CustomLineTooltipProps) {
   if (!point) return null;
 
   return (
-    <div className="rounded-lg border border-[#d6d0c4] bg-[#fbf9f5] px-3 py-2 font-mono text-[13px] tabular-nums shadow-md">
-      <div className="mb-1 font-sans font-semibold text-[#1c1917]">
+    <div className="rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-surface)] px-3 py-2 font-mono text-[13px] tabular-nums shadow-md">
+      <div className="mb-1 font-sans font-semibold text-[var(--sg-text-primary)]">
         Day {point.day} (W{point.week})
       </div>
       {mode === 'overflow' ? (
         <div className="space-y-0.5">
-          <div className="flex items-center justify-between gap-4 text-[#be123c]">
+          <div className="flex items-center justify-between gap-4 text-[var(--sg-rose)]">
             <span>Without SennaGrid</span>
             <span className="font-semibold">{formatFixed(point.reactiveOverflow, 1)} beds</span>
           </div>
-          <div className="flex items-center justify-between gap-4 text-[#0f766e]">
+          <div className="flex items-center justify-between gap-4 text-[var(--sg-teal)]">
             <span>With SennaGrid</span>
             <span className="font-semibold">{formatFixed(point.sennagridOverflow, 1)} beds</span>
           </div>
         </div>
       ) : (
         <div className="space-y-0.5">
-          <div className="flex items-center justify-between gap-4 text-[#be123c]">
+          <div className="flex items-center justify-between gap-4 text-[var(--sg-rose)]">
             <span>Without SennaGrid</span>
             <span className="font-semibold">{formatInt(point.reactiveActive)} cases</span>
           </div>
-          <div className="flex items-center justify-between gap-4 text-[#0f766e]">
+          <div className="flex items-center justify-between gap-4 text-[var(--sg-teal)]">
             <span>With SennaGrid</span>
             <span className="font-semibold">{formatInt(point.sennagridActive)} cases</span>
           </div>
@@ -67,17 +69,44 @@ function CustomLineTooltip({ active, payload, mode }: CustomLineTooltipProps) {
   );
 }
 
-export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChartsProps) {
+export function EpidemicCharts({ output, theme, currentDay, onSelectDay }: EpidemicChartsProps) {
   const [chartTab, setChartTab] = useState<'overflow' | 'infections'>('overflow');
 
   const dailySeries = useMemo(() => (output ? buildDailyChartSeries(output) : []), [output]);
   const strategyBars = useMemo(() => (output ? buildRadarSeries(output) : []), [output]);
 
+  const palette =
+    theme === 'dark'
+      ? {
+          grid: '#2c2925',
+          axis: '#3d3933',
+          tick: '#a8a29e',
+          ref: '#756e65',
+          reactiveStroke: '#fb7185',
+          reactiveFill: '#fb7185',
+          reactiveOpacity: 0.18,
+          optStroke: '#2dd4bf',
+          optFill: '#2dd4bf',
+          optOpacity: 0.2,
+        }
+      : {
+          grid: '#eae4d8',
+          axis: '#d6d0c4',
+          tick: '#57534e',
+          ref: '#8c857b',
+          reactiveStroke: '#e11d48',
+          reactiveFill: '#fac8d1',
+          reactiveOpacity: 0.28,
+          optStroke: '#0f766e',
+          optFill: '#cbe8e2',
+          optOpacity: 0.34,
+        };
+
   if (!output || dailySeries.length === 0) {
     return (
       <section
         aria-label="Epidemic trajectory and fit"
-        className="rounded-xl border border-[#e0dbd0] bg-[#fbf9f5] p-6 text-center text-sm text-[#57534e]"
+        className="rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-6 text-center text-sm text-[var(--sg-text-muted)]"
       >
         No simulation trajectory available yet.
       </section>
@@ -99,17 +128,17 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
   return (
     <section
       aria-label="Epidemic overflow trajectory and strategy fit"
-      className="rounded-xl border border-[#e0dbd0] bg-[#fbf9f5] p-5 sm:p-6"
+      className="rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-5 sm:p-6 transition-colors"
     >
       <div className="grid grid-cols-1 gap-8 min-[960px]:grid-cols-12 min-[960px]:items-start">
-        {/* Left: Clean OWID Trajectory Chart */}
+        {/* Left: Clean Trajectory Chart */}
         <article className="min-w-0 min-[960px]:col-span-7">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-[#1c1917]">
+              <h2 className="text-base font-semibold text-[var(--sg-text-primary)]">
                 {chartTab === 'overflow' ? 'ICU Overflow Trajectory' : 'Active Infections Trajectory'}
               </h2>
-              <p className="mt-0.5 text-[13px] text-[#57534e]">
+              <p className="mt-0.5 text-[13px] text-[var(--sg-text-muted)]">
                 {chartTab === 'overflow'
                   ? 'Day 0 to Day 91 excess ICU beds above local ward capacity'
                   : 'Day 0 to Day 91 city-wide active cases (click chart to jump day)'}
@@ -118,9 +147,9 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
 
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-3 text-[13px] font-medium">
-                <span className="inline-flex items-center gap-1.5 text-[#be123c]">
+                <span className="inline-flex items-center gap-1.5 text-[var(--sg-rose)]">
                   <span
-                    className="h-0.5 w-3 border-t-2 border-dashed border-[#e11d48]"
+                    className="h-0.5 w-3 border-t-2 border-dashed border-[var(--sg-rose)]"
                     aria-hidden="true"
                   />
                   <span>
@@ -132,8 +161,8 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
                     </strong>
                   </span>
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-[#0f766e]">
-                  <span className="h-0.5 w-3 bg-[#0f766e]" aria-hidden="true" />
+                <span className="inline-flex items-center gap-1.5 text-[var(--sg-teal)]">
+                  <span className="h-0.5 w-3 bg-[var(--sg-teal)]" aria-hidden="true" />
                   <span>
                     SennaGrid:{' '}
                     <strong className="font-mono tabular-nums">
@@ -148,7 +177,7 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
               <div
                 role="group"
                 aria-label="Trajectory chart view"
-                className="inline-flex rounded-md border border-[#e0dbd0] bg-[#eee9df] p-0.5 text-xs font-medium"
+                className="inline-flex rounded-md border border-[var(--sg-border-subtle)] bg-[var(--sg-inset)] p-0.5 text-xs font-medium"
               >
                 <button
                   type="button"
@@ -156,8 +185,8 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
                   onClick={() => setChartTab('overflow')}
                   className={`min-h-[44px] rounded px-2.5 py-0.5 transition-all min-[720px]:min-h-[26px] ${
                     chartTab === 'overflow'
-                      ? 'bg-[#fbf9f5] font-semibold text-[#1c1917] shadow-2xs'
-                      : 'text-[#57534e] hover:text-[#1c1917]'
+                      ? 'bg-[var(--sg-surface)] font-semibold text-[var(--sg-text-primary)] shadow-2xs ring-1 ring-[var(--sg-border-control)]/40'
+                      : 'text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
                   }`}
                 >
                   Overflow
@@ -168,8 +197,8 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
                   onClick={() => setChartTab('infections')}
                   className={`min-h-[44px] rounded px-2.5 py-0.5 transition-all min-[720px]:min-h-[26px] ${
                     chartTab === 'infections'
-                      ? 'bg-[#fbf9f5] font-semibold text-[#1c1917] shadow-2xs'
-                      : 'text-[#57534e] hover:text-[#1c1917]'
+                      ? 'bg-[var(--sg-surface)] font-semibold text-[var(--sg-text-primary)] shadow-2xs ring-1 ring-[var(--sg-border-control)]/40'
+                      : 'text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
                   }`}
                 >
                   Cases
@@ -186,40 +215,40 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
                   margin={{ top: 6, right: 12, left: -10, bottom: 2 }}
                   onClick={handleChartClick}
                 >
-                  <CartesianGrid horizontal vertical={false} stroke="#eae4d8" />
+                  <CartesianGrid horizontal vertical={false} stroke={palette.grid} />
                   <XAxis
                     dataKey="day"
-                    axisLine={{ stroke: '#d6d0c4' }}
+                    axisLine={{ stroke: palette.axis }}
                     tickLine={false}
-                    tick={{ fill: '#57534e', fontSize: 12 }}
+                    tick={{ fill: palette.tick, fontSize: 12 }}
                     ticks={[0, 30, 60, 91]}
                     tickFormatter={(v: number) => `Day ${v}`}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#57534e', fontSize: 12 }}
+                    tick={{ fill: palette.tick, fontSize: 12 }}
                     width={42}
                   />
                   <Tooltip content={<CustomLineTooltip mode="overflow" />} />
-                  <ReferenceLine x={currentDay} stroke="#8c857b" strokeDasharray="3 3" />
+                  <ReferenceLine x={currentDay} stroke={palette.ref} strokeDasharray="3 3" />
                   <Area
                     type="monotone"
                     dataKey="reactiveOverflow"
-                    stroke="#e11d48"
+                    stroke={palette.reactiveStroke}
                     strokeWidth={2.2}
                     strokeDasharray="5 4"
-                    fill="#fac8d1"
-                    fillOpacity={0.28}
+                    fill={palette.reactiveFill}
+                    fillOpacity={palette.reactiveOpacity}
                     isAnimationActive={false}
                   />
                   <Area
                     type="monotone"
                     dataKey="sennagridOverflow"
-                    stroke="#0f766e"
+                    stroke={palette.optStroke}
                     strokeWidth={2.4}
-                    fill="#cbe8e2"
-                    fillOpacity={0.34}
+                    fill={palette.optFill}
+                    fillOpacity={palette.optOpacity}
                     isAnimationActive={false}
                   />
                 </AreaChart>
@@ -229,43 +258,43 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
                   margin={{ top: 6, right: 12, left: -4, bottom: 2 }}
                   onClick={handleChartClick}
                 >
-                  <CartesianGrid horizontal vertical={false} stroke="#eae4d8" />
+                  <CartesianGrid horizontal vertical={false} stroke={palette.grid} />
                   <XAxis
                     dataKey="day"
-                    axisLine={{ stroke: '#d6d0c4' }}
+                    axisLine={{ stroke: palette.axis }}
                     tickLine={false}
-                    tick={{ fill: '#57534e', fontSize: 12 }}
+                    tick={{ fill: palette.tick, fontSize: 12 }}
                     ticks={[0, 30, 60, 91]}
                     tickFormatter={(v: number) => `Day ${v}`}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#57534e', fontSize: 12 }}
+                    tick={{ fill: palette.tick, fontSize: 12 }}
                     width={50}
                     tickFormatter={(v: number) =>
                       v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v))
                     }
                   />
                   <Tooltip content={<CustomLineTooltip mode="infections" />} />
-                  <ReferenceLine x={currentDay} stroke="#8c857b" strokeDasharray="3 3" />
+                  <ReferenceLine x={currentDay} stroke={palette.ref} strokeDasharray="3 3" />
                   <Area
                     type="monotone"
                     dataKey="reactiveActive"
-                    stroke="#e11d48"
+                    stroke={palette.reactiveStroke}
                     strokeWidth={2.2}
                     strokeDasharray="5 4"
-                    fill="#fac8d1"
-                    fillOpacity={0.25}
+                    fill={palette.reactiveFill}
+                    fillOpacity={palette.reactiveOpacity}
                     isAnimationActive={false}
                   />
                   <Area
                     type="monotone"
                     dataKey="sennagridActive"
-                    stroke="#0f766e"
+                    stroke={palette.optStroke}
                     strokeWidth={2.4}
-                    fill="#cbe8e2"
-                    fillOpacity={0.32}
+                    fill={palette.optFill}
+                    fillOpacity={palette.optOpacity}
                     isAnimationActive={false}
                   />
                 </AreaChart>
@@ -276,7 +305,7 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
 
         {/* Right: Clean 5-Bar Strategy Fit */}
         <article className="min-w-0 min-[960px]:col-span-5">
-          <h2 className="mb-4 text-base font-semibold text-[#1c1917]">
+          <h2 className="mb-4 text-base font-semibold text-[var(--sg-text-primary)]">
             Strategy Fit (vs Reactive Baseline)
           </h2>
           <div className="space-y-4">
@@ -291,10 +320,10 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
               return (
                 <div key={item.key} title={item.description}>
                   <div className="mb-1.5 flex items-baseline justify-between gap-2 text-[14px]">
-                    <span className="font-medium text-[#44403c]">{item.axis}</span>
-                    <span className="font-mono font-semibold tabular-nums text-[#1c1917]">
+                    <span className="font-medium text-[var(--sg-text-secondary)]">{item.axis}</span>
+                    <span className="font-mono font-semibold tabular-nums text-[var(--sg-text-primary)]">
                       {isTradeoffZero ? (
-                        <span className="text-[13px] font-medium text-[#b45309]">
+                        <span className="text-[13px] font-medium text-[var(--sg-amber)]">
                           0 (+{Math.abs(output.impactSummary.casesAvertedPct).toFixed(2)}% trade-off)
                         </span>
                       ) : (
@@ -302,9 +331,9 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
                       )}
                     </span>
                   </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#eee9df]">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--sg-inset)]">
                     <div
-                      className="h-full rounded-full bg-[#0f766e]"
+                      className="h-full rounded-full bg-[var(--sg-teal)]"
                       style={{
                         width: `${item.score > 0 ? Math.min(100, Math.max(1.5, item.score)) : 0}%`,
                       }}

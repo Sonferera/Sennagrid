@@ -20,7 +20,7 @@ export function TabNav() {
       <div
         role="tablist"
         aria-label="SennaGrid workspace views"
-        className="flex items-center justify-center gap-7"
+        className="flex items-center justify-center gap-6 sm:gap-7"
       >
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -35,15 +35,15 @@ export function TabNav() {
               onClick={() => setActiveTab(tab.id)}
               className={`relative inline-flex min-h-[44px] items-center px-1 text-[15px] transition-colors sm:min-h-[56px] ${
                 isActive
-                  ? 'font-semibold text-[#1c1917]'
-                  : 'font-medium text-[#57534e] hover:text-[#1c1917]'
+                  ? 'font-semibold text-[var(--sg-text-primary)]'
+                  : 'font-medium text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
               }`}
             >
               <span>{tab.label}</span>
               {isActive && (
                 <span
                   aria-hidden="true"
-                  className="absolute inset-x-0 bottom-0 h-[2.5px] rounded-full bg-[#0f766e]"
+                  className="absolute inset-x-0 bottom-0 h-[2.5px] rounded-full bg-[var(--sg-teal)]"
                 />
               )}
             </button>

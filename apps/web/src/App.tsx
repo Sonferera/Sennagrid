@@ -2,6 +2,7 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { ControlBar } from './components/layout/ControlBar';
+import { Footer } from './components/layout/Footer';
 import { HeaderBar } from './components/layout/HeaderBar';
 import { MethodologyView } from './components/methodology/MethodologyView';
 import { InteractiveTour } from './components/onboarding/InteractiveTour';
@@ -29,10 +30,10 @@ function InitialLoadingSkeleton() {
       aria-label="Loading initial optimization"
       className="grid grid-cols-1 gap-6 lg:grid-cols-[284px_minmax(0,1fr)]"
     >
-      <div className="h-96 animate-pulse rounded-xl border border-[#e0dbd0] bg-[#fbf9f5]" />
+      <div className="h-96 animate-pulse rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)]" />
       <div className="space-y-5">
-        <div className="h-28 animate-pulse rounded-xl border border-[#e0dbd0] bg-[#fbf9f5]" />
-        <div className="h-[460px] animate-pulse rounded-xl border border-[#e0dbd0] bg-[#fbf9f5]" />
+        <div className="h-28 animate-pulse rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)]" />
+        <div className="h-[460px] animate-pulse rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)]" />
       </div>
     </div>
   );
@@ -41,6 +42,7 @@ function InitialLoadingSkeleton() {
 export default function App() {
   const {
     activeTab,
+    theme,
     output,
     isOptimizing,
     error,
@@ -73,6 +75,7 @@ export default function App() {
   } = useSimulationStore(
     useShallow((s) => ({
       activeTab: s.activeTab,
+      theme: s.theme,
       output: s.output,
       isOptimizing: s.isOptimizing,
       error: s.error,
@@ -108,6 +111,10 @@ export default function App() {
   useEffect(() => {
     void initialize();
   }, [initialize]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -171,7 +178,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f5f2eb] text-[#1c1917]">
+    <div className="flex min-h-screen flex-col bg-[var(--sg-canvas)] text-[var(--sg-text-primary)] transition-colors">
       <HeaderBar />
 
       <div className="sr-only" aria-live="polite">
@@ -186,7 +193,7 @@ export default function App() {
         {error && (
           <div
             role="alert"
-            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#e7b4bd] bg-[#fdf0f2] px-4 py-3 text-sm text-[#9f1239]"
+            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--sg-rose-border)] bg-[var(--sg-rose-tint)] px-4 py-3 text-sm text-[var(--sg-rose-ink)]"
           >
             <div className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -197,7 +204,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => void runOptimization()}
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[#e7b4bd] bg-[#fbf9f5] px-3 py-1.5 font-semibold text-[#9f1239] hover:bg-[#fce5e9] sm:min-h-[36px]"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[var(--sg-rose-border)] bg-[var(--sg-surface)] px-3 py-1.5 font-semibold text-[var(--sg-rose-ink)] hover:opacity-90 sm:min-h-[36px]"
             >
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
               <span>Retry</span>
@@ -227,6 +234,7 @@ export default function App() {
 
                   <SplitMapView
                     output={output}
+                    theme={theme}
                     currentDay={currentDay}
                     selectedDistrictId={selectedDistrictId}
                     syncMapsLocked={syncMapsLocked}
@@ -255,6 +263,7 @@ export default function App() {
 
                   <EpidemicCharts
                     output={output}
+                    theme={theme}
                     currentDay={currentDay}
                     onSelectDay={setCurrentDay}
                   />
@@ -291,10 +300,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="py-6 text-center text-[13px] text-[#57534e]">
-        100% Client-Side RK4 Solver · Synthetic Urban Benchmarks (Metro Tropica &amp; Harbor
-        Corridor) for Research, Not Clinical Directives.
-      </footer>
+      <Footer />
 
       <InteractiveTour
         isOpen={tourOpen}

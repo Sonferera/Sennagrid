@@ -125,12 +125,14 @@ export function ControlBar() {
     <aside
       aria-label="Simulation controls"
       data-tour="control-bar"
-      className="flex h-full w-full shrink-0 flex-col justify-between gap-5 rounded-xl border border-[#e0dbd0] bg-[#fbf9f5] p-5"
+      className="flex h-full w-full shrink-0 flex-col justify-between gap-5 rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-5 transition-colors"
     >
       <div className="space-y-5">
         {/* 1. City Scenario */}
         <div>
-          <span className="mb-2 block text-[13px] font-medium text-[#57534e]">City Scenario</span>
+          <span className="mb-2 block text-[13px] font-medium text-[var(--sg-text-muted)]">
+            City Scenario
+          </span>
           <div
             role="radiogroup"
             aria-label="City scenario"
@@ -147,19 +149,21 @@ export function ControlBar() {
                   onClick={() => handleRegionChange(item.id)}
                   className={`flex min-h-[48px] w-full items-start justify-between gap-2 rounded-lg border px-3.5 py-3 text-left transition-colors ${
                     selected
-                      ? 'border-[#0f766e] bg-[#edf6f4]'
-                      : 'border-[#e0dbd0] bg-[#fbf9f5] hover:border-[#8c857b]'
+                      ? 'border-[var(--sg-teal)] bg-[var(--sg-teal-tint)]'
+                      : 'border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] hover:border-[var(--sg-border-control)]'
                   }`}
                 >
                   <div>
-                    <div className="text-[15px] font-semibold text-[#1c1917]">{item.name}</div>
-                    <div className="mt-0.5 text-[13px] text-[#57534e]">
+                    <div className="text-[15px] font-semibold text-[var(--sg-text-primary)]">
+                      {item.name}
+                    </div>
+                    <div className="mt-0.5 text-[13px] text-[var(--sg-text-muted)]">
                       {item.districts.length} districts · {formatPopulationCompact(item.districts)}
                     </div>
                   </div>
                   {selected && (
                     <Check
-                      className="mt-0.5 h-4 w-4 shrink-0 text-[#0f766e]"
+                      className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sg-teal)]"
                       aria-hidden="true"
                     />
                   )}
@@ -171,11 +175,13 @@ export function ControlBar() {
 
         {/* 2. Disease Model */}
         <div>
-          <span className="mb-2 block text-[13px] font-medium text-[#57534e]">Disease Model</span>
+          <span className="mb-2 block text-[13px] font-medium text-[var(--sg-text-muted)]">
+            Disease Model
+          </span>
           <div
             role="group"
             aria-label="Transmission model"
-            className="grid grid-cols-2 gap-1 rounded-lg border border-[#e0dbd0] bg-[#eee9df] p-1"
+            className="grid grid-cols-2 gap-1 rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-inset)] p-1"
           >
             <button
               type="button"
@@ -184,8 +190,8 @@ export function ControlBar() {
               title="Vector-borne SEIR-SEI (climate-modulated Dengue)"
               className={`min-h-[44px] rounded-md px-2 py-1.5 text-sm font-semibold transition-all lg:min-h-[36px] ${
                 params.diseaseMode === 'vector_seir_sei'
-                  ? 'bg-[#fbf9f5] text-[#1c1917] shadow-2xs ring-1 ring-[#d6d0c4]'
-                  : 'text-[#57534e] hover:text-[#1c1917]'
+                  ? 'bg-[var(--sg-surface)] text-[var(--sg-text-primary)] shadow-2xs ring-1 ring-[var(--sg-border-control)]/50'
+                  : 'text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
               }`}
             >
               Dengue
@@ -197,8 +203,8 @@ export function ControlBar() {
               title="Direct-contact SEIR (respiratory corridor spread)"
               className={`min-h-[44px] rounded-md px-2 py-1.5 text-sm font-semibold transition-all lg:min-h-[36px] ${
                 params.diseaseMode === 'direct_seir'
-                  ? 'bg-[#fbf9f5] text-[#1c1917] shadow-2xs ring-1 ring-[#d6d0c4]'
-                  : 'text-[#57534e] hover:text-[#1c1917]'
+                  ? 'bg-[var(--sg-surface)] text-[var(--sg-text-primary)] shadow-2xs ring-1 ring-[var(--sg-border-control)]/50'
+                  : 'text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
               }`}
             >
               Respiratory
@@ -209,10 +215,13 @@ export function ControlBar() {
         {/* 3. Weekly Budget Quota */}
         <div>
           <div className="flex items-baseline justify-between gap-2">
-            <label htmlFor="sg-budget-slider" className="text-[13px] font-medium text-[#57534e]">
+            <label
+              htmlFor="sg-budget-slider"
+              className="text-[13px] font-medium text-[var(--sg-text-muted)]"
+            >
               Budget
             </label>
-            <span className="font-mono text-sm font-semibold tabular-nums text-[#0f766e]">
+            <span className="font-mono text-sm font-semibold tabular-nums text-[var(--sg-teal)]">
               {budgetPct}% · {quotaK} wards
             </span>
           </div>
@@ -241,7 +250,7 @@ export function ControlBar() {
             className="sg-range -my-2"
             aria-valuetext={`${budgetPct} percent, ${quotaK} of ${districtCount} districts per week`}
           />
-          <div className="flex justify-between font-mono text-xs tabular-nums text-[#57534e]">
+          <div className="flex justify-between font-mono text-xs tabular-nums text-[var(--sg-text-muted)]">
             <span>10%</span>
             <span>40%</span>
           </div>
@@ -253,30 +262,32 @@ export function ControlBar() {
             type="button"
             onClick={flushOptimizationNow}
             disabled={isOptimizing}
-            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-[#0f766e] px-4 py-2.5 text-sm font-semibold text-[#fbf9f5] transition-colors hover:bg-[#115e59] disabled:opacity-70 lg:min-h-[42px]"
+            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-[var(--sg-teal-fill)] px-4 py-2.5 text-sm font-semibold text-[var(--sg-teal-fill-ink)] transition-colors hover:bg-[var(--sg-teal-fill-hover)] disabled:opacity-70 lg:min-h-[42px]"
           >
             {isOptimizing && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             <span>{isOptimizing ? 'Optimizing...' : 'Run Optimization'}</span>
           </button>
-          <p className="text-center font-mono text-[13px] tabular-nums text-[#57534e]">
+          <p className="text-center font-mono text-[13px] tabular-nums text-[var(--sg-text-muted)]">
             {isOptimizing ? 'Running Web Worker...' : solveSecondsText}
           </p>
         </div>
 
-        {/* 5. Always-Visible Model Parameters (No Dropdown) */}
-        <div className="border-t border-[#e0dbd0] pt-4">
-          <h2 className="mb-3 text-[13px] font-semibold text-[#1c1917]">Model Parameters</h2>
+        {/* 5. Always-Visible Model Parameters */}
+        <div className="border-t border-[var(--sg-border-subtle)] pt-4">
+          <h2 className="mb-3 text-[13px] font-semibold text-[var(--sg-text-primary)]">
+            Model Parameters
+          </h2>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1">
             {/* Climate Forcing */}
             <div>
-              <span className="mb-1.5 block text-[13px] font-medium text-[#57534e]">
+              <span className="mb-1.5 block text-[13px] font-medium text-[var(--sg-text-muted)]">
                 Climate Forcing
               </span>
               <div
                 role="group"
                 aria-label="Climate data source"
-                className="grid grid-cols-2 gap-1 rounded-lg border border-[#e0dbd0] bg-[#eee9df] p-1"
+                className="grid grid-cols-2 gap-1 rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-inset)] p-1"
               >
                 <button
                   type="button"
@@ -284,8 +295,8 @@ export function ControlBar() {
                   onClick={() => handleClimateModeChange('seasonal_benchmark')}
                   className={`min-h-[44px] rounded-md px-2 py-1 text-xs font-semibold transition-all lg:min-h-[32px] ${
                     climateMode === 'seasonal_benchmark'
-                      ? 'bg-[#fbf9f5] text-[#1c1917] shadow-2xs ring-1 ring-[#d6d0c4]'
-                      : 'text-[#57534e] hover:text-[#1c1917]'
+                      ? 'bg-[var(--sg-surface)] text-[var(--sg-text-primary)] shadow-2xs ring-1 ring-[var(--sg-border-control)]/50'
+                      : 'text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
                   }`}
                 >
                   Peak Season
@@ -296,15 +307,15 @@ export function ControlBar() {
                   onClick={() => handleClimateModeChange('live_weather')}
                   className={`min-h-[44px] rounded-md px-2 py-1 text-xs font-semibold transition-all lg:min-h-[32px] ${
                     climateMode === 'live_weather'
-                      ? 'bg-[#fbf9f5] text-[#1c1917] shadow-2xs ring-1 ring-[#d6d0c4]'
-                      : 'text-[#57534e] hover:text-[#1c1917]'
+                      ? 'bg-[var(--sg-surface)] text-[var(--sg-text-primary)] shadow-2xs ring-1 ring-[var(--sg-border-control)]/50'
+                      : 'text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
                   }`}
                 >
                   {liveWeatherLabel}
                 </button>
               </div>
               {climate && (
-                <p className="mt-1.5 font-mono text-xs tabular-nums text-[#57534e]">
+                <p className="mt-1.5 font-mono text-xs tabular-nums text-[var(--sg-text-muted)]">
                   {climate.meanTemp14d.toFixed(1)}°C · {climate.meanPrecip14d.toFixed(1)} mm/d
                 </p>
               )}
@@ -313,10 +324,10 @@ export function ControlBar() {
             {/* ICU Rate */}
             <div>
               <div className="flex justify-between text-[13px]">
-                <label htmlFor="sg-icu-rate" className="font-medium text-[#57534e]">
+                <label htmlFor="sg-icu-rate" className="font-medium text-[var(--sg-text-muted)]">
                   ICU Rate
                 </label>
-                <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
+                <span className="font-mono font-semibold tabular-nums text-[var(--sg-teal)]">
                   {(params.icuRate * 100).toFixed(2)}%
                 </span>
               </div>
@@ -339,10 +350,13 @@ export function ControlBar() {
             {/* Mobility Outflow */}
             <div>
               <div className="flex justify-between text-[13px]">
-                <label htmlFor="sg-mobility-outflow" className="font-medium text-[#57534e]">
+                <label
+                  htmlFor="sg-mobility-outflow"
+                  className="font-medium text-[var(--sg-text-muted)]"
+                >
                   Commuter Outflow
                 </label>
-                <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
+                <span className="font-mono font-semibold tabular-nums text-[var(--sg-teal)]">
                   {Math.round(params.mobilityOutflow * 100)}%
                 </span>
               </div>
@@ -365,10 +379,10 @@ export function ControlBar() {
             {/* Efficacy */}
             <div>
               <div className="flex justify-between text-[13px]">
-                <label htmlFor="sg-efficacy" className="font-medium text-[#57534e]">
+                <label htmlFor="sg-efficacy" className="font-medium text-[var(--sg-text-muted)]">
                   Team Efficacy
                 </label>
-                <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
+                <span className="font-mono font-semibold tabular-nums text-[var(--sg-teal)]">
                   {Math.round(activeEfficacy * 100)}%
                 </span>
               </div>
@@ -392,31 +406,31 @@ export function ControlBar() {
           <button
             type="button"
             onClick={() => void resetDefaults()}
-            className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-lg border border-[#8c857b] bg-[#fbf9f5] px-3 py-1.5 text-[13px] font-medium text-[#1c1917] shadow-2xs transition-colors hover:bg-[#eee9df] lg:min-h-[36px]"
+            className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-surface)] px-3 py-1.5 text-[13px] font-medium text-[var(--sg-text-primary)] shadow-2xs transition-colors hover:bg-[var(--sg-hover)] lg:min-h-[36px]"
           >
-            <RotateCcw className="h-3.5 w-3.5 text-[#57534e]" aria-hidden="true" />
+            <RotateCcw className="h-3.5 w-3.5 text-[var(--sg-text-muted)]" aria-hidden="true" />
             <span>Reset Defaults</span>
           </button>
         </div>
       </div>
 
-      {/* Anchored Footer Run Summary (aligns left sidebar height cleanly with right column) */}
-      <dl className="mt-auto space-y-2 border-t border-[#e0dbd0] pt-4 text-[13px]">
+      {/* Anchored Footer Run Summary */}
+      <dl className="mt-auto space-y-2 border-t border-[var(--sg-border-subtle)] pt-4 text-[13px]">
         <div className="flex justify-between gap-2">
-          <dt className="text-[#57534e]">Horizon</dt>
-          <dd className="font-mono font-medium tabular-nums text-[#1c1917]">
+          <dt className="text-[var(--sg-text-muted)]">Horizon</dt>
+          <dd className="font-mono font-medium tabular-nums text-[var(--sg-text-primary)]">
             {params.horizonDays}d ({output?.sennagrid.schedule.length ?? 13} weeks)
           </dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-[#57534e]">Solver</dt>
-          <dd className="font-mono font-medium tabular-nums text-[#1c1917]">
+          <dt className="text-[var(--sg-text-muted)]">Solver</dt>
+          <dd className="font-mono font-medium tabular-nums text-[var(--sg-text-primary)]">
             RK4 · dt={params.dt}d
           </dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-[#57534e]">City Beds</dt>
-          <dd className="font-mono font-medium tabular-nums text-[#1c1917]">
+          <dt className="text-[var(--sg-text-muted)]">City Beds</dt>
+          <dd className="font-mono font-medium tabular-nums text-[var(--sg-text-primary)]">
             {output ? `${output.totalIcuCapacity} ICU beds` : 'Calculating'}
           </dd>
         </div>

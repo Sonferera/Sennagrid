@@ -20,6 +20,31 @@ export type ActiveTab = 'simulator' | 'schedule' | 'methodology';
 export type PlaybackSpeed = 1 | 2 | 4;
 export type MobileMapStrategy = 'reactive' | 'sennagrid';
 export type ClimateMode = 'seasonal_benchmark' | 'live_weather';
+export type ThemeMode = 'dark' | 'light';
+
+const THEME_STORAGE_KEY = 'sennagrid-theme';
+
+function readInitialTheme(): ThemeMode {
+  if (typeof window === 'undefined') return 'dark';
+  try {
+    return window.localStorage.getItem(THEME_STORAGE_KEY) === 'light' ? 'light' : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+
+function persistAndApplyTheme(theme: ThemeMode): void {
+  if (typeof document !== 'undefined') {
+    document.documentElement.dataset.theme = theme;
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // Ignore storage quota or sandbox errors
+    }
+  }
+}
 
 export interface SimulationStoreDependencies {
   fetchClimate?: (regionId: RegionId) => Promise<ClimateSeries>;
@@ -30,6 +55,7 @@ export interface SimulationStoreDependencies {
 export interface SimulationStoreState {
   params: SimulationParams;
   climateMode: ClimateMode;
+  theme: ThemeMode;
   advancedOpen: boolean;
   activeTab: ActiveTab;
   selectedDistrictId: string | null;
@@ -66,6 +92,8 @@ export interface SimulationStoreState {
     focusPeakOnSettle?: boolean,
   ) => Promise<void>;
   setActiveTab: (tab: ActiveTab) => void;
+  setTheme: (theme: ThemeMode) => void;
+  toggleTheme: () => void;
   setCurrentDay: (day: number, fromUser?: boolean) => void;
   stepDay: (delta: number) => void;
   jumpToPeakDay: () => void;
@@ -167,6 +195,7 @@ export function createSimulationStore(
     return {
       params: { ...DEFAULT_SIMULATION_PARAMS },
       climateMode: 'seasonal_benchmark',
+      theme: readInitialTheme(),
       advancedOpen: false,
       activeTab: 'simulator',
       selectedDistrictId: null,
@@ -353,6 +382,17 @@ export function createSimulationStore(
 
       setActiveTab(tab) {
         set({ activeTab: tab });
+      },
+
+      setTheme(theme) {
+        persistAndApplyTheme(theme);
+        set({ theme });
+      },
+
+      toggleTheme() {
+        const next: ThemeMode = get().theme === 'dark' ? 'light' : 'dark';
+        persistAndApplyTheme(next);
+        set({ theme: next });
       },
 
       setCurrentDay(day, fromUser = true) {

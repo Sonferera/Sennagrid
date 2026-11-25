@@ -19,46 +19,74 @@ import {
   getTimelineMeta,
   selectPriorityBadgeDistrictIds,
 } from '../../lib/viewModels';
-import type { MobileMapStrategy } from '../../store/useSimulationStore';
+import type { MobileMapStrategy, ThemeMode } from '../../store/useSimulationStore';
 import { DistrictInspector, DistrictWatchlistGrid } from './DistrictInspector';
 
 const CARTO_POSITRON_STYLE_URL = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+const CARTO_DARK_STYLE_URL = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const BASEMAP_LOAD_TIMEOUT_MS = 4500;
 const SOURCE_ID = 'sennagrid-districts';
 const FLOWS_SOURCE_ID = 'sennagrid-flows';
 
-const OFFLINE_PAPER_STYLE: StyleSpecification = {
-  version: 8,
-  sources: {},
-  layers: [
-    {
-      id: 'offline-background',
-      type: 'background',
-      paint: {
-        'background-color': '#efebe2',
-      },
-    },
-  ],
-};
+function getBasemapStyleUrl(theme: ThemeMode): string {
+  return theme === 'dark' ? CARTO_DARK_STYLE_URL : CARTO_POSITRON_STYLE_URL;
+}
 
-// Soft paper cartographic stress ramp with clear crimson threshold at >=100% ICU overflow
-const STRESS_FILL_EXPRESSION: ExpressionSpecification = [
-  'interpolate',
-  ['linear'],
-  ['coalesce', ['feature-state', 'stress'], 0],
-  0,
-  '#e7f3ee',
-  0.4,
-  '#efeae0',
-  0.6,
-  '#faeac1',
-  0.995,
-  '#f7dd97',
-  1.0,
-  '#fac8d1',
-  1.35,
-  '#f43f5e',
-];
+function getOfflineStyle(theme: ThemeMode): StyleSpecification {
+  return {
+    version: 8,
+    sources: {},
+    layers: [
+      {
+        id: 'offline-background',
+        type: 'background',
+        paint: {
+          'background-color': theme === 'dark' ? '#161513' : '#efebe2',
+        },
+      },
+    ],
+  };
+}
+
+// Calibrated cartographic stress ramps for Obsidian Dark & Warm Paper themes
+function getStressFillExpression(theme: ThemeMode): ExpressionSpecification {
+  if (theme === 'dark') {
+    return [
+      'interpolate',
+      ['linear'],
+      ['coalesce', ['feature-state', 'stress'], 0],
+      0,
+      '#1c2b27',
+      0.4,
+      '#242320',
+      0.6,
+      '#423217',
+      0.995,
+      '#694914',
+      1.0,
+      '#5e1d2d',
+      1.35,
+      '#be123c',
+    ];
+  }
+  return [
+    'interpolate',
+    ['linear'],
+    ['coalesce', ['feature-state', 'stress'], 0],
+    0,
+    '#e7f3ee',
+    0.4,
+    '#efeae0',
+    0.6,
+    '#faeac1',
+    0.995,
+    '#f7dd97',
+    1.0,
+    '#fac8d1',
+    1.35,
+    '#f43f5e',
+  ];
+}
 
 interface HoverInfo {
   strategy: StrategyName;
@@ -76,6 +104,7 @@ interface MarkerHandle {
 
 interface SplitMapViewProps {
   output: OptimizationOutput;
+  theme: ThemeMode;
   currentDay: number;
   selectedDistrictId: string | null;
   syncMapsLocked: boolean;
@@ -136,6 +165,7 @@ function attachDistrictLayers(
   flowsGeoJson: GeoJSON.FeatureCollection,
   strategy: StrategyName,
   showFlows: boolean,
+  theme: ThemeMode,
 ): void {
   if (!map.getSource(SOURCE_ID)) {
     map.addSource(SOURCE_ID, {
@@ -158,8 +188,8 @@ function attachDistrictLayers(
       type: 'fill',
       source: SOURCE_ID,
       paint: {
-        'fill-color': STRESS_FILL_EXPRESSION,
-        'fill-opacity': 0.78,
+        'fill-color': getStressFillExpression(theme),
+        'fill-opacity': theme === 'dark' ? 0.84 : 0.78,
       },
     });
   }
@@ -170,9 +200,9 @@ function attachDistrictLayers(
       type: 'line',
       source: SOURCE_ID,
       paint: {
-        'line-color': '#8c857b',
+        'line-color': theme === 'dark' ? '#5c574f' : '#8c857b',
         'line-width': 0.9,
-        'line-opacity': 0.68,
+        'line-opacity': theme === 'dark' ? 0.75 : 0.68,
       },
     });
   }
@@ -184,9 +214,9 @@ function attachDistrictLayers(
       type: 'line',
       source: SOURCE_ID,
       paint: {
-        'line-color': '#1c1917',
+        'line-color': theme === 'dark' ? '#f3efe6' : '#1c1917',
         'line-width': ['case', ['==', ['feature-state', 'selected'], true], 5.5, 0],
-        'line-opacity': 0.28,
+        'line-opacity': theme === 'dark' ? 0.42 : 0.28,
       },
     });
   }
@@ -201,7 +231,7 @@ function attachDistrictLayers(
         'line-cap': 'round',
       },
       paint: {
-        'line-color': '#57534e',
+        'line-color': theme === 'dark' ? '#a8a29e' : '#57534e',
         'line-width': ['interpolate', ['linear'], ['get', 'strength'], 0, 0.8, 1, 2.0],
         'line-opacity': 0.28,
         'line-dasharray': [2, 2],
@@ -209,7 +239,14 @@ function attachDistrictLayers(
     });
   }
 
-  const treatedColor = strategy === 'reactive' ? '#e11d48' : '#0f766e';
+  const treatedColor =
+    strategy === 'reactive'
+      ? theme === 'dark'
+        ? '#fb7185'
+        : '#e11d48'
+      : theme === 'dark'
+        ? '#2dd4bf'
+        : '#0f766e';
   if (!map.getLayer('districts-treated-outline')) {
     map.addLayer({
       id: 'districts-treated-outline',
@@ -324,6 +361,7 @@ function applyFeatureStatesAndMarkers(
 
 export function SplitMapView({
   output,
+  theme,
   currentDay,
   selectedDistrictId,
   syncMapsLocked,
@@ -363,6 +401,9 @@ export function SplitMapView({
   latestShowLabelsRef.current = showDistrictLabels;
   const latestShowAllLabelsRef = useRef(showAllLabels);
   latestShowAllLabelsRef.current = showAllLabels;
+  const latestThemeRef = useRef(theme);
+  latestThemeRef.current = theme;
+  const prevThemeRef = useRef(theme);
   const onSelectDistrictRef = useRef(onSelectDistrict);
   onSelectDistrictRef.current = onSelectDistrict;
 
@@ -404,7 +445,7 @@ export function SplitMapView({
     ): maplibregl.Map => {
       const map = new maplibregl.Map({
         container,
-        style: CARTO_POSITRON_STYLE_URL,
+        style: getBasemapStyleUrl(latestThemeRef.current),
         bounds: initialBounds,
         fitBoundsOptions: { padding: 26 },
         attributionControl: { compact: true },
@@ -416,8 +457,9 @@ export function SplitMapView({
         if (disposed || fallbackTriggered) return;
         fallbackTriggered = true;
         setOfflineFallback(true);
-        leftMapRef.current?.setStyle(OFFLINE_PAPER_STYLE);
-        rightMapRef.current?.setStyle(OFFLINE_PAPER_STYLE);
+        const offline = getOfflineStyle(latestThemeRef.current);
+        leftMapRef.current?.setStyle(offline);
+        rightMapRef.current?.setStyle(offline);
       };
 
       const styleTimer = setTimeout(() => {
@@ -438,6 +480,7 @@ export function SplitMapView({
           curFlows,
           strategy,
           latestShowFlowsRef.current,
+          latestThemeRef.current,
         );
         syncMarkersForMap(map, markersRef, curOut, (id) => onSelectDistrictRef.current(id));
         applyFeatureStatesAndMarkers(
@@ -556,6 +599,7 @@ export function SplitMapView({
           flowsGeoJson,
           strategy,
           showCommuterFlows,
+          latestThemeRef.current,
         );
       }
       const flowSrc = map.getSource(FLOWS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
@@ -568,6 +612,14 @@ export function SplitMapView({
     fitBothToDistricts();
     setHoverInfo(null);
   }, [output.params.regionId, fitBothToDistricts]);
+
+  useEffect(() => {
+    if (prevThemeRef.current === theme) return;
+    prevThemeRef.current = theme;
+    const nextStyle = offlineFallback ? getOfflineStyle(theme) : getBasemapStyleUrl(theme);
+    leftMapRef.current?.setStyle(nextStyle);
+    rightMapRef.current?.setStyle(nextStyle);
+  }, [theme, offlineFallback]);
 
   useEffect(() => {
     for (const map of [leftMapRef.current, rightMapRef.current]) {
@@ -663,28 +715,34 @@ export function SplitMapView({
           left: Math.min(Math.max(10, hoverInfo.x + 12), 230),
           top: Math.max(10, hoverInfo.y - 12),
         }}
-        className="pointer-events-none absolute z-30 w-56 rounded-lg border border-[#d6d0c4] bg-[#fbf9f5]/98 p-3 text-[13px] shadow-md"
+        className="pointer-events-none absolute z-30 w-56 rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-surface)]/95 p-3 text-[13px] shadow-md"
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="font-bold text-[#1c1917]">{district.name}</span>
-          <span className="text-xs font-medium text-[#57534e]">
+          <span className="font-bold text-[var(--sg-text-primary)]">{district.name}</span>
+          <span className="text-xs font-medium text-[var(--sg-text-muted)]">
             {formatZoneLabel(district.zoneType)}
           </span>
         </div>
-        <div className="mt-2 space-y-1 font-mono text-xs tabular-nums text-[#57534e]">
+        <div className="mt-2 space-y-1 font-mono text-xs tabular-nums text-[var(--sg-text-muted)]">
           <div className="flex justify-between">
             <span>Active cases</span>
-            <span className="font-semibold text-[#1c1917]">{formatInt(activeInf)}</span>
+            <span className="font-semibold text-[var(--sg-text-primary)]">{formatInt(activeInf)}</span>
           </div>
           <div className="flex justify-between">
             <span>ICU load</span>
-            <span className={stressPct >= 100 ? 'font-bold text-[#be123c]' : 'font-semibold text-[#1c1917]'}>
+            <span
+              className={
+                stressPct >= 100
+                  ? 'font-bold text-[var(--sg-rose)]'
+                  : 'font-semibold text-[var(--sg-text-primary)]'
+              }
+            >
               {formatFixed(icuDemand, 1)} / {district.icuBeds} ({stressPct}%)
             </span>
           </div>
           <div className="flex justify-between">
             <span>Week {meta.weekNumber}</span>
-            <span className={treated ? 'font-semibold text-[#0f766e]' : 'text-[#57534e]'}>
+            <span className={treated ? 'font-semibold text-[var(--sg-teal)]' : 'text-[var(--sg-text-muted)]'}>
               {treated ? 'Team Active' : 'Standby'}
             </span>
           </div>
@@ -697,16 +755,16 @@ export function SplitMapView({
     <section
       aria-label="Spatial district ICU comparison"
       data-tour="split-map"
-      className="overflow-hidden rounded-xl border border-[#e0dbd0] bg-[#fbf9f5]"
+      className="overflow-hidden rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] transition-colors"
     >
       {/* Header: Title + 3-Dot Legend + Map / Watchlist Switch */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e0dbd0] px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--sg-border-subtle)] px-5 py-4">
         <div className="flex flex-wrap items-center gap-2.5">
-          <h2 className="text-base font-semibold text-[#1c1917]">
+          <h2 className="text-base font-semibold text-[var(--sg-text-primary)]">
             District ICU Load · Day {meta.day}
           </h2>
           {offlineFallback && (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-[#b45309]">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--sg-amber)]">
               <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Offline Basemap</span>
             </span>
@@ -714,17 +772,17 @@ export function SplitMapView({
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-[#57534e]">
+          <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-[var(--sg-text-muted)]">
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#059669]" aria-hidden="true" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--sg-safe-dot)]" aria-hidden="true" />
               <span>&lt;60% Safe</span>
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#d97706]" aria-hidden="true" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--sg-amber-dot)]" aria-hidden="true" />
               <span>60–99% Strained</span>
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#e11d48]" aria-hidden="true" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--sg-rose-dot)]" aria-hidden="true" />
               <span>≥100% Overflow</span>
             </span>
           </div>
@@ -732,7 +790,7 @@ export function SplitMapView({
           <div
             role="group"
             aria-label="Spatial view mode"
-            className="inline-flex rounded-lg border border-[#e0dbd0] bg-[#eee9df] p-0.5 text-[13px] font-medium"
+            className="inline-flex rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-inset)] p-0.5 text-[13px] font-medium"
           >
             <button
               type="button"
@@ -740,8 +798,8 @@ export function SplitMapView({
               onClick={() => setViewMode('map')}
               className={`min-h-[44px] rounded-md px-3 py-1 transition-all min-[720px]:min-h-[30px] ${
                 viewMode === 'map'
-                  ? 'bg-[#fbf9f5] font-semibold text-[#1c1917] shadow-2xs'
-                  : 'text-[#57534e] hover:text-[#1c1917]'
+                  ? 'bg-[var(--sg-surface)] font-semibold text-[var(--sg-text-primary)] shadow-2xs ring-1 ring-[var(--sg-border-control)]/40'
+                  : 'text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
               }`}
             >
               Map
@@ -752,8 +810,8 @@ export function SplitMapView({
               onClick={() => setViewMode('watchlist')}
               className={`min-h-[44px] rounded-md px-3 py-1 transition-all min-[720px]:min-h-[30px] ${
                 viewMode === 'watchlist'
-                  ? 'bg-[#fbf9f5] font-semibold text-[#1c1917] shadow-2xs'
-                  : 'text-[#57534e] hover:text-[#1c1917]'
+                  ? 'bg-[var(--sg-surface)] font-semibold text-[var(--sg-text-primary)] shadow-2xs ring-1 ring-[var(--sg-border-control)]/40'
+                  : 'text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
               }`}
             >
               Watchlist
@@ -769,7 +827,7 @@ export function SplitMapView({
           <div
             role="group"
             aria-label="Select map pane on mobile"
-            className="grid grid-cols-2 gap-1 rounded-lg border border-[#e0dbd0] bg-[#eee9df] p-1"
+            className="grid grid-cols-2 gap-1 rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-inset)] p-1"
           >
             <button
               type="button"
@@ -777,8 +835,8 @@ export function SplitMapView({
               onClick={() => onSetMobileMapStrategy('reactive')}
               className={`min-h-[44px] rounded-md px-3 py-1.5 text-[13px] font-semibold ${
                 mobileMapStrategy === 'reactive'
-                  ? 'bg-[#fbf9f5] text-[#be123c] shadow-2xs'
-                  : 'text-[#57534e]'
+                  ? 'bg-[var(--sg-surface)] text-[var(--sg-rose)] shadow-2xs'
+                  : 'text-[var(--sg-text-muted)]'
               }`}
             >
               Without SennaGrid
@@ -789,8 +847,8 @@ export function SplitMapView({
               onClick={() => onSetMobileMapStrategy('sennagrid')}
               className={`min-h-[44px] rounded-md px-3 py-1.5 text-[13px] font-semibold ${
                 mobileMapStrategy === 'sennagrid'
-                  ? 'bg-[#fbf9f5] text-[#0f766e] shadow-2xs'
-                  : 'text-[#57534e]'
+                  ? 'bg-[var(--sg-surface)] text-[var(--sg-teal)] shadow-2xs'
+                  : 'text-[var(--sg-text-muted)]'
               }`}
             >
               With SennaGrid
@@ -802,13 +860,13 @@ export function SplitMapView({
           {/* LEFT: Without SennaGrid */}
           <div className={mobileMapStrategy === 'reactive' ? 'block' : 'hidden min-[720px]:block'}>
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
-              <span className="font-semibold text-[#1c1917]">Without SennaGrid</span>
-              <span className="font-mono font-medium tabular-nums text-[#be123c]">
+              <span className="font-semibold text-[var(--sg-text-primary)]">Without SennaGrid</span>
+              <span className="font-mono font-medium tabular-nums text-[var(--sg-rose)]">
                 +{formatFixed(reactiveDayOverflow, 1)} overflow beds · {reactiveBreaches} breached
               </span>
             </div>
 
-            <div className="relative h-[320px] w-full overflow-hidden rounded-lg border border-[#e0dbd0] bg-[#efebe2] min-[720px]:h-[345px] min-[1180px]:h-[375px]">
+            <div className="relative h-[320px] w-full overflow-hidden rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-map-well)] min-[720px]:h-[345px] min-[1180px]:h-[375px]">
               <div
                 ref={leftContainerRef}
                 className="h-full w-full"
@@ -821,14 +879,14 @@ export function SplitMapView({
           {/* RIGHT: With SennaGrid */}
           <div className={mobileMapStrategy === 'sennagrid' ? 'block' : 'hidden min-[720px]:block'}>
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
-              <span className="font-semibold text-[#0f766e]">With SennaGrid</span>
-              <span className="font-mono font-medium tabular-nums text-[#0f766e]">
+              <span className="font-semibold text-[var(--sg-teal)]">With SennaGrid</span>
+              <span className="font-mono font-medium tabular-nums text-[var(--sg-teal)]">
                 {formatFixed(sennagridDayOverflow, 1)} overflow beds · {sennagridBreaches} breached ·{' '}
                 {sennagridDispatched.length} active hubs
               </span>
             </div>
 
-            <div className="relative h-[320px] w-full overflow-hidden rounded-lg border border-[#e0dbd0] bg-[#efebe2] min-[720px]:h-[345px] min-[1180px]:h-[375px]">
+            <div className="relative h-[320px] w-full overflow-hidden rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-map-well)] min-[720px]:h-[345px] min-[1180px]:h-[375px]">
               <div
                 ref={rightContainerRef}
                 className="h-full w-full"
@@ -858,8 +916,8 @@ export function SplitMapView({
               aria-pressed={showDistrictLabels}
               className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium shadow-2xs transition-colors active:scale-[0.99] min-[720px]:min-h-[34px] ${
                 showDistrictLabels
-                  ? 'border-[#0f766e] bg-[#edf6f4] text-[#115e59] hover:bg-[#e1efec]'
-                  : 'border-[#8c857b] bg-[#fbf9f5] text-[#44403c] hover:bg-[#eee9df]'
+                  ? 'border-[var(--sg-teal)] bg-[var(--sg-teal-tint)] text-[var(--sg-teal-ink)] hover:bg-[var(--sg-teal-tint-hover)]'
+                  : 'border-[var(--sg-border-control)] bg-[var(--sg-surface)] text-[var(--sg-text-secondary)] hover:bg-[var(--sg-hover)]'
               }`}
             >
               {showDistrictLabels ? (
@@ -878,8 +936,8 @@ export function SplitMapView({
               aria-pressed={showCommuterFlows}
               className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium shadow-2xs transition-colors active:scale-[0.99] min-[720px]:min-h-[34px] ${
                 showCommuterFlows
-                  ? 'border-[#0f766e] bg-[#edf6f4] text-[#115e59] hover:bg-[#e1efec]'
-                  : 'border-[#8c857b] bg-[#fbf9f5] text-[#44403c] hover:bg-[#eee9df]'
+                  ? 'border-[var(--sg-teal)] bg-[var(--sg-teal-tint)] text-[var(--sg-teal-ink)] hover:bg-[var(--sg-teal-tint-hover)]'
+                  : 'border-[var(--sg-border-control)] bg-[var(--sg-surface)] text-[var(--sg-text-secondary)] hover:bg-[var(--sg-hover)]'
               }`}
             >
               <Network className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -892,8 +950,8 @@ export function SplitMapView({
               aria-pressed={syncMapsLocked}
               className={`hidden min-h-[34px] items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium shadow-2xs transition-colors active:scale-[0.99] min-[720px]:inline-flex ${
                 syncMapsLocked
-                  ? 'border-[#0f766e] bg-[#edf6f4] text-[#115e59] hover:bg-[#e1efec]'
-                  : 'border-[#8c857b] bg-[#fbf9f5] text-[#44403c] hover:bg-[#eee9df]'
+                  ? 'border-[var(--sg-teal)] bg-[var(--sg-teal-tint)] text-[var(--sg-teal-ink)] hover:bg-[var(--sg-teal-tint-hover)]'
+                  : 'border-[var(--sg-border-control)] bg-[var(--sg-surface)] text-[var(--sg-text-secondary)] hover:bg-[var(--sg-hover)]'
               }`}
             >
               {syncMapsLocked ? (
@@ -907,22 +965,22 @@ export function SplitMapView({
             <button
               type="button"
               onClick={fitBothToDistricts}
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[#8c857b] bg-[#fbf9f5] px-3 py-1.5 font-medium text-[#1c1917] shadow-2xs transition-colors hover:bg-[#eee9df] active:scale-[0.99] min-[720px]:min-h-[34px]"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-surface)] px-3 py-1.5 font-medium text-[var(--sg-text-primary)] shadow-2xs transition-colors hover:bg-[var(--sg-hover)] active:scale-[0.99] min-[720px]:min-h-[34px]"
             >
-              <RotateCcw className="h-4 w-4 shrink-0 text-[#57534e]" aria-hidden="true" />
+              <RotateCcw className="h-4 w-4 shrink-0 text-[var(--sg-text-muted)]" aria-hidden="true" />
               <span>Reset Framing</span>
             </button>
           </div>
 
           <div className="flex items-center gap-2">
-            <label htmlFor="sg-district-select" className="font-medium text-[#57534e]">
+            <label htmlFor="sg-district-select" className="font-medium text-[var(--sg-text-muted)]">
               Inspect Ward:
             </label>
             <select
               id="sg-district-select"
               value={selectedDistrictId ?? ''}
               onChange={(e) => onSelectDistrict(e.target.value || null)}
-              className="min-h-[44px] rounded-lg border border-[#8c857b] bg-[#fbf9f5] px-3 py-1.5 text-[13px] font-medium text-[#1c1917] shadow-2xs transition-colors hover:bg-[#eee9df] min-[720px]:min-h-[34px]"
+              className="min-h-[44px] rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-inset)] px-3 py-1.5 text-[13px] font-medium text-[var(--sg-text-primary)] shadow-2xs transition-colors hover:bg-[var(--sg-hover)] min-[720px]:min-h-[34px]"
             >
               <option value="">None (click ward)</option>
               {output.districts.map((d) => (

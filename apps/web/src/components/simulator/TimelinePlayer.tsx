@@ -66,14 +66,14 @@ export function TimelinePlayer({
     <div
       aria-label="Simulation timeline playback"
       data-tour="timeline-player"
-      className="flex flex-wrap items-center gap-3.5 border-t border-[#e0dbd0] bg-[#fbf9f5] px-5 py-3.5 min-[720px]:flex-nowrap"
+      className="flex flex-wrap items-center gap-3.5 border-t border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] px-5 py-3.5 min-[720px]:flex-nowrap"
     >
       {/* Play / Pause Circular Button */}
       <button
         type="button"
         onClick={onTogglePlaying}
         aria-label={isPlaying ? 'Pause outbreak replay' : 'Play outbreak replay'}
-        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0f766e] text-[#fbf9f5] transition-colors hover:bg-[#115e59] min-[720px]:h-9 min-[720px]:w-9"
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--sg-teal-fill)] text-[var(--sg-teal-fill-ink)] transition-colors hover:bg-[var(--sg-teal-fill-hover)] min-[720px]:h-9 min-[720px]:w-9"
       >
         {isPlaying ? (
           <Pause className="h-4 w-4 fill-current" aria-hidden="true" />
@@ -83,7 +83,7 @@ export function TimelinePlayer({
       </button>
 
       {/* Monospace Day Readout */}
-      <span className="shrink-0 font-mono text-[13px] font-semibold tabular-nums text-[#1c1917]">
+      <span className="shrink-0 font-mono text-[13px] font-semibold tabular-nums text-[var(--sg-text-primary)]">
         Day {meta.day} / {meta.maxDay}
       </span>
 
@@ -111,18 +111,18 @@ export function TimelinePlayer({
           type="button"
           onClick={onJumpToPeak}
           title={`Jump to Reactive Peak Surge (Day ${crisisDay})`}
-          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[#8c857b] bg-[#fbf9f5] px-3 py-1.5 text-[13px] font-medium text-[#1c1917] shadow-2xs transition-colors hover:bg-[#eee9df] active:scale-[0.99] min-[720px]:min-h-[34px]"
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-inset)] px-3 py-1.5 text-[13px] font-medium text-[var(--sg-text-primary)] shadow-2xs transition-colors hover:bg-[var(--sg-hover)] active:scale-[0.99] min-[720px]:min-h-[34px]"
         >
-          <Flame className="h-3.5 w-3.5 shrink-0 text-[#be123c]" aria-hidden="true" />
+          <Flame className="h-3.5 w-3.5 shrink-0 text-[var(--sg-rose)]" aria-hidden="true" />
           <span>
-            Jump: <strong className="font-semibold text-[#be123c]">Peak (D{crisisDay})</strong>
+            Jump: <strong className="font-semibold text-[var(--sg-rose)]">Peak (D{crisisDay})</strong>
           </span>
         </button>
 
         <div
           role="group"
           aria-label="Playback speed"
-          className="inline-flex items-center gap-0.5 rounded-lg border border-[#8c857b]/80 bg-[#eee9df] p-0.5"
+          className="inline-flex items-center gap-0.5 rounded-lg border border-[var(--sg-border-control)]/80 bg-[var(--sg-inset)] p-0.5"
         >
           {SPEEDS.map((speed) => (
             <button
@@ -132,8 +132,8 @@ export function TimelinePlayer({
               onClick={() => onSetPlaybackSpeed(speed)}
               className={`min-h-[44px] min-w-[44px] rounded-md px-2 font-mono text-[13px] tabular-nums transition-all min-[720px]:min-h-[28px] min-[720px]:min-w-[34px] ${
                 playbackSpeed === speed
-                  ? 'bg-[#fbf9f5] font-bold text-[#1c1917] shadow-2xs ring-1 ring-[#8c857b]/40'
-                  : 'text-[#57534e] hover:text-[#1c1917]'
+                  ? 'bg-[var(--sg-surface)] font-bold text-[var(--sg-text-primary)] shadow-2xs ring-1 ring-[var(--sg-border-control)]/50'
+                  : 'text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
               }`}
             >
               {speed}x
