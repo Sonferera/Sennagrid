@@ -136,13 +136,17 @@ export function ControlBar() {
     <aside
       aria-label="Simulation controls"
       data-tour="control-bar"
-      className="w-full shrink-0 rounded-xl border border-slate-200 bg-white p-5"
+      className="w-full shrink-0 rounded-xl border border-[#e0dbd0] bg-[#fbf9f5] p-5"
     >
       <div className="space-y-5">
         {/* 1. City Scenario */}
         <div>
-          <span className="mb-2 block text-xs font-medium text-slate-600">City Scenario</span>
-          <div role="radiogroup" aria-label="City scenario" className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
+          <span className="mb-2 block text-[13px] font-medium text-[#57534e]">City Scenario</span>
+          <div
+            role="radiogroup"
+            aria-label="City scenario"
+            className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1"
+          >
             {REGION_PRESET_LIST.map((item) => {
               const selected = item.id === params.regionId;
               return (
@@ -152,15 +156,15 @@ export function ControlBar() {
                   role="radio"
                   aria-checked={selected}
                   onClick={() => handleRegionChange(item.id)}
-                  className={`flex min-h-[44px] w-full items-start justify-between gap-2 rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                  className={`flex min-h-[48px] w-full items-start justify-between gap-2 rounded-lg border px-3.5 py-3 text-left transition-colors ${
                     selected
-                      ? 'border-[#0f766e] bg-[#f0fdfa]'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
+                      ? 'border-[#0f766e] bg-[#edf6f4]'
+                      : 'border-[#e0dbd0] bg-[#fbf9f5] hover:border-[#c7c0b3]'
                   }`}
                 >
                   <div>
-                    <div className="text-[13px] font-semibold text-[#0f172a]">{item.name}</div>
-                    <div className="mt-0.5 text-[11px] text-slate-600">
+                    <div className="text-[15px] font-semibold text-[#1c1917]">{item.name}</div>
+                    <div className="mt-0.5 text-[13px] text-[#57534e]">
                       {item.districts.length} districts · {formatPopulationCompact(item.districts)}
                     </div>
                   </div>
@@ -178,21 +182,21 @@ export function ControlBar() {
 
         {/* 2. Disease Model */}
         <div>
-          <span className="mb-2 block text-xs font-medium text-slate-600">Disease Model</span>
+          <span className="mb-2 block text-[13px] font-medium text-[#57534e]">Disease Model</span>
           <div
             role="group"
             aria-label="Transmission model"
-            className="grid grid-cols-2 gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1"
+            className="grid grid-cols-2 gap-1 rounded-lg border border-[#e0dbd0] bg-[#eee9df] p-1"
           >
             <button
               type="button"
               aria-pressed={params.diseaseMode === 'vector_seir_sei'}
               onClick={() => handleDiseaseModeChange('vector_seir_sei')}
               title="Vector-borne SEIR-SEI (climate-modulated Dengue)"
-              className={`min-h-[44px] rounded-md px-2 py-1.5 text-xs font-semibold transition-all lg:min-h-[32px] ${
+              className={`min-h-[44px] rounded-md px-2 py-1.5 text-sm font-semibold transition-all lg:min-h-[36px] ${
                 params.diseaseMode === 'vector_seir_sei'
-                  ? 'bg-white text-[#0f172a] shadow-2xs ring-1 ring-slate-200'
-                  : 'text-slate-600 hover:text-[#0f172a]'
+                  ? 'bg-[#fbf9f5] text-[#1c1917] shadow-2xs ring-1 ring-[#d6d0c4]'
+                  : 'text-[#57534e] hover:text-[#1c1917]'
               }`}
             >
               Dengue
@@ -202,10 +206,10 @@ export function ControlBar() {
               aria-pressed={params.diseaseMode === 'direct_seir'}
               onClick={() => handleDiseaseModeChange('direct_seir')}
               title="Direct-contact SEIR (respiratory corridor spread)"
-              className={`min-h-[44px] rounded-md px-2 py-1.5 text-xs font-semibold transition-all lg:min-h-[32px] ${
+              className={`min-h-[44px] rounded-md px-2 py-1.5 text-sm font-semibold transition-all lg:min-h-[36px] ${
                 params.diseaseMode === 'direct_seir'
-                  ? 'bg-white text-[#0f172a] shadow-2xs ring-1 ring-slate-200'
-                  : 'text-slate-600 hover:text-[#0f172a]'
+                  ? 'bg-[#fbf9f5] text-[#1c1917] shadow-2xs ring-1 ring-[#d6d0c4]'
+                  : 'text-[#57534e] hover:text-[#1c1917]'
               }`}
             >
               Respiratory
@@ -216,10 +220,10 @@ export function ControlBar() {
         {/* 3. Weekly Budget Quota */}
         <div>
           <div className="flex items-baseline justify-between gap-2">
-            <label htmlFor="sg-budget-slider" className="text-xs font-medium text-slate-600">
+            <label htmlFor="sg-budget-slider" className="text-[13px] font-medium text-[#57534e]">
               Budget
             </label>
-            <span className="font-mono text-xs font-semibold tabular-nums text-[#0f766e]">
+            <span className="font-mono text-sm font-semibold tabular-nums text-[#0f766e]">
               {budgetPct}% · {quotaK} wards
             </span>
           </div>
@@ -248,7 +252,7 @@ export function ControlBar() {
             className="sg-range -my-2"
             aria-valuetext={`${budgetPct} percent, ${quotaK} of ${districtCount} districts per week`}
           />
-          <div className="flex justify-between font-mono text-[11px] tabular-nums text-slate-600">
+          <div className="flex justify-between font-mono text-xs tabular-nums text-[#57534e]">
             <span>10%</span>
             <span>40%</span>
           </div>
@@ -260,29 +264,29 @@ export function ControlBar() {
             type="button"
             onClick={flushOptimizationNow}
             disabled={isOptimizing}
-            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-[#0f766e] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#115e59] disabled:opacity-70 lg:min-h-[38px]"
+            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-[#0f766e] px-4 py-2.5 text-sm font-semibold text-[#fbf9f5] transition-colors hover:bg-[#115e59] disabled:opacity-70 lg:min-h-[42px]"
           >
-            {isOptimizing && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
+            {isOptimizing && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             <span>{isOptimizing ? 'Optimizing...' : 'Run Optimization'}</span>
           </button>
-          <p className="text-center font-mono text-[11px] tabular-nums text-slate-600">
+          <p className="text-center font-mono text-[13px] tabular-nums text-[#57534e]">
             {isOptimizing ? 'Running Web Worker...' : solveSecondsText}
           </p>
         </div>
 
         {/* 5. Collapsible Parameters & Climate Disclosure */}
-        <div className="border-t border-slate-100 pt-3">
+        <div className="border-t border-[#e0dbd0] pt-3.5">
           <button
             type="button"
             onClick={toggleAdvancedOpen}
             aria-expanded={advancedOpen}
             aria-controls="sg-advanced-params"
-            className="flex min-h-[44px] w-full items-center gap-1.5 text-left text-xs font-medium text-slate-600 transition-colors hover:text-[#0f172a] lg:min-h-[30px]"
+            className="flex min-h-[44px] w-full items-center gap-1.5 text-left text-[13px] font-medium text-[#57534e] transition-colors hover:text-[#1c1917] lg:min-h-[34px]"
           >
             {advancedOpen ? (
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden="true" />
+              <ChevronDown className="h-4 w-4 shrink-0 text-[#57534e]" aria-hidden="true" />
             ) : (
-              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden="true" />
+              <ChevronRight className="h-4 w-4 shrink-0 text-[#57534e]" aria-hidden="true" />
             )}
             <span>
               Parameters ({summaryClimate} · {(params.icuRate * 100).toFixed(1)}% ICU)
@@ -290,25 +294,25 @@ export function ControlBar() {
           </button>
 
           {advancedOpen && (
-            <div id="sg-advanced-params" className="mt-3 space-y-4 border-t border-slate-100 pt-3">
+            <div id="sg-advanced-params" className="mt-3 space-y-4 border-t border-[#e0dbd0] pt-3.5">
               {/* Climate Forcing */}
               <div>
-                <span className="mb-1.5 block text-[11px] font-medium text-slate-600">
+                <span className="mb-1.5 block text-[13px] font-medium text-[#57534e]">
                   Climate Forcing
                 </span>
                 <div
                   role="group"
                   aria-label="Climate data source"
-                  className="grid grid-cols-2 gap-1 rounded-lg border border-slate-200 bg-slate-100 p-0.5"
+                  className="grid grid-cols-2 gap-1 rounded-lg border border-[#e0dbd0] bg-[#eee9df] p-1"
                 >
                   <button
                     type="button"
                     aria-pressed={climateMode === 'seasonal_benchmark'}
                     onClick={() => handleClimateModeChange('seasonal_benchmark')}
-                    className={`min-h-[44px] rounded-md px-2 py-1 text-[11px] font-semibold transition-all lg:min-h-[30px] ${
+                    className={`min-h-[44px] rounded-md px-2 py-1 text-xs font-semibold transition-all lg:min-h-[32px] ${
                       climateMode === 'seasonal_benchmark'
-                        ? 'bg-white text-[#0f172a] shadow-2xs ring-1 ring-slate-200'
-                        : 'text-slate-600 hover:text-[#0f172a]'
+                        ? 'bg-[#fbf9f5] text-[#1c1917] shadow-2xs ring-1 ring-[#d6d0c4]'
+                        : 'text-[#57534e] hover:text-[#1c1917]'
                     }`}
                   >
                     Peak Season
@@ -317,17 +321,17 @@ export function ControlBar() {
                     type="button"
                     aria-pressed={climateMode === 'live_weather'}
                     onClick={() => handleClimateModeChange('live_weather')}
-                    className={`min-h-[44px] rounded-md px-2 py-1 text-[11px] font-semibold transition-all lg:min-h-[30px] ${
+                    className={`min-h-[44px] rounded-md px-2 py-1 text-xs font-semibold transition-all lg:min-h-[32px] ${
                       climateMode === 'live_weather'
-                        ? 'bg-white text-[#0f172a] shadow-2xs ring-1 ring-slate-200'
-                        : 'text-slate-600 hover:text-[#0f172a]'
+                        ? 'bg-[#fbf9f5] text-[#1c1917] shadow-2xs ring-1 ring-[#d6d0c4]'
+                        : 'text-[#57534e] hover:text-[#1c1917]'
                     }`}
                   >
                     {liveWeatherLabel}
                   </button>
                 </div>
                 {climate && (
-                  <p className="mt-1 font-mono text-[10px] tabular-nums text-slate-600">
+                  <p className="mt-1.5 font-mono text-xs tabular-nums text-[#57534e]">
                     {climate.meanTemp14d.toFixed(1)}°C · {climate.meanPrecip14d.toFixed(1)} mm/d
                   </p>
                 )}
@@ -335,8 +339,8 @@ export function ControlBar() {
 
               {/* ICU Rate */}
               <div>
-                <div className="flex justify-between text-[11px]">
-                  <label htmlFor="sg-icu-rate" className="font-medium text-slate-600">
+                <div className="flex justify-between text-[13px]">
+                  <label htmlFor="sg-icu-rate" className="font-medium text-[#57534e]">
                     ICU Rate
                   </label>
                   <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
@@ -361,8 +365,8 @@ export function ControlBar() {
 
               {/* Mobility Outflow */}
               <div>
-                <div className="flex justify-between text-[11px]">
-                  <label htmlFor="sg-mobility-outflow" className="font-medium text-slate-600">
+                <div className="flex justify-between text-[13px]">
+                  <label htmlFor="sg-mobility-outflow" className="font-medium text-[#57534e]">
                     Commuter Outflow
                   </label>
                   <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
@@ -387,8 +391,8 @@ export function ControlBar() {
 
               {/* Efficacy */}
               <div>
-                <div className="flex justify-between text-[11px]">
-                  <label htmlFor="sg-efficacy" className="font-medium text-slate-600">
+                <div className="flex justify-between text-[13px]">
+                  <label htmlFor="sg-efficacy" className="font-medium text-[#57534e]">
                     Team Efficacy
                   </label>
                   <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
@@ -414,9 +418,9 @@ export function ControlBar() {
               <button
                 type="button"
                 onClick={() => void resetDefaults()}
-                className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 lg:min-h-[32px]"
+                className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-lg border border-[#e0dbd0] bg-[#fbf9f5] px-3 py-1.5 text-[13px] font-medium text-[#44403c] transition-colors hover:bg-[#eee9df] lg:min-h-[36px]"
               >
-                <RotateCcw className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
+                <RotateCcw className="h-3.5 w-3.5 text-[#57534e]" aria-hidden="true" />
                 <span>Reset Defaults</span>
               </button>
             </div>

@@ -670,7 +670,7 @@ export function selectPriorityBadgeDistrictIds(
   strategy: 'reactive' | 'sennagrid',
   rawDay: number,
   selectedDistrictId: string | null,
-  maxBadges = 5,
+  maxBadges = 3,
 ): Set<string> {
   const n = output.districts.length;
   if (n === 0 || maxBadges <= 0) return new Set();

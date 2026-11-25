@@ -8,15 +8,16 @@
 
 ---
 
-## 1. Visual Direction: Precision Editorial Light
+## 1. Visual Direction: Warm Editorial Paper
 
-Following team design reviews in Google Stitch (`v3`), SennaGrid uses a calm, high-legibility light spatial interface inspired by public-health telemetry journals (*Our World in Data*) and precision analytical tools:
-- **Canvas & Surfaces:** Cool alabaster canvas (`#f8fafc`), flat white cards (`#ffffff`) framed by `1px solid #e2e8f0` hairline dividers, and muted controls (`#64748b` >= `4.76:1` WCAG AA).
+Following team design reviews in Google Stitch (`v3`) and readability refinements, SennaGrid uses a calm, glare-free **Warm Paper** spatial interface with large, comfortable typography (`14px`–`16px` UI prose, `16px` card headings, `32px`–`36px` impact figures):
+- **Canvas & Surfaces:** Warm archival paper canvas (`#f5f2eb`), soft ivory cards (`#fbf9f5`), linen-sand inset wells (`#eee9df`), hairline warm stone borders (`#e0dbd0`), and soft-sepia MapLibre canvas toning (`.maplibregl-canvas`) to eliminate white-screen glare.
+- **Typography Ink:** Warm deep charcoal (`#1c1917`, `16.63:1` on `#fbf9f5`), secondary stone (`#44403c`), and muted stone (`#57534e`, `7.26:1` on `#fbf9f5`).
 - **Semantic Strategy Colors:**
-  - **SennaGrid Optimized:** Deep Clinical Teal (`#0f766e` / `#0d9488`, `#115e59` on `#f0fdfa`).
-  - **Reactive Baseline:** Urgent Crimson Rose (`#be123c` / `#e11d48`, `#9f1239` on `#ffe4e6`).
-  - **Caution / Strained / Trade-off:** Warm Amber (`#b45309`, `#92400e` on `#fef3c7`).
-  - **Verified Pass:** Emerald (`#065f46` on `#ecfdf5`).
+  - **SennaGrid Optimized:** Deep Clinical Teal (`#0f766e` / `#0d9488`, `#115e59` on `#edf6f4`).
+  - **Reactive Baseline:** Urgent Crimson Rose (`#be123c` / `#e11d48`, `#9f1239` on `#fbe3e7`).
+  - **Caution / Strained / Trade-off:** Warm Amber (`#b45309`, `#92400e` on `#faecc8`).
+  - **Verified Pass:** Emerald (`#065f46` on `#e9f5ef`).
 - **Typography:** `Plus Jakarta Sans` for headings and interactive labels paired with `IBM Plex Mono` (`tabular-nums`) for metrics, equations, and schedules. Zero decorative emojis, zero em dashes, and zero raw ASCII arrows.
 
 ---

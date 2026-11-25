@@ -6,14 +6,14 @@
 }
 
 :root {
-  --sg-canvas: #f8fafc;
-  --sg-surface: #ffffff;
-  --sg-inset: #f1f5f9;
-  --sg-border-subtle: #e2e8f0;
-  --sg-border-control: #94a3b8;
-  --sg-text-primary: #0f172a;
-  --sg-text-secondary: #475569;
-  --sg-text-muted: #64748b;
+  --sg-canvas: #f5f2eb;
+  --sg-surface: #fbf9f5;
+  --sg-inset: #eee9df;
+  --sg-border-subtle: #e0dbd0;
+  --sg-border-control: #8c857b;
+  --sg-text-primary: #1c1917;
+  --sg-text-secondary: #44403c;
+  --sg-text-muted: #57534e;
   --sg-teal: #0f766e;
   --sg-teal-bright: #0d9488;
   --sg-rose: #be123c;
@@ -27,6 +27,7 @@
     background-color: var(--sg-canvas);
     color: var(--sg-text-primary);
     font-family: var(--font-sans);
+    font-size: 16px;
     overflow-x: clip;
   }
 
@@ -55,7 +56,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Slim accessible range slider with 44px vertical touch target */
+/* Slim accessible range slider tuned for warm paper contrast */
 .sg-range {
   -webkit-appearance: none;
   appearance: none;
@@ -65,66 +66,71 @@
 }
 
 .sg-range::-webkit-slider-runnable-track {
-  height: 4px;
+  height: 5px;
   border-radius: 9999px;
-  background: #e2e8f0;
+  background: #ddd7ca;
 }
 
 .sg-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
-  margin-top: -6px;
+  width: 18px;
+  height: 18px;
+  margin-top: -6.5px;
   border-radius: 9999px;
-  background: #ffffff;
+  background: #fbf9f5;
   border: 2.5px solid #0f766e;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 1px 3px rgba(28, 25, 23, 0.22);
   transition: transform 150ms ease, border-color 150ms ease;
 }
 
 .sg-range:hover:not(:disabled)::-webkit-slider-thumb {
   border-color: #0d9488;
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 
 .sg-range::-moz-range-track {
-  height: 4px;
+  height: 5px;
   border-radius: 9999px;
-  background: #e2e8f0;
+  background: #ddd7ca;
 }
 
 .sg-range::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 9999px;
-  background: #ffffff;
+  background: #fbf9f5;
   border: 2.5px solid #0f766e;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 1px 3px rgba(28, 25, 23, 0.22);
   transition: transform 150ms ease, border-color 150ms ease;
 }
 
 .sg-range:hover:not(:disabled)::-moz-range-thumb {
   border-color: #0d9488;
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 
-/* Clean minimalist on-map ward markers (key wards shown by default to avoid clutter) */
+/* Soft paper toning on MapLibre raster/vector canvas to remove glare without dulling HTML markers */
+.maplibregl-canvas {
+  filter: sepia(0.08) brightness(0.975) contrast(0.985);
+}
+
+/* Readable on-map priority ward badges */
 .sg-ward-marker {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
+  gap: 5px;
+  padding: 2.5px 7.5px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid #cbd5e1;
-  color: #0f172a;
+  background: rgba(251, 249, 245, 0.96);
+  border: 1px solid #c7c0b3;
+  color: #1c1917;
   font-family: var(--font-sans);
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
   white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 1px 3px rgba(28, 25, 23, 0.12);
   cursor: pointer;
   user-select: none;
   transition: transform 120ms ease, border-color 120ms ease;
@@ -136,33 +142,33 @@
 }
 
 .sg-ward-marker[data-band="overflow"] {
-  background: #fff1f2;
-  border-color: #e11d48;
+  background: #fdf0f2;
+  border-color: #be123c;
   color: #9f1239;
 }
 
 .sg-ward-marker[data-band="strained"] {
-  background: #fffbeb;
-  border-color: #d97706;
+  background: #fcf6e8;
+  border-color: #b45309;
   color: #92400e;
 }
 
 .sg-ward-marker[data-treated="sennagrid"][data-band="safe"] {
-  background: #f0fdfa;
+  background: #edf6f4;
   border-color: #0f766e;
   color: #115e59;
 }
 
 .sg-ward-marker[data-selected="true"] {
   border-width: 2px;
-  border-color: #0f172a;
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.14);
+  border-color: #1c1917;
+  box-shadow: 0 0 0 3px rgba(28, 25, 23, 0.15);
   z-index: 25;
 }
 
 .sg-ward-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 9999px;
   display: none;
   flex-shrink: 0;
@@ -178,30 +184,30 @@
   background: #0f766e;
 }
 
-/* Light Carto Positron MapLibre controls */
+/* Warm paper MapLibre navigation & attribution controls */
 .maplibregl-ctrl-attrib {
-  background-color: rgba(255, 255, 255, 0.85) !important;
-  color: #475569 !important;
-  font-size: 10px !important;
+  background-color: rgba(251, 249, 245, 0.9) !important;
+  color: #57534e !important;
+  font-size: 11px !important;
 }
 
 .maplibregl-ctrl-attrib a {
-  color: #0f172a !important;
+  color: #1c1917 !important;
 }
 
 .maplibregl-ctrl-group {
-  background: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
+  background: #fbf9f5 !important;
+  border: 1px solid #d6d0c4 !important;
+  box-shadow: 0 1px 2px rgba(28, 25, 23, 0.08) !important;
 }
 
 .maplibregl-ctrl-group button {
-  background-color: #ffffff !important;
-  border-color: #f1f5f9 !important;
+  background-color: #fbf9f5 !important;
+  border-color: #e0dbd0 !important;
 }
 
 .maplibregl-ctrl-group button:hover {
-  background-color: #f8fafc !important;
+  background-color: #eee9df !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

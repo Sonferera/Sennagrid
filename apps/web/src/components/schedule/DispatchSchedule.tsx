@@ -54,7 +54,7 @@ function getRationaleIndicator(rationale: RationaleTag): {
     case 'Mobility Hub Containment':
       return {
         letter: 'H',
-        cellClass: 'bg-[#ccfbf1] text-[#0f766e] hover:bg-[#99f6e4]',
+        cellClass: 'bg-[#d7f0ea] text-[#115e59] hover:bg-[#bfe7de]',
         dotColor: 'bg-[#0f766e]',
         textColor: 'text-[#0f766e]',
         shortLabel: 'Hub Containment',
@@ -62,7 +62,7 @@ function getRationaleIndicator(rationale: RationaleTag): {
     case 'Pre-emptive Surge Intercept':
       return {
         letter: 'S',
-        cellClass: 'bg-[#fef3c7] text-[#92400e] hover:bg-[#fde68a]',
+        cellClass: 'bg-[#faecc8] text-[#92400e] hover:bg-[#f5dfaa]',
         dotColor: 'bg-[#d97706]',
         textColor: 'text-[#92400e]',
         shortLabel: 'Surge Intercept',
@@ -70,7 +70,7 @@ function getRationaleIndicator(rationale: RationaleTag): {
     case 'ICU Capacity Shield':
       return {
         letter: 'I',
-        cellClass: 'bg-[#ffe4e6] text-[#9f1239] hover:bg-[#fecdd3]',
+        cellClass: 'bg-[#fbe3e7] text-[#9f1239] hover:bg-[#f6ccd4]',
         dotColor: 'bg-[#e11d48]',
         textColor: 'text-[#9f1239]',
         shortLabel: 'ICU Shield',
@@ -137,7 +137,9 @@ export function DispatchSchedule({
 
   const budgetPct = Math.round(output.params.budgetRatio * 100);
   const interventionLabel =
-    output.params.diseaseMode === 'vector_seir_sei' ? 'Dengue · Vector Control' : 'Respiratory · Targeted Vaccination';
+    output.params.diseaseMode === 'vector_seir_sei'
+      ? 'Dengue · Vector Control'
+      : 'Respiratory · Targeted Vaccination';
 
   const handleFilterChange = (updater: (prev: DispatchFilterState) => DispatchFilterState) => {
     setFilters(updater);
@@ -195,10 +197,10 @@ export function DispatchSchedule({
         className="flex flex-wrap items-end justify-between gap-4"
       >
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-[#0f172a]">
+          <h2 className="text-2xl font-bold tracking-tight text-[#1c1917] sm:text-[26px]">
             13-Week Dispatch Schedule
           </h2>
-          <p className="mt-1 text-xs text-slate-600">
+          <p className="mt-1 text-sm text-[#57534e]">
             {preset.name} · {interventionLabel} · {output.weeklyQuotaK} of {output.districts.length}{' '}
             districts per week ({output.assignments.length} deployments)
           </p>
@@ -208,18 +210,18 @@ export function DispatchSchedule({
           <button
             type="button"
             onClick={handleExportJson}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-[#0f172a] transition-colors hover:bg-slate-50 min-[720px]:min-h-[36px]"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-[#d6d0c4] bg-[#fbf9f5] px-4 py-2 text-[13px] font-semibold text-[#1c1917] transition-colors hover:bg-[#eee9df] min-[720px]:min-h-[38px]"
           >
-            <FileJson className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
+            <FileJson className="h-4 w-4 text-[#57534e]" aria-hidden="true" />
             <span>Export JSON</span>
           </button>
 
           <button
             type="button"
             onClick={handleExportCsv}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-[#0f766e] px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#115e59] min-[720px]:min-h-[36px]"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-[#0f766e] px-4 py-2 text-[13px] font-semibold text-[#fbf9f5] transition-colors hover:bg-[#115e59] min-[720px]:min-h-[38px]"
           >
-            <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden="true" />
+            <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
             <span>Export CSV</span>
           </button>
         </div>
@@ -228,10 +230,10 @@ export function DispatchSchedule({
       {exportFeedback && (
         <div
           role={exportFeedback.tone === 'error' ? 'alert' : 'status'}
-          className={`flex items-center justify-between gap-2 rounded-xl border px-4 py-2.5 text-xs font-medium ${
+          className={`flex items-center justify-between gap-2 rounded-xl border px-4 py-3 text-[13px] font-medium ${
             exportFeedback.tone === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-[#065f46]'
-              : 'border-rose-200 bg-rose-50 text-[#9f1239]'
+              ? 'border-[#b9dfd0] bg-[#e9f5ef] text-[#065f46]'
+              : 'border-[#e7b4bd] bg-[#fdf0f2] text-[#9f1239]'
           }`}
         >
           <span className="inline-flex items-center gap-2">
@@ -242,74 +244,74 @@ export function DispatchSchedule({
             )}
             <span>{exportFeedback.message}</span>
           </span>
-          <Download className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden="true" />
+          <Download className="h-4 w-4 shrink-0 opacity-70" aria-hidden="true" />
         </div>
       )}
 
       {/* Card 1: Calm Weekly Coverage Matrix */}
       <section
         aria-label="13-week spatial deployment matrix"
-        className="rounded-xl border border-slate-200 bg-white p-5"
+        className="rounded-xl border border-[#e0dbd0] bg-[#fbf9f5] p-5 sm:p-6"
       >
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold text-[#0f172a]">
+          <h3 className="text-base font-semibold text-[#1c1917]">
             Weekly Coverage Matrix (W01–W{String(totalWeeks).padStart(2, '0')})
           </h3>
 
-          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600">
+          <div className="flex flex-wrap items-center gap-4 text-[13px] text-[#57534e]">
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#0f766e]" aria-hidden="true" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#0f766e]" aria-hidden="true" />
               <span>Hub Containment (H)</span>
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#d97706]" aria-hidden="true" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#d97706]" aria-hidden="true" />
               <span>Surge Intercept (S)</span>
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#e11d48]" aria-hidden="true" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#e11d48]" aria-hidden="true" />
               <span>ICU Shield (I)</span>
             </span>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-left text-xs">
+          <table className="w-full min-w-[660px] border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-100 font-mono text-[11px] font-medium text-slate-600">
-                <th scope="col" className="py-2 pr-4">
+              <tr className="border-b border-[#e0dbd0] font-mono text-xs font-medium text-[#57534e]">
+                <th scope="col" className="py-2.5 pr-4">
                   DISTRICT
                 </th>
                 {weekOptions.map((w) => (
-                  <th key={w} scope="col" className="px-1 py-2 text-center font-mono">
+                  <th key={w} scope="col" className="px-1 py-2.5 text-center font-mono">
                     W{String(w).padStart(2, '0')}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[#ebe6dc]">
               {matrixDistricts.map((district) => (
-                <tr key={district.id} className="hover:bg-slate-50/60">
-                  <td className="whitespace-nowrap py-2.5 pr-4 font-medium text-[#0f172a]">
+                <tr key={district.id} className="hover:bg-[#f5f2eb]">
+                  <td className="whitespace-nowrap py-3 pr-4 font-medium text-[#1c1917]">
                     {district.name}
                   </td>
                   {weekOptions.map((w) => {
                     const rationale = assignmentMap.get(`${w}:${district.id}`);
                     if (!rationale) {
                       return (
-                        <td key={w} className="px-1 py-2 text-center font-mono text-slate-300">
+                        <td key={w} className="px-1 py-2.5 text-center font-mono text-[#c7c0b3]">
                           ·
                         </td>
                       );
                     }
                     const style = getRationaleIndicator(rationale);
                     return (
-                      <td key={w} className="px-1 py-1.5 text-center">
+                      <td key={w} className="px-1 py-2 text-center">
                         <button
                           type="button"
                           title={`Week ${w} · ${district.name}: ${rationale}`}
                           aria-label={`Inspect ${district.name} in Week ${w} (${rationale})`}
                           onClick={() => onInspectDistrictAtWeek(district.id, w)}
-                          className={`inline-flex h-6 w-6 items-center justify-center rounded-md font-mono text-[11px] font-semibold transition-colors ${style.cellClass}`}
+                          className={`inline-flex h-7 w-7 items-center justify-center rounded-md font-mono text-xs font-semibold transition-colors ${style.cellClass}`}
                         >
                           {style.letter}
                         </button>
@@ -322,7 +324,7 @@ export function DispatchSchedule({
           </table>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-[11px] text-slate-600">
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-[#e0dbd0] pt-3.5 text-[13px] text-[#57534e]">
           <span className="font-mono tabular-nums">
             {output.weeklyQuotaK} / {output.weeklyQuotaK} teams per week ·{' '}
             {output.assignments.length} total allocations
@@ -344,10 +346,10 @@ export function DispatchSchedule({
       {/* Card 2: Clean 5-Column Dispatch Table */}
       <section
         aria-label="Weekly field assignments"
-        className="rounded-xl border border-slate-200 bg-white p-5"
+        className="rounded-xl border border-[#e0dbd0] bg-[#fbf9f5] p-5 sm:p-6"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold text-[#0f172a]">Field Assignments</h3>
+          <h3 className="text-base font-semibold text-[#1c1917]">Field Assignments</h3>
 
           <div className="flex flex-wrap items-center gap-2">
             <label htmlFor="sg-filter-week" className="sr-only">
@@ -362,7 +364,7 @@ export function DispatchSchedule({
                   week: e.target.value === 'all' ? 'all' : Number(e.target.value),
                 }))
               }
-              className="min-h-[44px] rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-[#0f172a] min-[720px]:min-h-[34px]"
+              className="min-h-[44px] rounded-lg border border-[#d6d0c4] bg-[#fbf9f5] px-3 py-1 text-[13px] font-medium text-[#1c1917] min-[720px]:min-h-[36px]"
             >
               <option value="all">All Weeks</option>
               {weekOptions.map((w) => (
@@ -384,7 +386,7 @@ export function DispatchSchedule({
                   zoneType: e.target.value as DispatchFilterState['zoneType'],
                 }))
               }
-              className="min-h-[44px] rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-[#0f172a] min-[720px]:min-h-[34px]"
+              className="min-h-[44px] rounded-lg border border-[#d6d0c4] bg-[#fbf9f5] px-3 py-1 text-[13px] font-medium text-[#1c1917] min-[720px]:min-h-[36px]"
             >
               <option value="all">All Zones</option>
               {ZONE_OPTIONS.map((z) => (
@@ -406,7 +408,7 @@ export function DispatchSchedule({
                   rationale: e.target.value as DispatchFilterState['rationale'],
                 }))
               }
-              className="min-h-[44px] rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-[#0f172a] min-[720px]:min-h-[34px]"
+              className="min-h-[44px] rounded-lg border border-[#d6d0c4] bg-[#fbf9f5] px-3 py-1 text-[13px] font-medium text-[#1c1917] min-[720px]:min-h-[36px]"
             >
               <option value="all">All Rationales</option>
               {RATIONALE_OPTIONS.map((r) => (
@@ -421,7 +423,7 @@ export function DispatchSchedule({
                 Filter district
               </label>
               <Search
-                className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#57534e]"
                 aria-hidden="true"
               />
               <input
@@ -432,7 +434,7 @@ export function DispatchSchedule({
                   handleFilterChange((prev) => ({ ...prev, search: e.target.value }))
                 }
                 placeholder="Filter district..."
-                className="min-h-[44px] w-44 rounded-lg border border-slate-200 bg-white py-1 pl-8 pr-2.5 text-xs text-[#0f172a] placeholder:text-slate-500 min-[720px]:min-h-[34px]"
+                className="min-h-[44px] w-48 rounded-lg border border-[#d6d0c4] bg-[#fbf9f5] py-1 pl-9 pr-3 text-[13px] text-[#1c1917] placeholder:text-[#57534e] min-[720px]:min-h-[36px]"
               />
             </div>
 
@@ -440,7 +442,7 @@ export function DispatchSchedule({
               <button
                 type="button"
                 onClick={() => handleFilterChange(() => INITIAL_FILTERS)}
-                className="min-h-[44px] rounded-lg px-2.5 py-1 text-xs font-medium text-[#0f766e] hover:bg-teal-50 min-[720px]:min-h-[34px]"
+                className="min-h-[44px] rounded-lg px-3 py-1 text-[13px] font-medium text-[#0f766e] hover:bg-[#edf6f4] min-[720px]:min-h-[36px]"
               >
                 Clear
               </button>
@@ -449,14 +451,14 @@ export function DispatchSchedule({
         </div>
 
         {filteredRows.length === 0 ? (
-          <div className="py-10 text-center">
-            <p className="text-sm font-medium text-[#0f172a]">
+          <div className="py-12 text-center">
+            <p className="text-base font-medium text-[#1c1917]">
               No assignments match your current filter.
             </p>
             <button
               type="button"
               onClick={() => handleFilterChange(() => INITIAL_FILTERS)}
-              className="mt-2 min-h-[44px] text-xs font-semibold text-[#0f766e] hover:underline min-[720px]:min-h-0"
+              className="mt-2 min-h-[44px] text-sm font-semibold text-[#0f766e] hover:underline min-[720px]:min-h-0"
             >
               Reset filters
             </button>
@@ -464,35 +466,35 @@ export function DispatchSchedule({
         ) : (
           <>
             {/* Mobile Stacked List (< 720px) */}
-            <div className="mt-4 divide-y divide-slate-100 min-[720px]:hidden">
+            <div className="mt-4 divide-y divide-[#ebe6dc] min-[720px]:hidden">
               {pagedRows.map((row) => {
                 const style = getRationaleIndicator(row.rationale);
                 const icuPct = Math.round(
                   computeDistrictStress(row.icuLoadAtWeekStart, row.icuCapacity) * 100,
                 );
                 return (
-                  <article key={`${row.week}-${row.districtId}`} className="space-y-2 py-3.5">
+                  <article key={`${row.week}-${row.districtId}`} className="space-y-2 py-4">
                     <div className="flex items-baseline justify-between gap-2">
                       <button
                         type="button"
                         onClick={() => onInspectDistrictAtWeek(row.districtId, row.week)}
-                        className="min-h-[44px] text-left text-sm font-semibold text-[#0f172a] hover:text-[#0f766e]"
+                        className="min-h-[44px] text-left text-[15px] font-semibold text-[#1c1917] hover:text-[#0f766e]"
                       >
-                        <span className="mr-2 font-mono text-xs text-slate-600">
+                        <span className="mr-2 font-mono text-[13px] text-[#57534e]">
                           W{String(row.week).padStart(2, '0')}
                         </span>
                         {row.districtName}
                       </button>
-                      <span className="font-mono text-xs tabular-nums text-[#0f172a]">
+                      <span className="font-mono text-[13px] tabular-nums text-[#1c1917]">
                         {icuPct}% ({formatFixed(row.icuLoadAtWeekStart, 1)} / {row.icuCapacity})
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
                       <span className={`inline-flex items-center gap-1.5 font-medium ${style.textColor}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${style.dotColor}`} aria-hidden="true" />
+                        <span className={`h-2 w-2 rounded-full ${style.dotColor}`} aria-hidden="true" />
                         <span>{style.shortLabel}</span>
                       </span>
-                      <span className="text-slate-600">{row.interventionType}</span>
+                      <span className="text-[#57534e]">{row.interventionType}</span>
                     </div>
                   </article>
                 );
@@ -501,27 +503,27 @@ export function DispatchSchedule({
 
             {/* Clean 5-Column Desktop Table (>= 720px) */}
             <div className="mt-4 hidden overflow-x-auto min-[720px]:block">
-              <table className="w-full border-collapse text-left text-xs">
+              <table className="w-full border-collapse text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 text-[11px] font-medium text-slate-600">
-                    <th scope="col" className="py-2.5 pr-3 font-mono">
+                  <tr className="border-b border-[#e0dbd0] text-xs font-medium text-[#57534e]">
+                    <th scope="col" className="py-3 pr-3 font-mono">
                       WEEK
                     </th>
-                    <th scope="col" className="px-3 py-2.5">
+                    <th scope="col" className="px-3 py-3">
                       DISTRICT
                     </th>
-                    <th scope="col" className="px-3 py-2.5">
+                    <th scope="col" className="px-3 py-3">
                       RATIONALE
                     </th>
-                    <th scope="col" className="px-3 py-2.5">
+                    <th scope="col" className="px-3 py-3">
                       PROTOCOL
                     </th>
-                    <th scope="col" className="py-2.5 pl-3 text-right font-mono">
+                    <th scope="col" className="py-3 pl-3 text-right font-mono">
                       FORECAST ICU
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-[#ebe6dc]">
                   {pagedRows.map((row) => {
                     const style = getRationaleIndicator(row.rationale);
                     const icuPct = Math.round(
@@ -530,33 +532,33 @@ export function DispatchSchedule({
                     return (
                       <tr
                         key={`${row.week}-${row.districtId}`}
-                        className="transition-colors hover:bg-slate-50/70"
+                        className="transition-colors hover:bg-[#f5f2eb]"
                       >
-                        <td className="whitespace-nowrap py-3 pr-3 font-mono font-semibold tabular-nums text-[#0f172a]">
+                        <td className="whitespace-nowrap py-3.5 pr-3 font-mono font-semibold tabular-nums text-[#1c1917]">
                           W{String(row.week).padStart(2, '0')}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-3">
+                        <td className="whitespace-nowrap px-3 py-3.5">
                           <button
                             type="button"
                             onClick={() => onInspectDistrictAtWeek(row.districtId, row.week)}
-                            className="font-semibold text-[#0f172a] hover:text-[#0f766e] hover:underline"
+                            className="font-semibold text-[#1c1917] hover:text-[#0f766e] hover:underline"
                           >
                             {row.districtName}
                           </button>{' '}
-                          <span className="text-slate-600">({formatZoneLabel(row.zoneType)})</span>
+                          <span className="text-[#57534e]">({formatZoneLabel(row.zoneType)})</span>
                         </td>
-                        <td className="whitespace-nowrap px-3 py-3">
+                        <td className="whitespace-nowrap px-3 py-3.5">
                           <span className={`inline-flex items-center gap-1.5 font-medium ${style.textColor}`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${style.dotColor}`} aria-hidden="true" />
+                            <span className={`h-2 w-2 rounded-full ${style.dotColor}`} aria-hidden="true" />
                             <span>{style.shortLabel}</span>
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-3 py-3 text-slate-600">
+                        <td className="whitespace-nowrap px-3 py-3.5 text-[#57534e]">
                           {row.interventionType}
                         </td>
-                        <td className="whitespace-nowrap py-3 pl-3 text-right font-mono tabular-nums text-[#0f172a]">
+                        <td className="whitespace-nowrap py-3.5 pl-3 text-right font-mono tabular-nums text-[#1c1917]">
                           <strong>{icuPct}%</strong>{' '}
-                          <span className="text-slate-600">
+                          <span className="text-[#57534e]">
                             ({formatFixed(row.icuLoadAtWeekStart, 1)} / {row.icuCapacity})
                           </span>
                         </td>
@@ -568,7 +570,7 @@ export function DispatchSchedule({
             </div>
 
             {/* Clean Pagination Bar */}
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#e0dbd0] pt-3.5 text-[13px] text-[#57534e]">
               <span className="tabular-nums">
                 Showing {rangeStart}–{rangeEnd} of {filteredRows.length} assignments
               </span>
@@ -577,7 +579,7 @@ export function DispatchSchedule({
                   type="button"
                   disabled={safePage <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="min-h-[44px] rounded px-2 font-sans font-medium text-[#0f172a] hover:bg-slate-100 disabled:opacity-40 min-[720px]:min-h-[28px]"
+                  className="min-h-[44px] rounded px-2.5 font-sans font-medium text-[#1c1917] hover:bg-[#eee9df] disabled:opacity-40 min-[720px]:min-h-[30px]"
                 >
                   Prev
                 </button>
@@ -588,7 +590,7 @@ export function DispatchSchedule({
                   type="button"
                   disabled={safePage >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="min-h-[44px] rounded px-2 font-sans font-medium text-[#0f172a] hover:bg-slate-100 disabled:opacity-40 min-[720px]:min-h-[28px]"
+                  className="min-h-[44px] rounded px-2.5 font-sans font-medium text-[#1c1917] hover:bg-[#eee9df] disabled:opacity-40 min-[720px]:min-h-[30px]"
                 >
                   Next
                 </button>

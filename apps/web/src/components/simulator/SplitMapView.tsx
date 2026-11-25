@@ -27,7 +27,7 @@ const BASEMAP_LOAD_TIMEOUT_MS = 4500;
 const SOURCE_ID = 'sennagrid-districts';
 const FLOWS_SOURCE_ID = 'sennagrid-flows';
 
-const OFFLINE_LIGHT_STYLE: StyleSpecification = {
+const OFFLINE_PAPER_STYLE: StyleSpecification = {
   version: 8,
   sources: {},
   layers: [
@@ -35,27 +35,27 @@ const OFFLINE_LIGHT_STYLE: StyleSpecification = {
       id: 'offline-background',
       type: 'background',
       paint: {
-        'background-color': '#f1f5f9',
+        'background-color': '#efebe2',
       },
     },
   ],
 };
 
-// Calm pastel cartographic stress ramp with crisp threshold jump at 100% ICU overflow
+// Soft paper cartographic stress ramp with clear crimson threshold at >=100% ICU overflow
 const STRESS_FILL_EXPRESSION: ExpressionSpecification = [
   'interpolate',
   ['linear'],
   ['coalesce', ['feature-state', 'stress'], 0],
   0,
-  '#ecfdf5',
+  '#e7f3ee',
   0.4,
-  '#f1f5f9',
+  '#efeae0',
   0.6,
-  '#fef3c7',
+  '#faeac1',
   0.995,
-  '#fde68a',
+  '#f7dd97',
   1.0,
-  '#fecdd3',
+  '#fac8d1',
   1.35,
   '#f43f5e',
 ];
@@ -170,21 +170,21 @@ function attachDistrictLayers(
       type: 'line',
       source: SOURCE_ID,
       paint: {
-        'line-color': '#94a3b8',
+        'line-color': '#8c857b',
         'line-width': 0.9,
-        'line-opacity': 0.7,
+        'line-opacity': 0.68,
       },
     });
   }
 
-  // Selected halo sits under active dispatch outlines so team borders stay clearly visible
+  // Selected halo sits under active dispatch outlines so team borders remain visible
   if (!map.getLayer('districts-selected-halo')) {
     map.addLayer({
       id: 'districts-selected-halo',
       type: 'line',
       source: SOURCE_ID,
       paint: {
-        'line-color': '#0f172a',
+        'line-color': '#1c1917',
         'line-width': ['case', ['==', ['feature-state', 'selected'], true], 5.5, 0],
         'line-opacity': 0.28,
       },
@@ -201,7 +201,7 @@ function attachDistrictLayers(
         'line-cap': 'round',
       },
       paint: {
-        'line-color': '#64748b',
+        'line-color': '#57534e',
         'line-width': ['interpolate', ['linear'], ['get', 'strength'], 0, 0.8, 1, 2.0],
         'line-opacity': 0.28,
         'line-dasharray': [2, 2],
@@ -288,7 +288,7 @@ function applyFeatureStatesAndMarkers(
   const weekRow = stratResult.schedule[meta.weekIndex];
   const visibleBadgeIds =
     showLabels && !showAllLabels
-      ? selectPriorityBadgeDistrictIds(output, strategy, day, selectedDistrictId, 5)
+      ? selectPriorityBadgeDistrictIds(output, strategy, day, selectedDistrictId, 3)
       : null;
 
   for (let i = 0; i < n; i++) {
@@ -416,8 +416,8 @@ export function SplitMapView({
         if (disposed || fallbackTriggered) return;
         fallbackTriggered = true;
         setOfflineFallback(true);
-        leftMapRef.current?.setStyle(OFFLINE_LIGHT_STYLE);
-        rightMapRef.current?.setStyle(OFFLINE_LIGHT_STYLE);
+        leftMapRef.current?.setStyle(OFFLINE_PAPER_STYLE);
+        rightMapRef.current?.setStyle(OFFLINE_PAPER_STYLE);
       };
 
       const styleTimer = setTimeout(() => {
@@ -663,28 +663,28 @@ export function SplitMapView({
           left: Math.min(Math.max(10, hoverInfo.x + 12), 230),
           top: Math.max(10, hoverInfo.y - 12),
         }}
-        className="pointer-events-none absolute z-30 w-52 rounded-lg border border-slate-200 bg-white/95 p-2.5 text-xs shadow-md"
+        className="pointer-events-none absolute z-30 w-56 rounded-lg border border-[#d6d0c4] bg-[#fbf9f5]/98 p-3 text-[13px] shadow-md"
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="font-bold text-[#0f172a]">{district.name}</span>
-          <span className="text-[10px] font-medium text-slate-600">
+          <span className="font-bold text-[#1c1917]">{district.name}</span>
+          <span className="text-xs font-medium text-[#57534e]">
             {formatZoneLabel(district.zoneType)}
           </span>
         </div>
-        <div className="mt-1.5 space-y-1 font-mono text-[11px] tabular-nums text-slate-600">
+        <div className="mt-2 space-y-1 font-mono text-xs tabular-nums text-[#57534e]">
           <div className="flex justify-between">
             <span>Active cases</span>
-            <span className="font-semibold text-[#0f172a]">{formatInt(activeInf)}</span>
+            <span className="font-semibold text-[#1c1917]">{formatInt(activeInf)}</span>
           </div>
           <div className="flex justify-between">
             <span>ICU load</span>
-            <span className={stressPct >= 100 ? 'font-bold text-[#be123c]' : 'font-semibold text-[#0f172a]'}>
+            <span className={stressPct >= 100 ? 'font-bold text-[#be123c]' : 'font-semibold text-[#1c1917]'}>
               {formatFixed(icuDemand, 1)} / {district.icuBeds} ({stressPct}%)
             </span>
           </div>
           <div className="flex justify-between">
             <span>Week {meta.weekNumber}</span>
-            <span className={treated ? 'font-semibold text-[#0f766e]' : 'text-slate-600'}>
+            <span className={treated ? 'font-semibold text-[#0f766e]' : 'text-[#57534e]'}>
               {treated ? 'Team Active' : 'Standby'}
             </span>
           </div>
@@ -697,16 +697,16 @@ export function SplitMapView({
     <section
       aria-label="Spatial district ICU comparison"
       data-tour="split-map"
-      className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+      className="overflow-hidden rounded-xl border border-[#e0dbd0] bg-[#fbf9f5]"
     >
-      {/* Calm Header: Title + 3-Dot Legend + Map / Watchlist Switch */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+      {/* Header: Title + 3-Dot Legend + Map / Watchlist Switch */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e0dbd0] px-5 py-4">
         <div className="flex flex-wrap items-center gap-2.5">
-          <h2 className="text-sm font-semibold text-[#0f172a]">
+          <h2 className="text-base font-semibold text-[#1c1917]">
             District ICU Load · Day {meta.day}
           </h2>
           {offlineFallback && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#b45309]">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-[#b45309]">
               <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Offline Basemap</span>
             </span>
@@ -714,17 +714,17 @@ export function SplitMapView({
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+          <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-[#57534e]">
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#059669]" aria-hidden="true" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#059669]" aria-hidden="true" />
               <span>&lt;60% Safe</span>
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#d97706]" aria-hidden="true" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#d97706]" aria-hidden="true" />
               <span>60–99% Strained</span>
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#e11d48]" aria-hidden="true" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#e11d48]" aria-hidden="true" />
               <span>≥100% Overflow</span>
             </span>
           </div>
@@ -732,16 +732,16 @@ export function SplitMapView({
           <div
             role="group"
             aria-label="Spatial view mode"
-            className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs font-medium"
+            className="inline-flex rounded-lg border border-[#e0dbd0] bg-[#eee9df] p-0.5 text-[13px] font-medium"
           >
             <button
               type="button"
               aria-pressed={viewMode === 'map'}
               onClick={() => setViewMode('map')}
-              className={`min-h-[44px] rounded-md px-2.5 py-1 transition-all min-[720px]:min-h-[28px] ${
+              className={`min-h-[44px] rounded-md px-3 py-1 transition-all min-[720px]:min-h-[30px] ${
                 viewMode === 'map'
-                  ? 'bg-white font-semibold text-[#0f172a] shadow-2xs'
-                  : 'text-slate-600 hover:text-[#0f172a]'
+                  ? 'bg-[#fbf9f5] font-semibold text-[#1c1917] shadow-2xs'
+                  : 'text-[#57534e] hover:text-[#1c1917]'
               }`}
             >
               Map
@@ -750,10 +750,10 @@ export function SplitMapView({
               type="button"
               aria-pressed={viewMode === 'watchlist'}
               onClick={() => setViewMode('watchlist')}
-              className={`min-h-[44px] rounded-md px-2.5 py-1 transition-all min-[720px]:min-h-[28px] ${
+              className={`min-h-[44px] rounded-md px-3 py-1 transition-all min-[720px]:min-h-[30px] ${
                 viewMode === 'watchlist'
-                  ? 'bg-white font-semibold text-[#0f172a] shadow-2xs'
-                  : 'text-slate-600 hover:text-[#0f172a]'
+                  ? 'bg-[#fbf9f5] font-semibold text-[#1c1917] shadow-2xs'
+                  : 'text-[#57534e] hover:text-[#1c1917]'
               }`}
             >
               Watchlist
@@ -769,16 +769,16 @@ export function SplitMapView({
           <div
             role="group"
             aria-label="Select map pane on mobile"
-            className="grid grid-cols-2 gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1"
+            className="grid grid-cols-2 gap-1 rounded-lg border border-[#e0dbd0] bg-[#eee9df] p-1"
           >
             <button
               type="button"
               aria-pressed={mobileMapStrategy === 'reactive'}
               onClick={() => onSetMobileMapStrategy('reactive')}
-              className={`min-h-[44px] rounded-md px-3 py-1.5 text-xs font-semibold ${
+              className={`min-h-[44px] rounded-md px-3 py-1.5 text-[13px] font-semibold ${
                 mobileMapStrategy === 'reactive'
-                  ? 'bg-white text-[#be123c] shadow-2xs'
-                  : 'text-slate-600'
+                  ? 'bg-[#fbf9f5] text-[#be123c] shadow-2xs'
+                  : 'text-[#57534e]'
               }`}
             >
               Without SennaGrid
@@ -787,10 +787,10 @@ export function SplitMapView({
               type="button"
               aria-pressed={mobileMapStrategy === 'sennagrid'}
               onClick={() => onSetMobileMapStrategy('sennagrid')}
-              className={`min-h-[44px] rounded-md px-3 py-1.5 text-xs font-semibold ${
+              className={`min-h-[44px] rounded-md px-3 py-1.5 text-[13px] font-semibold ${
                 mobileMapStrategy === 'sennagrid'
-                  ? 'bg-white text-[#0f766e] shadow-2xs'
-                  : 'text-slate-600'
+                  ? 'bg-[#fbf9f5] text-[#0f766e] shadow-2xs'
+                  : 'text-[#57534e]'
               }`}
             >
               With SennaGrid
@@ -801,14 +801,14 @@ export function SplitMapView({
         <div className="grid grid-cols-1 gap-5 min-[720px]:grid-cols-2">
           {/* LEFT: Without SennaGrid */}
           <div className={mobileMapStrategy === 'reactive' ? 'block' : 'hidden min-[720px]:block'}>
-            <div className="mb-2 flex items-baseline justify-between gap-2 text-xs">
-              <span className="font-semibold text-[#0f172a]">Without SennaGrid</span>
+            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
+              <span className="font-semibold text-[#1c1917]">Without SennaGrid</span>
               <span className="font-mono font-medium tabular-nums text-[#be123c]">
                 +{formatFixed(reactiveDayOverflow, 1)} overflow beds · {reactiveBreaches} breached
               </span>
             </div>
 
-            <div className="relative h-[320px] w-full overflow-hidden rounded-lg border border-slate-200 bg-[#f1f5f9] min-[720px]:h-[340px] min-[1180px]:h-[370px]">
+            <div className="relative h-[320px] w-full overflow-hidden rounded-lg border border-[#e0dbd0] bg-[#efebe2] min-[720px]:h-[345px] min-[1180px]:h-[375px]">
               <div
                 ref={leftContainerRef}
                 className="h-full w-full"
@@ -820,7 +820,7 @@ export function SplitMapView({
 
           {/* RIGHT: With SennaGrid */}
           <div className={mobileMapStrategy === 'sennagrid' ? 'block' : 'hidden min-[720px]:block'}>
-            <div className="mb-2 flex items-baseline justify-between gap-2 text-xs">
+            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
               <span className="font-semibold text-[#0f766e]">With SennaGrid</span>
               <span className="font-mono font-medium tabular-nums text-[#0f766e]">
                 {formatFixed(sennagridDayOverflow, 1)} overflow beds · {sennagridBreaches} breached ·{' '}
@@ -828,7 +828,7 @@ export function SplitMapView({
               </span>
             </div>
 
-            <div className="relative h-[320px] w-full overflow-hidden rounded-lg border border-slate-200 bg-[#f1f5f9] min-[720px]:h-[340px] min-[1180px]:h-[370px]">
+            <div className="relative h-[320px] w-full overflow-hidden rounded-lg border border-[#e0dbd0] bg-[#efebe2] min-[720px]:h-[345px] min-[1180px]:h-[375px]">
               <div
                 ref={rightContainerRef}
                 className="h-full w-full"
@@ -840,7 +840,7 @@ export function SplitMapView({
         </div>
 
         {/* Quiet Single-Line Map Utility Controls */}
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600">
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 text-[13px] text-[#57534e]">
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
@@ -855,53 +855,53 @@ export function SplitMapView({
                   setShowAllLabels(false);
                 }
               }}
-              className="min-h-[44px] font-medium hover:text-[#0f172a] min-[720px]:min-h-0"
+              className="min-h-[44px] font-medium hover:text-[#1c1917] min-[720px]:min-h-0"
             >
               Labels: {!showDistrictLabels ? 'Off' : showAllLabels ? 'All Wards' : 'Key Wards'}
             </button>
-            <span aria-hidden="true" className="text-slate-300">
+            <span aria-hidden="true" className="text-[#c7c0b3]">
               ·
             </span>
             <button
               type="button"
               onClick={onToggleCommuterFlows}
               aria-pressed={showCommuterFlows}
-              className="min-h-[44px] font-medium hover:text-[#0f172a] min-[720px]:min-h-0"
+              className="min-h-[44px] font-medium hover:text-[#1c1917] min-[720px]:min-h-0"
             >
               Commuter Flows: {showCommuterFlows ? 'On' : 'Off'}
             </button>
-            <span aria-hidden="true" className="hidden text-slate-300 min-[720px]:inline">
+            <span aria-hidden="true" className="hidden text-[#c7c0b3] min-[720px]:inline">
               ·
             </span>
             <button
               type="button"
               onClick={onToggleSyncMaps}
               aria-pressed={syncMapsLocked}
-              className="hidden font-medium hover:text-[#0f172a] min-[720px]:inline"
+              className="hidden font-medium hover:text-[#1c1917] min-[720px]:inline"
             >
               Sync Pan: {syncMapsLocked ? 'On' : 'Off'}
             </button>
-            <span aria-hidden="true" className="text-slate-300">
+            <span aria-hidden="true" className="text-[#c7c0b3]">
               ·
             </span>
             <button
               type="button"
               onClick={fitBothToDistricts}
-              className="min-h-[44px] font-medium hover:text-[#0f172a] min-[720px]:min-h-0"
+              className="min-h-[44px] font-medium hover:text-[#1c1917] min-[720px]:min-h-0"
             >
               Reset Framing
             </button>
           </div>
 
           <div className="flex items-center gap-2">
-            <label htmlFor="sg-district-select" className="font-medium text-slate-600">
+            <label htmlFor="sg-district-select" className="font-medium text-[#57534e]">
               Inspect Ward:
             </label>
             <select
               id="sg-district-select"
               value={selectedDistrictId ?? ''}
               onChange={(e) => onSelectDistrict(e.target.value || null)}
-              className="min-h-[44px] rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-[#0f172a] min-[720px]:min-h-[26px]"
+              className="min-h-[44px] rounded-md border border-[#d6d0c4] bg-[#fbf9f5] px-2.5 py-1 text-[13px] font-medium text-[#1c1917] min-[720px]:min-h-[30px]"
             >
               <option value="">None (click ward)</option>
               {output.districts.map((d) => (
@@ -923,7 +923,7 @@ export function SplitMapView({
         />
       )}
 
-      {/* Contextual Ward Comparison Strip (appears cleanly only when a ward is clicked/selected) */}
+      {/* Contextual Ward Comparison Strip (appears only when a ward is clicked/selected) */}
       {selectedDistrictId && (
         <DistrictInspector
           output={output}

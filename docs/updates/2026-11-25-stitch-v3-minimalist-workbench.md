@@ -11,6 +11,9 @@ Streamlined the SennaGrid web interface (`apps/web`) into the approved **Stitch 
 
 ## Changes
 
+- **Warm Paper Theme & Enlarged Typography (`index.css`, `index.html`, `DESIGN_SPEC.md`, all UI views):**
+  - Replaced bright `#f8fafc` / `#ffffff` surfaces with soft archival paper tones (`#f5f2eb` canvas, `#fbf9f5` cards, `#eee9df` inset wells, `#e0dbd0` warm stone borders, `#1c1917` / `#57534e` warm charcoal inks, plus gentle sepia/brightness toning on `.maplibregl-canvas`) to eliminate white glare.
+  - Increased UI readability across all components (`14px`–`15px` controls/tables, `16px` section headings, `13px` secondary captions, `32px`–`36px` KPI figures) while keeping WCAG AA contrast >= `4.78:1`.
 - **Minimal Header & Calm Control Rail (`HeaderBar.tsx`, `TabNav.tsx`, `ControlBar.tsx`):**
   - Consolidated navigation into a 52px top bar (`SennaGrid` wordmark, underlined tabs `Simulator` / `Weekly Plan` / `Methodology`, `Tour`, and `5/5 Gates Pass` indicator).
   - Moved primary simulation inputs into a crisp `256px` left control rail (`City Scenario`, `Dengue | Respiratory`, `Budget` slider, `Run Optimization`) with a collapsed `Parameters` drawer housing Climate Forcing (`Peak Season` vs `Live Weather`), `ICU Rate`, `Commuter Outflow`, `Team Efficacy`, and `Reset Defaults`.

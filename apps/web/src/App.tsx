@@ -27,12 +27,12 @@ function InitialLoadingSkeleton() {
     <div
       aria-busy="true"
       aria-label="Loading initial optimization"
-      className="grid grid-cols-1 gap-6 lg:grid-cols-[256px_minmax(0,1fr)]"
+      className="grid grid-cols-1 gap-6 lg:grid-cols-[284px_minmax(0,1fr)]"
     >
-      <div className="h-96 animate-pulse rounded-xl border border-slate-200 bg-white" />
+      <div className="h-96 animate-pulse rounded-xl border border-[#e0dbd0] bg-[#fbf9f5]" />
       <div className="space-y-5">
-        <div className="h-28 animate-pulse rounded-xl border border-slate-200 bg-white" />
-        <div className="h-[460px] animate-pulse rounded-xl border border-slate-200 bg-white" />
+        <div className="h-28 animate-pulse rounded-xl border border-[#e0dbd0] bg-[#fbf9f5]" />
+        <div className="h-[460px] animate-pulse rounded-xl border border-[#e0dbd0] bg-[#fbf9f5]" />
       </div>
     </div>
   );
@@ -181,7 +181,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f8fafc] text-[#0f172a]">
+    <div className="flex min-h-screen flex-col bg-[#f5f2eb] text-[#1c1917]">
       <HeaderBar />
 
       <div className="sr-only" aria-live="polite">
@@ -192,11 +192,11 @@ export default function App() {
             : ''}
       </div>
 
-      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6">
+      <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-6">
         {error && (
           <div
             role="alert"
-            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-[#9f1239]"
+            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#e7b4bd] bg-[#fdf0f2] px-4 py-3 text-sm text-[#9f1239]"
           >
             <div className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -207,9 +207,9 @@ export default function App() {
             <button
               type="button"
               onClick={() => void runOptimization()}
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 py-1.5 font-semibold text-[#9f1239] hover:bg-rose-100 sm:min-h-[34px]"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[#e7b4bd] bg-[#fbf9f5] px-3 py-1.5 font-semibold text-[#9f1239] hover:bg-[#fce5e9] sm:min-h-[36px]"
             >
-              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
               <span>Retry</span>
             </button>
           </div>
@@ -224,7 +224,7 @@ export default function App() {
                 id="panel-simulator"
                 role="tabpanel"
                 aria-labelledby="tab-simulator"
-                className="grid grid-cols-1 gap-6 lg:grid-cols-[256px_minmax(0,1fr)] lg:items-start"
+                className="grid grid-cols-1 gap-6 lg:grid-cols-[284px_minmax(0,1fr)] lg:items-start"
               >
                 <ControlBar />
 
@@ -277,7 +277,7 @@ export default function App() {
                 id="panel-schedule"
                 role="tabpanel"
                 aria-labelledby="tab-schedule"
-                className="mx-auto max-w-[1200px] space-y-6"
+                className="mx-auto max-w-[1240px] space-y-6"
               >
                 <DispatchSchedule
                   output={output}
@@ -292,7 +292,7 @@ export default function App() {
                 id="panel-methodology"
                 role="tabpanel"
                 aria-labelledby="tab-methodology"
-                className="mx-auto max-w-[1200px]"
+                className="mx-auto max-w-[1240px]"
               >
                 <MethodologyView output={output} />
               </div>
@@ -301,7 +301,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="py-5 text-center text-[11px] text-slate-600">
+      <footer className="py-6 text-center text-[13px] text-[#57534e]">
         100% Client-Side RK4 Solver · Synthetic Urban Benchmarks (Metro Tropica &amp; Harbor
         Corridor) for Research, Not Clinical Directives.
       </footer>
