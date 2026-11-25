@@ -659,3 +659,71 @@ export function summarizeSwapTrace(swapTrace: readonly SwapTraceEntry[]): SwapTr
     totalOverflowSavedBedDays: Number(totalOverflowSavedBedDays.toFixed(1)),
   };
 }
+
+/**
+ * Selects a compact, non-overlapping set of key district IDs to label on a strategy map
+ * at a given day: prioritizing selected wards, breached wards (>=100% ICU), active weekly teams,
+ * or highest-stress wards when no breach or active focus exists.
+ */
+export function selectPriorityBadgeDistrictIds(
+  output: OptimizationOutput,
+  strategy: 'reactive' | 'sennagrid',
+  rawDay: number,
+  selectedDistrictId: string | null,
+  maxBadges = 5,
+): Set<string> {
+  const n = output.districts.length;
+  if (n === 0 || maxBadges <= 0) return new Set();
+
+  const meta = getTimelineMeta(output, rawDay);
+  const strat = strategy === 'reactive' ? output.reactive : output.sennagrid;
+  const rowBase = meta.day * n;
+  const weekRow = strat.schedule[meta.weekIndex];
+
+  const scored = output.districts.map((district, i) => {
+    const icuDemand = strat.districtIcuDemand[rowBase + i] ?? 0;
+    const stress = computeDistrictStress(icuDemand, district.icuBeds);
+    const treated = (weekRow?.[i] ?? 0) === 1;
+    const selected = district.id === selectedDistrictId;
+    return { id: district.id, stress, treated, selected };
+  });
+
+  const chosen = new Set<string>();
+  if (selectedDistrictId && scored.some((s) => s.id === selectedDistrictId)) {
+    chosen.add(selectedDistrictId);
+  }
+
+  // Always surface breaching wards first (highest stress first)
+  const breaching = scored.filter((s) => s.stress >= 1.0).sort((a, b) => b.stress - a.stress);
+  for (const item of breaching) {
+    if (chosen.size >= maxBadges) break;
+    chosen.add(item.id);
+  }
+
+  // For SennaGrid (and Reactive when below breach), surface active weekly interventions
+  const treatedList = scored.filter((s) => s.treated).sort((a, b) => b.stress - a.stress);
+  if (strategy === 'sennagrid' || breaching.length === 0) {
+    for (const item of treatedList) {
+      if (chosen.size >= maxBadges) break;
+      chosen.add(item.id);
+    }
+  }
+
+  // Fallback to top stressed wards so maps never appear unlabeled
+  if (chosen.size === 0) {
+    const topStress = [...scored].sort((a, b) => b.stress - a.stress).slice(0, Math.min(3, maxBadges));
+    for (const item of topStress) {
+      chosen.add(item.id);
+    }
+  }
+
+  return chosen;
+}
+
+export function formatPopulationCompact(districts: readonly DistrictProperties[]): string {
+  const total = districts.reduce((sum, d) => sum + d.population, 0);
+  if (total >= 1_000_000) {
+    return `${(total / 1_000_000).toFixed(2)}M pop`;
+  }
+  return `${Math.round(total / 1000)}K pop`;
+}

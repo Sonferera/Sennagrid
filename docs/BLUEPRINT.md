@@ -78,6 +78,7 @@ Sennagrid/
 │           └── components/
 │               ├── layout/
 │               │   ├── ControlBar.tsx
+│               │   ├── HeaderBar.tsx
 │               │   └── TabNav.tsx
 │               ├── simulator/
 │               │   ├── KpiStrip.tsx

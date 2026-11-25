@@ -17,8 +17,10 @@ import {
   filterDispatchAssignments,
   findCrisisFocusDay,
   findReactivePeakIcuDay,
+  formatPopulationCompact,
   getDistrictSnapshotAtDay,
   getTimelineMeta,
+  selectPriorityBadgeDistrictIds,
   summarizeSwapTrace,
 } from '../viewModels';
 
@@ -172,5 +174,21 @@ describe('viewModels deterministic transformations', () => {
     if (harborOut.swapTrace.length > 0) {
       expect(summary.passesCompleted).toBeGreaterThanOrEqual(1);
     }
+  });
+
+  it('selects non-overlapping priority map badges and formats compact city population', () => {
+    const crisisDay = findCrisisFocusDay(metroOut);
+    const chosenId = metroOut.districts[0]!.id;
+    const reactiveBadges = selectPriorityBadgeDistrictIds(metroOut, 'reactive', crisisDay, chosenId, 4);
+    const optBadges = selectPriorityBadgeDistrictIds(metroOut, 'sennagrid', crisisDay, chosenId, 4);
+
+    expect(reactiveBadges.has(chosenId)).toBe(true);
+    expect(optBadges.has(chosenId)).toBe(true);
+    expect(reactiveBadges.size).toBeLessThanOrEqual(4);
+    expect(optBadges.size).toBeLessThanOrEqual(4);
+    expect(optBadges.size).toBeGreaterThanOrEqual(2);
+
+    expect(formatPopulationCompact(METRO_TROPICA_PRESET.districts)).toMatch(/M pop$/);
+    expect(formatPopulationCompact(HARBOR_CORRIDOR_PRESET.districts)).toMatch(/K pop$/);
   });
 });

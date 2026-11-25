@@ -1,5 +1,5 @@
 import type { OptimizationOutput, StrategyName } from '@sennagrid/engine';
-import { Eye, EyeOff, Link2, Link2Off, Network, RotateCcw, WifiOff } from 'lucide-react';
+import { WifiOff } from 'lucide-react';
 import maplibregl, {
   type ExpressionSpecification,
   type LngLatBoundsLike,
@@ -9,7 +9,6 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getRegionPreset, type DistrictFeatureCollection } from '../../data/regions';
 import {
-  buildDistrictShortCode,
   buildTopCommuterCorridors,
   classifyStressBand,
   computeDistrictStress,
@@ -18,8 +17,10 @@ import {
   formatZoneLabel,
   getDispatchedDistrictsForWeek,
   getTimelineMeta,
+  selectPriorityBadgeDistrictIds,
 } from '../../lib/viewModels';
 import type { MobileMapStrategy } from '../../store/useSimulationStore';
+import { DistrictInspector, DistrictWatchlistGrid } from './DistrictInspector';
 
 const CARTO_POSITRON_STYLE_URL = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 const BASEMAP_LOAD_TIMEOUT_MS = 4500;
@@ -34,29 +35,29 @@ const OFFLINE_LIGHT_STYLE: StyleSpecification = {
       id: 'offline-background',
       type: 'background',
       paint: {
-        'background-color': '#eef2f6',
+        'background-color': '#f1f5f9',
       },
     },
   ],
 };
 
-// Clean cartographic ramp with a sharp threshold jump at 100% so crimson exclusively marks true ICU overflow
+// Calm pastel cartographic stress ramp with crisp threshold jump at 100% ICU overflow
 const STRESS_FILL_EXPRESSION: ExpressionSpecification = [
   'interpolate',
   ['linear'],
   ['coalesce', ['feature-state', 'stress'], 0],
   0,
   '#ecfdf5',
-  0.35,
-  '#bae6fd',
+  0.4,
+  '#f1f5f9',
   0.6,
-  '#fde68a',
+  '#fef3c7',
   0.995,
-  '#fbbf24',
+  '#fde68a',
   1.0,
-  '#f43f5e',
+  '#fecdd3',
   1.35,
-  '#be123c',
+  '#f43f5e',
 ];
 
 interface HoverInfo {
@@ -86,6 +87,7 @@ interface SplitMapViewProps {
   onToggleCommuterFlows: () => void;
   onToggleDistrictLabels: () => void;
   onSetMobileMapStrategy: (strategy: MobileMapStrategy) => void;
+  children?: React.ReactNode;
 }
 
 function computeFeatureCollectionBounds(fc: DistrictFeatureCollection): LngLatBoundsLike {
@@ -157,7 +159,7 @@ function attachDistrictLayers(
       source: SOURCE_ID,
       paint: {
         'fill-color': STRESS_FILL_EXPRESSION,
-        'fill-opacity': 0.82,
+        'fill-opacity': 0.78,
       },
     });
   }
@@ -168,14 +170,14 @@ function attachDistrictLayers(
       type: 'line',
       source: SOURCE_ID,
       paint: {
-        'line-color': '#64748b',
-        'line-width': 1.1,
-        'line-opacity': 0.65,
+        'line-color': '#94a3b8',
+        'line-width': 0.9,
+        'line-opacity': 0.7,
       },
     });
   }
 
-  // Selected halo sits UNDER active dispatch border so treated outlines remain 100% visible!
+  // Selected halo sits under active dispatch outlines so team borders stay clearly visible
   if (!map.getLayer('districts-selected-halo')) {
     map.addLayer({
       id: 'districts-selected-halo',
@@ -183,8 +185,8 @@ function attachDistrictLayers(
       source: SOURCE_ID,
       paint: {
         'line-color': '#0f172a',
-        'line-width': ['case', ['==', ['feature-state', 'selected'], true], 6.5, 0],
-        'line-opacity': 0.25,
+        'line-width': ['case', ['==', ['feature-state', 'selected'], true], 5.5, 0],
+        'line-opacity': 0.28,
       },
     });
   }
@@ -199,9 +201,9 @@ function attachDistrictLayers(
         'line-cap': 'round',
       },
       paint: {
-        'line-color': '#475569',
-        'line-width': ['interpolate', ['linear'], ['get', 'strength'], 0, 1, 1, 2.4],
-        'line-opacity': 0.34,
+        'line-color': '#64748b',
+        'line-width': ['interpolate', ['linear'], ['get', 'strength'], 0, 0.8, 1, 2.0],
+        'line-opacity': 0.28,
         'line-dasharray': [2, 2],
       },
     });
@@ -215,10 +217,15 @@ function attachDistrictLayers(
       source: SOURCE_ID,
       paint: {
         'line-color': treatedColor,
-        'line-width': ['case', ['==', ['feature-state', 'treated'], true], 3, 0],
+        'line-width': ['case', ['==', ['feature-state', 'treated'], true], 2.6, 0],
       },
     });
   }
+}
+
+function compactDistrictLabel(name: string): string {
+  const firstWord = name.split(/\s+/)[0] ?? name;
+  return firstWord.length >= 4 ? firstWord : name;
 }
 
 function syncMarkersForMap(
@@ -230,8 +237,7 @@ function syncMarkersForMap(
   for (const handle of handlesRef.current) {
     handle.marker.remove();
   }
-  handlesRef.current = output.districts.map((district, idx) => {
-    const shortCode = buildDistrictShortCode(district, idx);
+  handlesRef.current = output.districts.map((district) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'sg-ward-marker';
@@ -242,7 +248,7 @@ function syncMarkersForMap(
     dot.setAttribute('aria-hidden', 'true');
 
     const labelSpan = document.createElement('span');
-    labelSpan.textContent = shortCode;
+    labelSpan.textContent = compactDistrictLabel(district.name);
 
     btn.appendChild(dot);
     btn.appendChild(labelSpan);
@@ -272,6 +278,7 @@ function applyFeatureStatesAndMarkers(
   day: number,
   selectedDistrictId: string | null,
   showLabels: boolean,
+  showAllLabels: boolean,
 ): void {
   const hasSource = Boolean(map.getSource(SOURCE_ID));
   const meta = getTimelineMeta(output, day);
@@ -279,6 +286,10 @@ function applyFeatureStatesAndMarkers(
   const n = output.districts.length;
   const rowBase = meta.day * n;
   const weekRow = stratResult.schedule[meta.weekIndex];
+  const visibleBadgeIds =
+    showLabels && !showAllLabels
+      ? selectPriorityBadgeDistrictIds(output, strategy, day, selectedDistrictId, 5)
+      : null;
 
   for (let i = 0; i < n; i++) {
     const district = output.districts[i];
@@ -297,11 +308,12 @@ function applyFeatureStatesAndMarkers(
 
     const handle = handles[i];
     if (handle) {
-      handle.el.style.display = showLabels ? 'inline-flex' : 'none';
-      if (showLabels) {
-        const shortInitials = buildDistrictShortCode(district, i).slice(0, 2);
+      const shouldShow =
+        showLabels && (showAllLabels || (visibleBadgeIds?.has(district.id) ?? false));
+      handle.el.style.display = shouldShow ? 'inline-flex' : 'none';
+      if (shouldShow) {
         const pct = Math.round(stress * 100);
-        handle.labelSpan.textContent = `${shortInitials} ${pct}%`;
+        handle.labelSpan.textContent = `${compactDistrictLabel(district.name)} ${pct}%`;
         handle.el.dataset.band = classifyStressBand(stress);
         handle.el.dataset.treated = treated ? strategy : 'none';
         handle.el.dataset.selected = selected ? 'true' : 'false';
@@ -323,6 +335,7 @@ export function SplitMapView({
   onToggleCommuterFlows,
   onToggleDistrictLabels,
   onSetMobileMapStrategy,
+  children,
 }: SplitMapViewProps) {
   const leftContainerRef = useRef<HTMLDivElement | null>(null);
   const rightContainerRef = useRef<HTMLDivElement | null>(null);
@@ -330,6 +343,9 @@ export function SplitMapView({
   const rightMapRef = useRef<maplibregl.Map | null>(null);
   const leftMarkersRef = useRef<MarkerHandle[]>([]);
   const rightMarkersRef = useRef<MarkerHandle[]>([]);
+
+  const [viewMode, setViewMode] = useState<'map' | 'watchlist'>('map');
+  const [showAllLabels, setShowAllLabels] = useState(false);
 
   const isSyncingRef = useRef(false);
   const syncLockedRef = useRef(syncMapsLocked);
@@ -345,6 +361,8 @@ export function SplitMapView({
   latestShowFlowsRef.current = showCommuterFlows;
   const latestShowLabelsRef = useRef(showDistrictLabels);
   latestShowLabelsRef.current = showDistrictLabels;
+  const latestShowAllLabelsRef = useRef(showAllLabels);
+  latestShowAllLabelsRef.current = showAllLabels;
   const onSelectDistrictRef = useRef(onSelectDistrict);
   onSelectDistrictRef.current = onSelectDistrict;
 
@@ -363,12 +381,11 @@ export function SplitMapView({
     const activePreset = getRegionPreset(latestOutputRef.current.params.regionId);
     const bounds = computeFeatureCollectionBounds(activePreset.featureCollection);
     isSyncingRef.current = true;
-    leftMapRef.current?.fitBounds(bounds, { padding: 28, animate: false });
-    rightMapRef.current?.fitBounds(bounds, { padding: 28, animate: false });
+    leftMapRef.current?.fitBounds(bounds, { padding: 26, animate: false });
+    rightMapRef.current?.fitBounds(bounds, { padding: 26, animate: false });
     isSyncingRef.current = false;
   }, []);
 
-  // Initialize dual MapLibre GL v5 instances once
   useEffect(() => {
     const leftEl = leftContainerRef.current;
     const rightEl = rightContainerRef.current;
@@ -389,7 +406,7 @@ export function SplitMapView({
         container,
         style: CARTO_POSITRON_STYLE_URL,
         bounds: initialBounds,
-        fitBoundsOptions: { padding: 28 },
+        fitBoundsOptions: { padding: 26 },
         attributionControl: { compact: true },
       });
 
@@ -431,6 +448,7 @@ export function SplitMapView({
           latestDayRef.current,
           latestSelectedRef.current,
           latestShowLabelsRef.current,
+          latestShowAllLabelsRef.current,
         );
         loadedCount++;
         if (loadedCount >= 2) {
@@ -520,7 +538,6 @@ export function SplitMapView({
     };
   }, []);
 
-  // Update GeoJSON sources, markers, and fitBounds when switching scenario
   useEffect(() => {
     const activePreset = getRegionPreset(output.params.regionId);
     const updateRegionOnMap = (
@@ -552,7 +569,6 @@ export function SplitMapView({
     setHoverInfo(null);
   }, [output.params.regionId, fitBothToDistricts]);
 
-  // Update commuter flow data & visibility when mobilityOutflow or toggle changes
   useEffect(() => {
     for (const map of [leftMapRef.current, rightMapRef.current]) {
       if (!map || !map.isStyleLoaded()) continue;
@@ -568,7 +584,6 @@ export function SplitMapView({
     }
   }, [flowsGeoJson, showCommuterFlows, mapsReady]);
 
-  // Fast Day 0..91 playback updates on polygons and markers
   useEffect(() => {
     if (leftMapRef.current?.isStyleLoaded()) {
       applyFeatureStatesAndMarkers(
@@ -579,6 +594,7 @@ export function SplitMapView({
         currentDay,
         selectedDistrictId,
         showDistrictLabels,
+        showAllLabels,
       );
     }
     if (rightMapRef.current?.isStyleLoaded()) {
@@ -590,24 +606,21 @@ export function SplitMapView({
         currentDay,
         selectedDistrictId,
         showDistrictLabels,
+        showAllLabels,
       );
     }
-  }, [output, currentDay, selectedDistrictId, showDistrictLabels, mapsReady]);
+  }, [output, currentDay, selectedDistrictId, showDistrictLabels, showAllLabels, mapsReady]);
 
-  // Ensure mobile map resizes cleanly when toggled
   useEffect(() => {
+    if (viewMode !== 'map') return;
     const raf = requestAnimationFrame(() => {
       leftMapRef.current?.resize();
       rightMapRef.current?.resize();
       fitBothToDistricts();
     });
     return () => cancelAnimationFrame(raf);
-  }, [mobileMapStrategy, fitBothToDistricts]);
+  }, [mobileMapStrategy, viewMode, fitBothToDistricts]);
 
-  const reactiveDispatched = useMemo(
-    () => getDispatchedDistrictsForWeek(output, 'reactive', meta.weekIndex),
-    [output, meta.weekIndex],
-  );
   const sennagridDispatched = useMemo(
     () => getDispatchedDistrictsForWeek(output, 'sennagrid', meta.weekIndex),
     [output, meta.weekIndex],
@@ -615,6 +628,19 @@ export function SplitMapView({
 
   const reactiveDayOverflow = output.reactive.dailyCityOverflow[meta.day] ?? 0;
   const sennagridDayOverflow = output.sennagrid.dailyCityOverflow[meta.day] ?? 0;
+
+  const { reactiveBreaches, sennagridBreaches } = useMemo(() => {
+    const n = output.districts.length;
+    const base = meta.day * n;
+    let rCount = 0;
+    let sCount = 0;
+    for (let i = 0; i < n; i++) {
+      const beds = output.districts[i]?.icuBeds ?? 1;
+      if ((output.reactive.districtIcuDemand[base + i] ?? 0) >= beds) rCount++;
+      if ((output.sennagrid.districtIcuDemand[base + i] ?? 0) >= beds) sCount++;
+    }
+    return { reactiveBreaches: rCount, sennagridBreaches: sCount };
+  }, [output, meta.day]);
 
   const renderHoverTooltip = (strategy: StrategyName) => {
     if (!hoverInfo || hoverInfo.strategy !== strategy) return null;
@@ -637,11 +663,11 @@ export function SplitMapView({
           left: Math.min(Math.max(10, hoverInfo.x + 12), 230),
           top: Math.max(10, hoverInfo.y - 12),
         }}
-        className="pointer-events-none absolute z-30 w-56 rounded-lg border border-slate-300 bg-white/96 p-2.5 text-xs shadow-lg"
+        className="pointer-events-none absolute z-30 w-52 rounded-lg border border-slate-200 bg-white/95 p-2.5 text-xs shadow-md"
       >
         <div className="flex items-center justify-between gap-2">
           <span className="font-bold text-[#0f172a]">{district.name}</span>
-          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+          <span className="text-[10px] font-medium text-slate-600">
             {formatZoneLabel(district.zoneType)}
           </span>
         </div>
@@ -651,23 +677,15 @@ export function SplitMapView({
             <span className="font-semibold text-[#0f172a]">{formatInt(activeInf)}</span>
           </div>
           <div className="flex justify-between">
-            <span>ICU load / beds</span>
+            <span>ICU load</span>
             <span className={stressPct >= 100 ? 'font-bold text-[#be123c]' : 'font-semibold text-[#0f172a]'}>
               {formatFixed(icuDemand, 1)} / {district.icuBeds} ({stressPct}%)
             </span>
           </div>
           <div className="flex justify-between">
-            <span>Week {meta.weekNumber} team</span>
-            <span
-              className={
-                treated
-                  ? strategy === 'reactive'
-                    ? 'font-bold text-[#be123c]'
-                    : 'font-bold text-[#0f766e]'
-                  : 'text-slate-500'
-              }
-            >
-              {treated ? 'Dispatched Here' : 'Standby'}
+            <span>Week {meta.weekNumber}</span>
+            <span className={treated ? 'font-semibold text-[#0f766e]' : 'text-slate-600'}>
+              {treated ? 'Team Active' : 'Standby'}
             </span>
           </div>
         </div>
@@ -676,258 +694,247 @@ export function SplitMapView({
   };
 
   return (
-    <div data-tour="split-map" className="overflow-hidden rounded-t-xl border border-slate-200 bg-white shadow-2xs">
-      {/* Map Header & Layer Toggles */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-2.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-sm font-bold text-[#0f172a]">Side-by-Side Spatial ICU Map</h2>
-          <span className="rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-slate-700">
-            Day {meta.day} · {meta.weekLabel}
-          </span>
+    <section
+      aria-label="Spatial district ICU comparison"
+      data-tour="split-map"
+      className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+    >
+      {/* Calm Header: Title + 3-Dot Legend + Map / Watchlist Switch */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h2 className="text-sm font-semibold text-[#0f172a]">
+            District ICU Load · Day {meta.day}
+          </h2>
           {offlineFallback && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-600/30 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-[#92400e]">
-              <WifiOff className="h-3 w-3" aria-hidden="true" />
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#b45309]">
+              <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Offline Basemap</span>
             </span>
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            onClick={onToggleDistrictLabels}
-            aria-pressed={showDistrictLabels}
-            className={`inline-flex min-h-[44px] items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors min-[720px]:min-h-[32px] ${
-              showDistrictLabels
-                ? 'border-teal-600/40 bg-teal-50 text-[#115e59]'
-                : 'border-slate-500 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            {showDistrictLabels ? (
-              <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-            ) : (
-              <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
-            )}
-            <span>Ward Badges</span>
-          </button>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#059669]" aria-hidden="true" />
+              <span>&lt;60% Safe</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#d97706]" aria-hidden="true" />
+              <span>60–99% Strained</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#e11d48]" aria-hidden="true" />
+              <span>≥100% Overflow</span>
+            </span>
+          </div>
 
-          <button
-            type="button"
-            onClick={onToggleCommuterFlows}
-            aria-pressed={showCommuterFlows}
-            className={`inline-flex min-h-[44px] items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors min-[720px]:min-h-[32px] ${
-              showCommuterFlows
-                ? 'border-teal-600/40 bg-teal-50 text-[#115e59]'
-                : 'border-slate-500 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
+          <div
+            role="group"
+            aria-label="Spatial view mode"
+            className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs font-medium"
           >
-            <Network className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>Commuter Flows</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onToggleSyncMaps}
-            aria-pressed={syncMapsLocked}
-            className="hidden min-h-[32px] items-center gap-1 rounded-lg border border-slate-500 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 min-[720px]:inline-flex"
-          >
-            {syncMapsLocked ? (
-              <Link2 className="h-3.5 w-3.5 text-[#0f766e]" aria-hidden="true" />
-            ) : (
-              <Link2Off className="h-3.5 w-3.5 text-[#b45309]" aria-hidden="true" />
-            )}
-            <span>{syncMapsLocked ? 'Sync On' : 'Sync Off'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={fitBothToDistricts}
-            className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-slate-500 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 min-[720px]:min-h-[32px]"
-          >
-            <RotateCcw className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
-            <span>Fit City</span>
-          </button>
+            <button
+              type="button"
+              aria-pressed={viewMode === 'map'}
+              onClick={() => setViewMode('map')}
+              className={`min-h-[44px] rounded-md px-2.5 py-1 transition-all min-[720px]:min-h-[28px] ${
+                viewMode === 'map'
+                  ? 'bg-white font-semibold text-[#0f172a] shadow-2xs'
+                  : 'text-slate-600 hover:text-[#0f172a]'
+              }`}
+            >
+              Map
+            </button>
+            <button
+              type="button"
+              aria-pressed={viewMode === 'watchlist'}
+              onClick={() => setViewMode('watchlist')}
+              className={`min-h-[44px] rounded-md px-2.5 py-1 transition-all min-[720px]:min-h-[28px] ${
+                viewMode === 'watchlist'
+                  ? 'bg-white font-semibold text-[#0f172a] shadow-2xs'
+                  : 'text-slate-600 hover:text-[#0f172a]'
+              }`}
+            >
+              Watchlist
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Mobile Scenario Switch (< 720px) */}
-      <div className="border-b border-slate-200 bg-slate-50 p-2.5 min-[720px]:hidden">
-        <div
-          role="group"
-          aria-label="Select strategy map on mobile"
-          className="grid grid-cols-2 gap-1 rounded-lg border border-slate-500 bg-white p-1"
-        >
-          <button
-            type="button"
-            aria-pressed={mobileMapStrategy === 'reactive'}
-            onClick={() => onSetMobileMapStrategy('reactive')}
-            className={`min-h-[44px] rounded-md px-3 py-1.5 text-xs font-bold transition-colors ${
-              mobileMapStrategy === 'reactive'
-                ? 'bg-rose-50 text-[#9f1239] ring-1 ring-rose-500/40'
-                : 'text-slate-600'
-            }`}
+      {/* Main Content Area: Dual Side-by-Side Maps OR Watchlist Table */}
+      <div className={viewMode === 'watchlist' ? 'hidden' : 'p-5'}>
+        {/* Mobile Strategy Switcher (< 720px) */}
+        <div className="mb-3 min-[720px]:hidden">
+          <div
+            role="group"
+            aria-label="Select map pane on mobile"
+            className="grid grid-cols-2 gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1"
           >
-            Reactive Baseline
-          </button>
-          <button
-            type="button"
-            aria-pressed={mobileMapStrategy === 'sennagrid'}
-            onClick={() => onSetMobileMapStrategy('sennagrid')}
-            className={`min-h-[44px] rounded-md px-3 py-1.5 text-xs font-bold transition-colors ${
-              mobileMapStrategy === 'sennagrid'
-                ? 'bg-teal-50 text-[#115e59] ring-1 ring-teal-600/40'
-                : 'text-slate-600'
-            }`}
-          >
-            SennaGrid Optimized
-          </button>
+            <button
+              type="button"
+              aria-pressed={mobileMapStrategy === 'reactive'}
+              onClick={() => onSetMobileMapStrategy('reactive')}
+              className={`min-h-[44px] rounded-md px-3 py-1.5 text-xs font-semibold ${
+                mobileMapStrategy === 'reactive'
+                  ? 'bg-white text-[#be123c] shadow-2xs'
+                  : 'text-slate-600'
+              }`}
+            >
+              Without SennaGrid
+            </button>
+            <button
+              type="button"
+              aria-pressed={mobileMapStrategy === 'sennagrid'}
+              onClick={() => onSetMobileMapStrategy('sennagrid')}
+              className={`min-h-[44px] rounded-md px-3 py-1.5 text-xs font-semibold ${
+                mobileMapStrategy === 'sennagrid'
+                  ? 'bg-white text-[#0f766e] shadow-2xs'
+                  : 'text-slate-600'
+              }`}
+            >
+              With SennaGrid
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Dual Map Panes */}
-      <div className="grid grid-cols-1 divide-y divide-slate-200 min-[720px]:grid-cols-2 min-[720px]:divide-x min-[720px]:divide-y-0">
-        {/* LEFT: Reactive Baseline */}
-        <div className={mobileMapStrategy === 'reactive' ? 'block' : 'hidden min-[720px]:block'}>
-          <div className="flex min-h-[68px] flex-col justify-between gap-1.5 border-b border-slate-200 bg-rose-50/45 px-3.5 py-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#e11d48]" aria-hidden="true" />
-                <span className="text-xs font-bold text-[#9f1239]">Reactive Baseline</span>
-                <span className="hidden text-[11px] text-slate-600 xl:inline">
-                  (Chases current cases)
-                </span>
-              </div>
-              <span
-                className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-[11px] font-semibold tabular-nums ${
-                  reactiveDayOverflow > 0.05
-                    ? 'border border-rose-500/40 bg-rose-100 text-[#9f1239]'
-                    : 'border border-slate-300 bg-white text-slate-700'
-                }`}
-              >
-                Overflow: {formatFixed(reactiveDayOverflow, 1)} beds
+        <div className="grid grid-cols-1 gap-5 min-[720px]:grid-cols-2">
+          {/* LEFT: Without SennaGrid */}
+          <div className={mobileMapStrategy === 'reactive' ? 'block' : 'hidden min-[720px]:block'}>
+            <div className="mb-2 flex items-baseline justify-between gap-2 text-xs">
+              <span className="font-semibold text-[#0f172a]">Without SennaGrid</span>
+              <span className="font-mono font-medium tabular-nums text-[#be123c]">
+                +{formatFixed(reactiveDayOverflow, 1)} overflow beds · {reactiveBreaches} breached
               </span>
             </div>
 
-            {/* Active Week Dispatched Ward Chips */}
-            <div className="flex flex-wrap items-center gap-1 text-[11px]">
-              <span className="font-medium text-slate-600">Week {meta.weekNumber} teams:</span>
-              {reactiveDispatched.map((w) => (
-                <button
-                  key={w.id}
-                  type="button"
-                  onClick={() => onSelectDistrict(w.id)}
-                  className="rounded border border-rose-500/40 bg-white px-1.5 py-0.5 font-medium text-[#9f1239] transition-colors hover:bg-rose-50"
-                >
-                  {w.name}
-                </button>
-              ))}
+            <div className="relative h-[320px] w-full overflow-hidden rounded-lg border border-slate-200 bg-[#f1f5f9] min-[720px]:h-[340px] min-[1180px]:h-[370px]">
+              <div
+                ref={leftContainerRef}
+                className="h-full w-full"
+                aria-label={`Without SennaGrid reactive map for ${preset.name}`}
+              />
+              {renderHoverTooltip('reactive')}
             </div>
           </div>
 
-          <div className="relative h-[330px] w-full bg-[#eef2f6] min-[720px]:h-[360px] min-[1180px]:h-[395px]">
-            <div
-              ref={leftContainerRef}
-              className="h-full w-full"
-              aria-label={`Reactive Baseline map for ${preset.name}`}
-            />
-            {renderHoverTooltip('reactive')}
-          </div>
-        </div>
-
-        {/* RIGHT: SennaGrid Optimized */}
-        <div className={mobileMapStrategy === 'sennagrid' ? 'block' : 'hidden min-[720px]:block'}>
-          <div className="flex min-h-[68px] flex-col justify-between gap-1.5 border-b border-slate-200 bg-teal-50/50 px-3.5 py-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#0d9488]" aria-hidden="true" />
-                <span className="text-xs font-bold text-[#115e59]">SennaGrid Optimized</span>
-                <span className="hidden text-[11px] text-slate-600 xl:inline">
-                  (Shields hubs &amp; ICU)
-                </span>
-              </div>
-              <span
-                className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-[11px] font-semibold tabular-nums ${
-                  sennagridDayOverflow > 0.05
-                    ? 'border border-amber-500/40 bg-amber-100 text-[#92400e]'
-                    : 'border border-emerald-600/30 bg-emerald-50 text-[#065f46]'
-                }`}
-              >
-                Overflow: {formatFixed(sennagridDayOverflow, 1)} beds
+          {/* RIGHT: With SennaGrid */}
+          <div className={mobileMapStrategy === 'sennagrid' ? 'block' : 'hidden min-[720px]:block'}>
+            <div className="mb-2 flex items-baseline justify-between gap-2 text-xs">
+              <span className="font-semibold text-[#0f766e]">With SennaGrid</span>
+              <span className="font-mono font-medium tabular-nums text-[#0f766e]">
+                {formatFixed(sennagridDayOverflow, 1)} overflow beds · {sennagridBreaches} breached ·{' '}
+                {sennagridDispatched.length} active hubs
               </span>
             </div>
 
-            {/* Active Week Dispatched Ward Chips */}
-            <div className="flex flex-wrap items-center gap-1 text-[11px]">
-              <span className="font-medium text-slate-600">Week {meta.weekNumber} teams:</span>
-              {sennagridDispatched.map((w) => (
-                <button
-                  key={w.id}
-                  type="button"
-                  onClick={() => onSelectDistrict(w.id)}
-                  className="rounded border border-teal-600/40 bg-white px-1.5 py-0.5 font-medium text-[#115e59] transition-colors hover:bg-teal-50"
-                >
-                  {w.name}
-                </button>
-              ))}
+            <div className="relative h-[320px] w-full overflow-hidden rounded-lg border border-slate-200 bg-[#f1f5f9] min-[720px]:h-[340px] min-[1180px]:h-[370px]">
+              <div
+                ref={rightContainerRef}
+                className="h-full w-full"
+                aria-label={`With SennaGrid optimized map for ${preset.name}`}
+              />
+              {renderHoverTooltip('sennagrid')}
             </div>
           </div>
+        </div>
 
-          <div className="relative h-[330px] w-full bg-[#eef2f6] min-[720px]:h-[360px] min-[1180px]:h-[395px]">
-            <div
-              ref={rightContainerRef}
-              className="h-full w-full"
-              aria-label={`SennaGrid Optimized map for ${preset.name}`}
-            />
-            {renderHoverTooltip('sennagrid')}
+        {/* Quiet Single-Line Map Utility Controls */}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (!showDistrictLabels) {
+                  onToggleDistrictLabels();
+                  setShowAllLabels(false);
+                } else if (!showAllLabels) {
+                  setShowAllLabels(true);
+                } else {
+                  onToggleDistrictLabels();
+                  setShowAllLabels(false);
+                }
+              }}
+              className="min-h-[44px] font-medium hover:text-[#0f172a] min-[720px]:min-h-0"
+            >
+              Labels: {!showDistrictLabels ? 'Off' : showAllLabels ? 'All Wards' : 'Key Wards'}
+            </button>
+            <span aria-hidden="true" className="text-slate-300">
+              ·
+            </span>
+            <button
+              type="button"
+              onClick={onToggleCommuterFlows}
+              aria-pressed={showCommuterFlows}
+              className="min-h-[44px] font-medium hover:text-[#0f172a] min-[720px]:min-h-0"
+            >
+              Commuter Flows: {showCommuterFlows ? 'On' : 'Off'}
+            </button>
+            <span aria-hidden="true" className="hidden text-slate-300 min-[720px]:inline">
+              ·
+            </span>
+            <button
+              type="button"
+              onClick={onToggleSyncMaps}
+              aria-pressed={syncMapsLocked}
+              className="hidden font-medium hover:text-[#0f172a] min-[720px]:inline"
+            >
+              Sync Pan: {syncMapsLocked ? 'On' : 'Off'}
+            </button>
+            <span aria-hidden="true" className="text-slate-300">
+              ·
+            </span>
+            <button
+              type="button"
+              onClick={fitBothToDistricts}
+              className="min-h-[44px] font-medium hover:text-[#0f172a] min-[720px]:min-h-0"
+            >
+              Reset Framing
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label htmlFor="sg-district-select" className="font-medium text-slate-600">
+              Inspect Ward:
+            </label>
+            <select
+              id="sg-district-select"
+              value={selectedDistrictId ?? ''}
+              onChange={(e) => onSelectDistrict(e.target.value || null)}
+              className="min-h-[44px] rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-[#0f172a] min-[720px]:min-h-[26px]"
+            >
+              <option value="">None (click ward)</option>
+              {output.districts.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name} ({d.icuBeds} beds)
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
 
-      {/* Clear Visual Legend Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-700">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-          <span className="font-semibold text-slate-600">ICU Stress (Demand / Beds):</span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-xs border border-slate-400 bg-[#ecfdf5]" aria-hidden="true" />
-            <span>0–35% Calm</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-xs border border-slate-400 bg-[#bae6fd]" aria-hidden="true" />
-            <span>35–59% Moderate</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-xs border border-amber-500 bg-[#fde68a]" aria-hidden="true" />
-            <span>60–99% Strained</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-xs border border-rose-600 bg-[#f43f5e]" aria-hidden="true" />
-            <span>100%+ ICU Overflow</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-xs border-2 border-[#0f766e] bg-white" aria-hidden="true" />
-            <span>Active Team Outline</span>
-          </span>
-        </div>
+      {viewMode === 'watchlist' && (
+        <DistrictWatchlistGrid
+          output={output}
+          selectedDistrictId={selectedDistrictId}
+          currentDay={currentDay}
+          onSelectDistrict={onSelectDistrict}
+        />
+      )}
 
-        <div className="flex items-center gap-2">
-          <label htmlFor="sg-district-select" className="text-xs font-semibold text-slate-600">
-            Inspect Ward:
-          </label>
-          <select
-            id="sg-district-select"
-            value={selectedDistrictId ?? ''}
-            onChange={(e) => onSelectDistrict(e.target.value || null)}
-            className="min-h-[44px] rounded-lg border border-slate-500 bg-white px-2.5 py-1 text-xs font-semibold text-[#0f172a] min-[720px]:min-h-[32px]"
-          >
-            <option value="">All wards (ranked list)</option>
-            {output.districts.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name} ({d.icuBeds} beds)
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-    </div>
+      {/* Contextual Ward Comparison Strip (appears cleanly only when a ward is clicked/selected) */}
+      {selectedDistrictId && (
+        <DistrictInspector
+          output={output}
+          selectedDistrictId={selectedDistrictId}
+          currentDay={currentDay}
+          onClose={() => onSelectDistrict(null)}
+        />
+      )}
+
+      {/* Docked Slim Playback Strip */}
+      {children}
+    </section>
   );
 }

@@ -2,11 +2,11 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { ControlBar } from './components/layout/ControlBar';
+import { HeaderBar } from './components/layout/HeaderBar';
 import { MethodologyView } from './components/methodology/MethodologyView';
 import { InteractiveTour } from './components/onboarding/InteractiveTour';
 import { DispatchSchedule } from './components/schedule/DispatchSchedule';
 import { SwapTracePanel } from './components/schedule/SwapTracePanel';
-import { DistrictInspector } from './components/simulator/DistrictInspector';
 import { EpidemicCharts } from './components/simulator/EpidemicCharts';
 import { KpiStrip } from './components/simulator/KpiStrip';
 import { SplitMapView } from './components/simulator/SplitMapView';
@@ -24,24 +24,15 @@ function isEditableElement(target: EventTarget | null): boolean {
 
 function InitialLoadingSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Loading initial optimization" className="space-y-4">
-      <div className="h-16 animate-pulse rounded-xl border border-slate-200 bg-white" />
-      <div className="grid grid-cols-1 gap-3 min-[560px]:grid-cols-2 min-[1180px]:grid-cols-4">
-        {[0, 1, 2, 3].map((idx) => (
-          <div
-            key={idx}
-            className="h-32 animate-pulse rounded-xl border border-slate-200 bg-white p-4"
-          >
-            <div className="h-3 w-28 rounded bg-slate-200" />
-            <div className="mt-4 h-7 w-36 rounded bg-slate-200" />
-            <div className="mt-4 h-3 w-full rounded bg-slate-100" />
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 min-[1180px]:grid-cols-12">
-        <div className="h-[460px] animate-pulse rounded-xl border border-slate-200 bg-white min-[1180px]:col-span-9" />
-        <div className="h-[460px] animate-pulse rounded-xl border border-slate-200 bg-white min-[1180px]:col-span-3" />
+    <div
+      aria-busy="true"
+      aria-label="Loading initial optimization"
+      className="grid grid-cols-1 gap-6 lg:grid-cols-[256px_minmax(0,1fr)]"
+    >
+      <div className="h-96 animate-pulse rounded-xl border border-slate-200 bg-white" />
+      <div className="space-y-5">
+        <div className="h-28 animate-pulse rounded-xl border border-slate-200 bg-white" />
+        <div className="h-[460px] animate-pulse rounded-xl border border-slate-200 bg-white" />
       </div>
     </div>
   );
@@ -70,7 +61,6 @@ export default function App() {
     setCurrentDay,
     stepDay,
     jumpToPeakDay,
-    playFromStart,
     togglePlaying,
     setPlaying,
     setPlaybackSpeed,
@@ -105,7 +95,6 @@ export default function App() {
       setCurrentDay: s.setCurrentDay,
       stepDay: s.stepDay,
       jumpToPeakDay: s.jumpToPeakDay,
-      playFromStart: s.playFromStart,
       togglePlaying: s.togglePlaying,
       setPlaying: s.setPlaying,
       setPlaybackSpeed: s.setPlaybackSpeed,
@@ -193,7 +182,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8fafc] text-[#0f172a]">
-      <ControlBar />
+      <HeaderBar />
 
       <div className="sr-only" aria-live="polite">
         {isOptimizing
@@ -203,11 +192,11 @@ export default function App() {
             : ''}
       </div>
 
-      <main className="mx-auto w-full max-w-[1440px] flex-1 space-y-4 px-4 py-4 min-[720px]:px-6">
+      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6">
         {error && (
           <div
             role="alert"
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-[#9f1239]"
+            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-[#9f1239]"
           >
             <div className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -218,10 +207,10 @@ export default function App() {
             <button
               type="button"
               onClick={() => void runOptimization()}
-              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-rose-500/40 bg-white px-3 py-1.5 font-semibold text-[#9f1239] hover:bg-rose-100"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 py-1.5 font-semibold text-[#9f1239] hover:bg-rose-100 sm:min-h-[34px]"
             >
               <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Retry Optimization</span>
+              <span>Retry</span>
             </button>
           </div>
         )}
@@ -235,31 +224,31 @@ export default function App() {
                 id="panel-simulator"
                 role="tabpanel"
                 aria-labelledby="tab-simulator"
-                className="space-y-4"
+                className="grid grid-cols-1 gap-6 lg:grid-cols-[256px_minmax(0,1fr)] lg:items-start"
               >
-                <KpiStrip
-                  output={output}
-                  isOptimizing={isOptimizing}
-                  onInspectGates={() => setActiveTab('methodology')}
-                />
+                <ControlBar />
 
-                {/* Unified 12-Column Spatial Stage: Map + Attached Timeline + Docked Watchlist/Inspector */}
-                <div className="grid grid-cols-1 gap-4 min-[1180px]:grid-cols-12 min-[1180px]:items-stretch">
-                  <div className="min-[1180px]:col-span-9">
-                    <SplitMapView
-                      output={output}
-                      currentDay={currentDay}
-                      selectedDistrictId={selectedDistrictId}
-                      syncMapsLocked={syncMapsLocked}
-                      showCommuterFlows={showCommuterFlows}
-                      showDistrictLabels={showDistrictLabels}
-                      mobileMapStrategy={mobileMapStrategy}
-                      onSelectDistrict={selectDistrict}
-                      onToggleSyncMaps={toggleSyncMaps}
-                      onToggleCommuterFlows={toggleCommuterFlows}
-                      onToggleDistrictLabels={toggleDistrictLabels}
-                      onSetMobileMapStrategy={setMobileMapStrategy}
-                    />
+                <div className="min-w-0 space-y-5">
+                  <KpiStrip
+                    output={output}
+                    isOptimizing={isOptimizing}
+                    onInspectGates={() => setActiveTab('methodology')}
+                  />
+
+                  <SplitMapView
+                    output={output}
+                    currentDay={currentDay}
+                    selectedDistrictId={selectedDistrictId}
+                    syncMapsLocked={syncMapsLocked}
+                    showCommuterFlows={showCommuterFlows}
+                    showDistrictLabels={showDistrictLabels}
+                    mobileMapStrategy={mobileMapStrategy}
+                    onSelectDistrict={selectDistrict}
+                    onToggleSyncMaps={toggleSyncMaps}
+                    onToggleCommuterFlows={toggleCommuterFlows}
+                    onToggleDistrictLabels={toggleDistrictLabels}
+                    onSetMobileMapStrategy={setMobileMapStrategy}
+                  >
                     <TimelinePlayer
                       output={output}
                       currentDay={currentDay}
@@ -268,28 +257,18 @@ export default function App() {
                       onSetCurrentDay={setCurrentDay}
                       onStepDay={stepDay}
                       onJumpToPeak={jumpToPeakDay}
-                      onPlayFromStart={playFromStart}
                       onTogglePlaying={togglePlaying}
                       onSetPlaying={setPlaying}
                       onSetPlaybackSpeed={setPlaybackSpeed}
                     />
-                  </div>
+                  </SplitMapView>
 
-                  <div className="min-[1180px]:col-span-3">
-                    <DistrictInspector
-                      output={output}
-                      selectedDistrictId={selectedDistrictId}
-                      currentDay={currentDay}
-                      onSelectDistrict={selectDistrict}
-                    />
-                  </div>
+                  <EpidemicCharts
+                    output={output}
+                    currentDay={currentDay}
+                    onSelectDay={setCurrentDay}
+                  />
                 </div>
-
-                <EpidemicCharts
-                  output={output}
-                  currentDay={currentDay}
-                  onSelectDay={setCurrentDay}
-                />
               </div>
             )}
 
@@ -298,7 +277,7 @@ export default function App() {
                 id="panel-schedule"
                 role="tabpanel"
                 aria-labelledby="tab-schedule"
-                className="space-y-4"
+                className="mx-auto max-w-[1200px] space-y-6"
               >
                 <DispatchSchedule
                   output={output}
@@ -313,6 +292,7 @@ export default function App() {
                 id="panel-methodology"
                 role="tabpanel"
                 aria-labelledby="tab-methodology"
+                className="mx-auto max-w-[1200px]"
               >
                 <MethodologyView output={output} />
               </div>
@@ -321,17 +301,9 @@ export default function App() {
         )}
       </main>
 
-      <footer className="border-t border-slate-200 bg-white px-4 py-3 text-xs text-slate-500 min-[720px]:px-6">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-2">
-          <span>
-            SennaGrid runs 100% client-side in your browser via Web Worker (deterministic RK4
-            solver, zero backend or paid API keys).
-          </span>
-          <span>
-            Synthetic urban benchmarks (Metro Tropica &amp; Harbor Corridor) for public health
-            planning research, not clinical directives.
-          </span>
-        </div>
+      <footer className="py-5 text-center text-[11px] text-slate-600">
+        100% Client-Side RK4 Solver · Synthetic Urban Benchmarks (Metro Tropica &amp; Harbor
+        Corridor) for Research, Not Clinical Directives.
       </footer>
 
       <InteractiveTour

@@ -4,11 +4,6 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -21,7 +16,6 @@ import {
   formatFixed,
   formatInt,
   type DailyChartPoint,
-  type RadarChartDatum,
 } from '../../lib/viewModels';
 
 interface EpidemicChartsProps {
@@ -33,7 +27,7 @@ interface EpidemicChartsProps {
 interface CustomLineTooltipProps {
   active?: boolean;
   payload?: Array<{ payload?: DailyChartPoint }>;
-  mode: 'infections' | 'icu_total' | 'icu_overflow';
+  mode: 'overflow' | 'infections';
 }
 
 function CustomLineTooltip({ active, payload, mode }: CustomLineTooltipProps) {
@@ -42,53 +36,30 @@ function CustomLineTooltip({ active, payload, mode }: CustomLineTooltipProps) {
   if (!point) return null;
 
   return (
-    <div className="rounded-lg border border-slate-300 bg-white/98 p-2.5 font-mono text-xs tabular-nums shadow-lg">
-      <div className="mb-1.5 font-sans font-bold text-[#0f172a]">
-        Day {point.day} (Week {point.week})
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-xs tabular-nums shadow-md">
+      <div className="mb-1 font-sans font-semibold text-[#0f172a]">
+        Day {point.day} (W{point.week})
       </div>
-      {mode === 'infections' ? (
-        <div className="space-y-1">
+      {mode === 'overflow' ? (
+        <div className="space-y-0.5">
           <div className="flex items-center justify-between gap-4 text-[#be123c]">
-            <span>Reactive Baseline</span>
-            <span className="font-semibold">{formatInt(point.reactiveActive)} cases</span>
-          </div>
-          <div className="flex items-center justify-between gap-4 text-[#0f766e]">
-            <span>SennaGrid Optimized</span>
-            <span className="font-semibold">{formatInt(point.sennagridActive)} cases</span>
-          </div>
-        </div>
-      ) : mode === 'icu_overflow' ? (
-        <div className="space-y-1">
-          <div className="flex items-center justify-between gap-4 text-[#be123c]">
-            <span>Reactive Overflow</span>
+            <span>Without SennaGrid</span>
             <span className="font-semibold">{formatFixed(point.reactiveOverflow, 1)} beds</span>
           </div>
           <div className="flex items-center justify-between gap-4 text-[#0f766e]">
-            <span>SennaGrid Overflow</span>
+            <span>With SennaGrid</span>
             <span className="font-semibold">{formatFixed(point.sennagridOverflow, 1)} beds</span>
           </div>
         </div>
       ) : (
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <div className="flex items-center justify-between gap-4 text-[#be123c]">
-            <span>Reactive ICU Demand</span>
-            <span className="font-semibold">{formatFixed(point.reactiveIcu, 1)} beds</span>
+            <span>Without SennaGrid</span>
+            <span className="font-semibold">{formatInt(point.reactiveActive)} cases</span>
           </div>
           <div className="flex items-center justify-between gap-4 text-[#0f766e]">
-            <span>SennaGrid ICU Demand</span>
-            <span className="font-semibold">{formatFixed(point.sennagridIcu, 1)} beds</span>
-          </div>
-          <div className="flex items-center justify-between gap-4 border-t border-slate-200 pt-1 text-slate-600">
-            <span>Aggregate City Beds</span>
-            <span>{point.totalIcuCapacity} beds</span>
-          </div>
-          <div className="flex items-center justify-between gap-4 text-[#be123c]">
-            <span>District Breach (Reactive)</span>
-            <span>{formatFixed(point.reactiveOverflow, 1)} beds</span>
-          </div>
-          <div className="flex items-center justify-between gap-4 text-[#0f766e]">
-            <span>District Breach (SennaGrid)</span>
-            <span>{formatFixed(point.sennagridOverflow, 1)} beds</span>
+            <span>With SennaGrid</span>
+            <span className="font-semibold">{formatInt(point.sennagridActive)} cases</span>
           </div>
         </div>
       )}
@@ -96,42 +67,19 @@ function CustomLineTooltip({ active, payload, mode }: CustomLineTooltipProps) {
   );
 }
 
-interface CustomRadarTooltipProps {
-  active?: boolean;
-  payload?: Array<{ payload?: RadarChartDatum }>;
-}
-
-function CustomRadarTooltip({ active, payload }: CustomRadarTooltipProps) {
-  if (!active || !payload || payload.length === 0) return null;
-  const item = payload[0]?.payload;
-  if (!item) return null;
-
-  return (
-    <div className="max-w-xs rounded-lg border border-slate-300 bg-white/98 p-2.5 text-xs shadow-lg">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="font-bold text-[#0f172a]">{item.axis}</span>
-        <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
-          {item.score.toFixed(1)} / 100
-        </span>
-      </div>
-      <p className="mt-1 text-[11px] leading-snug text-slate-600">{item.description}</p>
-    </div>
-  );
-}
-
 export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChartsProps) {
-  const [icuChartMode, setIcuChartMode] = useState<'overflow' | 'total'>('overflow');
+  const [chartTab, setChartTab] = useState<'overflow' | 'infections'>('overflow');
 
   const dailySeries = useMemo(() => (output ? buildDailyChartSeries(output) : []), [output]);
-  const radarSeries = useMemo(() => (output ? buildRadarSeries(output) : []), [output]);
+  const strategyBars = useMemo(() => (output ? buildRadarSeries(output) : []), [output]);
 
   if (!output || dailySeries.length === 0) {
     return (
       <section
-        aria-label="Epidemic trajectory charts"
-        className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-600 shadow-2xs"
+        aria-label="Epidemic trajectory and fit"
+        className="rounded-xl border border-slate-200 bg-white p-6 text-center text-xs text-slate-600"
       >
-        No simulation curves available yet.
+        No simulation trajectory available yet.
       </section>
     );
   }
@@ -148,291 +96,226 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
     }
   };
 
-  const hasAnyOverflow =
-    output.reactive.peakIcuOverflow > 0.05 || output.sennagrid.peakIcuOverflow > 0.05;
-  const effectiveIcuMode = hasAnyOverflow ? icuChartMode : 'total';
-
-  const maxTotalIcuVal = Math.max(
-    output.totalIcuCapacity * 1.08,
-    output.reactive.peakIcuDemand * 1.1,
-    output.sennagrid.peakIcuDemand * 1.1,
-    10,
-  );
-
   return (
     <section
-      aria-label="Epidemic trajectory and strategy scorecard"
-      className="grid grid-cols-1 gap-4 min-[1180px]:grid-cols-12"
+      aria-label="Epidemic overflow trajectory and strategy fit"
+      className="rounded-xl border border-slate-200 bg-white p-5"
     >
-      {/* Chart 1: ICU Hospital Pressure (Overflow Beds vs Aggregate Demand) */}
-      <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs min-[1180px]:col-span-4">
-        <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-bold text-[#0f172a]">
-              {effectiveIcuMode === 'overflow'
-                ? 'Daily Hospital ICU Overflow (Breach Beds)'
-                : 'City-Wide ICU Demand vs Total Beds'}
-            </h2>
-            <p className="text-xs text-slate-500">
-              {effectiveIcuMode === 'overflow'
-                ? 'Sum of excess ICU patients in wards exceeding local bed capacity'
-                : `Aggregate demand across all wards (city total: ${output.totalIcuCapacity} beds)`}
-            </p>
-          </div>
+      <div className="grid grid-cols-1 gap-8 min-[960px]:grid-cols-12 min-[960px]:items-start">
+        {/* Left: Clean OWID Trajectory Chart */}
+        <article className="min-[960px]:col-span-7">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold text-[#0f172a]">
+                {chartTab === 'overflow' ? 'ICU Overflow Trajectory' : 'Active Infections Trajectory'}
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-600">
+                {chartTab === 'overflow'
+                  ? 'Day 0 to Day 91 excess ICU beds above local ward capacity'
+                  : 'Day 0 to Day 91 city-wide active cases (click chart to jump day)'}
+              </p>
+            </div>
 
-          <div
-            role="group"
-            aria-label="ICU chart metric"
-            className="inline-flex rounded-lg border border-slate-400 bg-slate-100 p-0.5 text-[11px] font-semibold"
-          >
-            <button
-              type="button"
-              aria-pressed={effectiveIcuMode === 'overflow'}
-              onClick={() => setIcuChartMode('overflow')}
-              className={`min-h-[36px] rounded-md px-2 py-0.5 transition-all min-[720px]:min-h-[26px] ${
-                effectiveIcuMode === 'overflow'
-                  ? 'bg-white text-[#0f766e] shadow-2xs ring-1 ring-slate-300'
-                  : 'text-slate-600 hover:text-[#0f172a]'
-              }`}
-            >
-              Overflow
-            </button>
-            <button
-              type="button"
-              aria-pressed={effectiveIcuMode === 'total'}
-              onClick={() => setIcuChartMode('total')}
-              className={`min-h-[36px] rounded-md px-2 py-0.5 transition-all min-[720px]:min-h-[26px] ${
-                effectiveIcuMode === 'total'
-                  ? 'bg-white text-[#0f766e] shadow-2xs ring-1 ring-slate-300'
-                  : 'text-slate-600 hover:text-[#0f172a]'
-              }`}
-            >
-              City Total
-            </button>
-          </div>
-        </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-3 text-xs font-medium">
+                <span className="inline-flex items-center gap-1.5 text-[#be123c]">
+                  <span
+                    className="h-0.5 w-3 border-t-2 border-dashed border-[#e11d48]"
+                    aria-hidden="true"
+                  />
+                  <span>
+                    Reactive:{' '}
+                    <strong className="font-mono tabular-nums">
+                      {chartTab === 'overflow'
+                        ? `+${formatFixed(output.reactive.peakIcuOverflow, 1)}`
+                        : formatInt(output.reactive.peakActiveInfections)}
+                    </strong>
+                  </span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-[#0f766e]">
+                  <span className="h-0.5 w-3 bg-[#0f766e]" aria-hidden="true" />
+                  <span>
+                    SennaGrid:{' '}
+                    <strong className="font-mono tabular-nums">
+                      {chartTab === 'overflow'
+                        ? formatFixed(output.sennagrid.peakIcuOverflow, 1)
+                        : formatInt(output.sennagrid.peakActiveInfections)}
+                    </strong>
+                  </span>
+                </span>
+              </div>
 
-        <div className="h-60 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            {effectiveIcuMode === 'overflow' ? (
-              <AreaChart
-                data={dailySeries}
-                margin={{ top: 8, right: 10, left: -8, bottom: 2 }}
-                onClick={handleChartClick}
+              <div
+                role="group"
+                aria-label="Trajectory chart view"
+                className="inline-flex rounded-md border border-slate-200 bg-slate-100 p-0.5 text-[11px] font-medium"
               >
-                <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="day"
-                  stroke="#64748b"
-                  tick={{ fill: '#64748b', fontSize: 11 }}
-                  tickFormatter={(v: number) => `D${v}`}
-                />
-                <YAxis stroke="#64748b" tick={{ fill: '#64748b', fontSize: 11 }} width={44} />
-                <Tooltip content={<CustomLineTooltip mode="icu_overflow" />} />
-                <ReferenceLine x={currentDay} stroke="#0f172a" strokeDasharray="3 3" />
-                <Area
-                  type="monotone"
-                  dataKey="reactiveOverflow"
-                  name="Reactive Overflow"
-                  stroke="#e11d48"
-                  strokeWidth={2}
-                  strokeDasharray="5 3"
-                  fill="#fecdd3"
-                  fillOpacity={0.5}
-                  isAnimationActive={false}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="sennagridOverflow"
-                  name="SennaGrid Overflow"
-                  stroke="#0f766e"
-                  strokeWidth={2.25}
-                  fill="#99f6e4"
-                  fillOpacity={0.45}
-                  isAnimationActive={false}
-                />
-              </AreaChart>
-            ) : (
-              <AreaChart
-                data={dailySeries}
-                margin={{ top: 8, right: 10, left: -8, bottom: 2 }}
-                onClick={handleChartClick}
-              >
-                <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="day"
-                  stroke="#64748b"
-                  tick={{ fill: '#64748b', fontSize: 11 }}
-                  tickFormatter={(v: number) => `D${v}`}
-                />
-                <YAxis
-                  stroke="#64748b"
-                  domain={[0, Math.ceil(maxTotalIcuVal)]}
-                  tick={{ fill: '#64748b', fontSize: 11 }}
-                  width={44}
-                />
-                <Tooltip content={<CustomLineTooltip mode="icu_total" />} />
-                <ReferenceLine
-                  y={output.totalIcuCapacity}
-                  stroke="#be123c"
-                  strokeDasharray="6 3"
-                  strokeWidth={1.5}
-                />
-                <ReferenceLine x={currentDay} stroke="#0f172a" strokeDasharray="3 3" />
-                <Area
-                  type="monotone"
-                  dataKey="reactiveIcu"
-                  name="Reactive ICU Demand"
-                  stroke="#e11d48"
-                  strokeWidth={2}
-                  strokeDasharray="5 3"
-                  fill="#ffe4e6"
-                  fillOpacity={0.4}
-                  isAnimationActive={false}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="sennagridIcu"
-                  name="SennaGrid ICU Demand"
-                  stroke="#0f766e"
-                  strokeWidth={2.25}
-                  fill="#ccfbf1"
-                  fillOpacity={0.45}
-                  isAnimationActive={false}
-                />
-              </AreaChart>
-            )}
-          </ResponsiveContainer>
-        </div>
-      </article>
-
-      {/* Chart 2: Active Infections Trajectory */}
-      <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs min-[1180px]:col-span-4">
-        <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-bold text-[#0f172a]">Active Infections Trajectory</h2>
-            <p className="text-xs text-slate-500">Click chart to scrub day playhead</p>
+                <button
+                  type="button"
+                  aria-pressed={chartTab === 'overflow'}
+                  onClick={() => setChartTab('overflow')}
+                  className={`min-h-[44px] rounded px-2 py-0.5 transition-all min-[720px]:min-h-[24px] ${
+                    chartTab === 'overflow'
+                      ? 'bg-white font-semibold text-[#0f172a] shadow-2xs'
+                      : 'text-slate-600 hover:text-[#0f172a]'
+                  }`}
+                >
+                  Overflow
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={chartTab === 'infections'}
+                  onClick={() => setChartTab('infections')}
+                  className={`min-h-[44px] rounded px-2 py-0.5 transition-all min-[720px]:min-h-[24px] ${
+                    chartTab === 'infections'
+                      ? 'bg-white font-semibold text-[#0f172a] shadow-2xs'
+                      : 'text-slate-600 hover:text-[#0f172a]'
+                  }`}
+                >
+                  Cases
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-3 text-xs font-semibold">
-            <span className="inline-flex items-center gap-1.5 text-[#be123c]">
-              <span className="h-0.5 w-3.5 border-t-2 border-dashed border-[#e11d48]" aria-hidden="true" />
-              Reactive
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-[#0f766e]">
-              <span className="h-0.5 w-3.5 bg-[#0f766e]" aria-hidden="true" />
-              SennaGrid
-            </span>
-          </div>
-        </div>
 
-        <div className="h-60 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={dailySeries}
-              margin={{ top: 8, right: 10, left: -4, bottom: 2 }}
-              onClick={handleChartClick}
-            >
-              <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />
-              <XAxis
-                dataKey="day"
-                stroke="#64748b"
-                tick={{ fill: '#64748b', fontSize: 11 }}
-                tickFormatter={(v: number) => `D${v}`}
-              />
-              <YAxis
-                stroke="#64748b"
-                tick={{ fill: '#64748b', fontSize: 11 }}
-                width={48}
-                tickFormatter={(v: number) =>
-                  v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v))
-                }
-              />
-              <Tooltip content={<CustomLineTooltip mode="infections" />} />
-              <ReferenceLine x={currentDay} stroke="#0f172a" strokeDasharray="3 3" />
-              <Area
-                type="monotone"
-                dataKey="reactiveActive"
-                name="Reactive Baseline"
-                stroke="#e11d48"
-                strokeWidth={2}
-                strokeDasharray="5 3"
-                fill="#ffe4e6"
-                fillOpacity={0.35}
-                isAnimationActive={false}
-              />
-              <Area
-                type="monotone"
-                dataKey="sennagridActive"
-                name="SennaGrid Optimized"
-                stroke="#0f766e"
-                strokeWidth={2.25}
-                fill="#ccfbf1"
-                fillOpacity={0.4}
-                isAnimationActive={false}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </article>
-
-      {/* Chart 3: 5-Axis Strategy Scorecard (Radar + Explicit Numeric Bars) */}
-      <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs min-[1180px]:col-span-4">
-        <div className="mb-2">
-          <h2 className="text-sm font-bold text-[#0f172a]">5-Axis Strategy Scorecard (0–100)</h2>
-          <p className="text-xs text-slate-500">
-            Engine-normalized SennaGrid gain relative to Reactive Baseline
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 items-center gap-2 sm:grid-cols-12">
-          <div className="h-52 w-full sm:col-span-7">
+          <div className="h-52 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarSeries} cx="50%" cy="50%" outerRadius="68%">
-                <PolarGrid stroke="#cbd5e1" />
-                <PolarAngleAxis
-                  dataKey="axis"
-                  tick={{ fill: '#475569', fontSize: 10 }}
-                />
-                <PolarRadiusAxis
-                  angle={90}
-                  domain={[0, 100]}
-                  tickCount={3}
-                  tick={{ fill: '#64748b', fontSize: 9 }}
-                />
-                <Tooltip content={<CustomRadarTooltip />} />
-                <Radar
-                  name="SennaGrid Score"
-                  dataKey="score"
-                  stroke="#0f766e"
-                  strokeWidth={2}
-                  fill="#0d9488"
-                  fillOpacity={0.25}
-                  isAnimationActive={false}
-                />
-              </RadarChart>
+              {chartTab === 'overflow' ? (
+                <AreaChart
+                  data={dailySeries}
+                  margin={{ top: 6, right: 12, left: -12, bottom: 2 }}
+                  onClick={handleChartClick}
+                >
+                  <CartesianGrid horizontal vertical={false} stroke="#f1f5f9" />
+                  <XAxis
+                    dataKey="day"
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    ticks={[0, 30, 60, 91]}
+                    tickFormatter={(v: number) => `Day ${v}`}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    width={42}
+                  />
+                  <Tooltip content={<CustomLineTooltip mode="overflow" />} />
+                  <ReferenceLine x={currentDay} stroke="#94a3b8" strokeDasharray="3 3" />
+                  <Area
+                    type="monotone"
+                    dataKey="reactiveOverflow"
+                    stroke="#e11d48"
+                    strokeWidth={2}
+                    strokeDasharray="5 4"
+                    fill="#ffe4e6"
+                    fillOpacity={0.25}
+                    isAnimationActive={false}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="sennagridOverflow"
+                    stroke="#0f766e"
+                    strokeWidth={2.25}
+                    fill="#ccfbf1"
+                    fillOpacity={0.3}
+                    isAnimationActive={false}
+                  />
+                </AreaChart>
+              ) : (
+                <AreaChart
+                  data={dailySeries}
+                  margin={{ top: 6, right: 12, left: -6, bottom: 2 }}
+                  onClick={handleChartClick}
+                >
+                  <CartesianGrid horizontal vertical={false} stroke="#f1f5f9" />
+                  <XAxis
+                    dataKey="day"
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    ticks={[0, 30, 60, 91]}
+                    tickFormatter={(v: number) => `Day ${v}`}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    width={48}
+                    tickFormatter={(v: number) =>
+                      v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v))
+                    }
+                  />
+                  <Tooltip content={<CustomLineTooltip mode="infections" />} />
+                  <ReferenceLine x={currentDay} stroke="#94a3b8" strokeDasharray="3 3" />
+                  <Area
+                    type="monotone"
+                    dataKey="reactiveActive"
+                    stroke="#e11d48"
+                    strokeWidth={2}
+                    strokeDasharray="5 4"
+                    fill="#ffe4e6"
+                    fillOpacity={0.22}
+                    isAnimationActive={false}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="sennagridActive"
+                    stroke="#0f766e"
+                    strokeWidth={2.25}
+                    fill="#ccfbf1"
+                    fillOpacity={0.28}
+                    isAnimationActive={false}
+                  />
+                </AreaChart>
+              )}
             </ResponsiveContainer>
           </div>
+        </article>
 
-          <div className="space-y-2 sm:col-span-5">
-            {radarSeries.map((item) => (
-              <div key={item.key} className="space-y-0.5">
-                <div className="flex justify-between text-[11px]">
-                  <span className="font-medium text-slate-700">{item.axis}</span>
-                  <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
-                    {item.score.toFixed(0)}
-                  </span>
+        {/* Right: Clean 5-Bar Strategy Fit */}
+        <article className="min-[960px]:col-span-5">
+          <h2 className="mb-4 text-sm font-semibold text-[#0f172a]">
+            Strategy Fit (vs Reactive Baseline)
+          </h2>
+          <div className="space-y-3.5">
+            {strategyBars.map((item) => {
+              const displayScore =
+                item.score >= 10 || item.score === 0
+                  ? Math.round(item.score)
+                  : item.score.toFixed(1);
+              const isTradeoffZero =
+                item.key === 'casesControl' && output.impactSummary.casesAverted < 0;
+
+              return (
+                <div key={item.key} title={item.description}>
+                  <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
+                    <span className="font-medium text-slate-700">{item.axis}</span>
+                    <span className="font-mono font-semibold tabular-nums text-[#0f172a]">
+                      {isTradeoffZero ? (
+                        <span className="font-normal text-[#b45309]">
+                          0 (+{Math.abs(output.impactSummary.casesAvertedPct).toFixed(2)}% trade-off)
+                        </span>
+                      ) : (
+                        displayScore
+                      )}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-[#0f766e]"
+                      style={{
+                        width: `${item.score > 0 ? Math.min(100, Math.max(1.5, item.score)) : 0}%`,
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className="h-full rounded-full bg-[#0d9488]"
-                    style={{ width: `${Math.max(item.score > 0 ? 5 : 0, item.score)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        </div>
-      </article>
+        </article>
+      </div>
     </section>
   );
 }

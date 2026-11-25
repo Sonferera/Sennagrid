@@ -1,14 +1,5 @@
 import type { OptimizationOutput } from '@sennagrid/engine';
-import {
-  ChevronLeft,
-  ChevronRight,
-  CloudRain,
-  Flame,
-  Pause,
-  Play,
-  RotateCcw,
-  Thermometer,
-} from 'lucide-react';
+import { Pause, Play } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { findCrisisFocusDay, getTimelineMeta } from '../../lib/viewModels';
 import type { PlaybackSpeed } from '../../store/useSimulationStore';
@@ -21,7 +12,6 @@ interface TimelinePlayerProps {
   onSetCurrentDay: (day: number) => void;
   onStepDay: (delta: number) => void;
   onJumpToPeak: () => void;
-  onPlayFromStart: () => void;
   onTogglePlaying: () => void;
   onSetPlaying: (playing: boolean) => void;
   onSetPlaybackSpeed: (speed: PlaybackSpeed) => void;
@@ -35,9 +25,7 @@ export function TimelinePlayer({
   isPlaying,
   playbackSpeed,
   onSetCurrentDay,
-  onStepDay,
   onJumpToPeak,
-  onPlayFromStart,
   onTogglePlaying,
   onSetPlaying,
   onSetPlaybackSpeed,
@@ -75,113 +63,32 @@ export function TimelinePlayer({
   }, [isPlaying, playbackSpeed, meta.maxDay, onSetCurrentDay, onSetPlaying]);
 
   return (
-    <section
+    <div
       aria-label="Simulation timeline playback"
       data-tour="timeline-player"
-      className="rounded-b-xl border border-t-0 border-slate-200 bg-white px-4 py-3 shadow-2xs"
+      className="flex flex-wrap items-center gap-3 border-t border-slate-100 bg-white px-5 py-3 min-[720px]:flex-nowrap"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            onClick={onTogglePlaying}
-            aria-label={isPlaying ? 'Pause simulation playback' : 'Play simulation playback'}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg bg-[#0f766e] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#0d9488] min-[720px]:min-h-[34px]"
-          >
-            {isPlaying ? (
-              <Pause className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
-            ) : (
-              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
-            )}
-            <span>{isPlaying ? 'Pause' : 'Play'}</span>
-          </button>
+      {/* Play / Pause Circular Button */}
+      <button
+        type="button"
+        onClick={onTogglePlaying}
+        aria-label={isPlaying ? 'Pause outbreak replay' : 'Play outbreak replay'}
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0f766e] text-white transition-colors hover:bg-[#115e59] min-[720px]:h-8 min-[720px]:w-8"
+      >
+        {isPlaying ? (
+          <Pause className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+        ) : (
+          <Play className="ml-0.5 h-3.5 w-3.5 fill-current" aria-hidden="true" />
+        )}
+      </button>
 
-          <button
-            type="button"
-            onClick={onPlayFromStart}
-            title="Replay outbreak from Day 0"
-            className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-slate-500 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 min-[720px]:min-h-[34px]"
-          >
-            <RotateCcw className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
-            <span>Replay D0</span>
-          </button>
+      {/* Monospace Day Readout */}
+      <span className="shrink-0 font-mono text-xs font-semibold tabular-nums text-[#0f172a]">
+        Day {meta.day} / {meta.maxDay}
+      </span>
 
-          <button
-            type="button"
-            onClick={() => onStepDay(-1)}
-            disabled={meta.day <= 0}
-            aria-label="Previous day"
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-slate-500 bg-white text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40 min-[720px]:min-h-[34px] min-[720px]:min-w-[34px]"
-          >
-            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onStepDay(1)}
-            disabled={meta.day >= meta.maxDay}
-            aria-label="Next day"
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-slate-500 bg-white text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40 min-[720px]:min-h-[34px] min-[720px]:min-w-[34px]"
-          >
-            <ChevronRight className="h-4 w-4" aria-hidden="true" />
-          </button>
-
-          <button
-            type="button"
-            onClick={onJumpToPeak}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-rose-500/50 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-[#9f1239] transition-colors hover:bg-rose-100 min-[720px]:min-h-[34px]"
-          >
-            <Flame className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span>Peak Surge (Day {crisisDay})</span>
-          </button>
-
-          <div
-            role="group"
-            aria-label="Playback speed"
-            className="inline-flex items-center gap-0.5 rounded-lg border border-slate-500 bg-slate-100 p-0.5"
-          >
-            {SPEEDS.map((speed) => (
-              <button
-                key={speed}
-                type="button"
-                aria-pressed={playbackSpeed === speed}
-                onClick={() => onSetPlaybackSpeed(speed)}
-                className={`min-h-[44px] min-w-[44px] rounded-md px-2 font-mono text-xs font-semibold tabular-nums transition-all min-[720px]:min-h-[28px] min-[720px]:min-w-[36px] ${
-                  playbackSpeed === speed
-                    ? 'bg-white text-[#0f766e] shadow-2xs ring-1 ring-slate-300'
-                    : 'text-slate-600 hover:text-[#0f172a]'
-                }`}
-              >
-                {speed}x
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Active Day & Climate Badges */}
-        <div className="flex flex-wrap items-center gap-2.5 font-mono text-xs tabular-nums">
-          <span className="rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1 font-semibold text-[#0f172a]">
-            Day {meta.day}/{meta.maxDay}{' '}
-            <span className="font-normal text-[#0f766e]">({meta.weekLabel})</span>
-          </span>
-
-          {output.params.diseaseMode === 'vector_seir_sei' && meta.climatePoint && (
-            <div className="flex items-center gap-2.5 text-slate-600">
-              <span className="inline-flex items-center gap-1">
-                <Thermometer className="h-3.5 w-3.5 text-[#b45309]" aria-hidden="true" />
-                {meta.climatePoint.temperatureC.toFixed(1)}°C
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <CloudRain className="h-3.5 w-3.5 text-[#0f766e]" aria-hidden="true" />
-                7d Rain {meta.climatePoint.rollingRain7dMm.toFixed(0)} mm
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Scrubber Slider */}
-      <div className="mt-1">
+      {/* Minimalist Scrubber */}
+      <div className="min-w-[140px] flex-1">
         <label htmlFor="sg-timeline-scrubber" className="sr-only">
           Simulation day scrubber from Day 0 to Day {meta.maxDay}
         </label>
@@ -193,15 +100,42 @@ export function TimelinePlayer({
           step={1}
           value={meta.day}
           onChange={(e) => onSetCurrentDay(Number(e.target.value))}
-          className="sg-range -my-1.5"
+          className="sg-range -my-2.5"
           aria-valuetext={`Day ${meta.day} of ${meta.maxDay}, ${meta.weekLabel}`}
         />
-        <div className="flex justify-between font-mono text-[10px] tabular-nums text-slate-500">
-          <span>Day 0 (Week 1)</span>
-          <span>Peak Surge: Day {crisisDay}</span>
-          <span>Day {meta.maxDay} (End Week {meta.totalWeeks})</span>
+      </div>
+
+      {/* Peak Surge Jump + Speed Selector */}
+      <div className="flex shrink-0 items-center gap-3">
+        <button
+          type="button"
+          onClick={onJumpToPeak}
+          title={`Jump to Reactive Peak Surge (Day ${crisisDay})`}
+          className="min-h-[44px] rounded-md px-2 text-xs font-medium text-[#0f172a] transition-colors hover:bg-slate-100 min-[720px]:min-h-[28px]"
+        >
+          Jump: <span className="font-semibold text-[#be123c]">Peak (D{crisisDay})</span>
+        </button>
+
+        <span aria-hidden="true" className="h-3.5 w-px bg-slate-200" />
+
+        <div role="group" aria-label="Playback speed" className="flex items-center gap-1">
+          {SPEEDS.map((speed) => (
+            <button
+              key={speed}
+              type="button"
+              aria-pressed={playbackSpeed === speed}
+              onClick={() => onSetPlaybackSpeed(speed)}
+              className={`min-h-[44px] min-w-[44px] rounded px-1.5 font-mono text-xs tabular-nums transition-colors min-[720px]:min-h-[26px] min-[720px]:min-w-[28px] ${
+                playbackSpeed === speed
+                  ? 'font-bold text-[#0f172a] underline decoration-[#0f766e] decoration-2 underline-offset-4'
+                  : 'text-slate-600 hover:text-[#0f172a]'
+              }`}
+            >
+              {speed}x
+            </button>
+          ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
