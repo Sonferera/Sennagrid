@@ -1,5 +1,5 @@
 import type { OptimizationOutput } from '@sennagrid/engine';
-import { Pause, Play } from 'lucide-react';
+import { Flame, Pause, Play } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { findCrisisFocusDay, getTimelineMeta } from '../../lib/viewModels';
 import type { PlaybackSpeed } from '../../store/useSimulationStore';
@@ -106,28 +106,33 @@ export function TimelinePlayer({
       </div>
 
       {/* Peak Surge Jump + Speed Selector */}
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex shrink-0 items-center gap-2.5">
         <button
           type="button"
           onClick={onJumpToPeak}
           title={`Jump to Reactive Peak Surge (Day ${crisisDay})`}
-          className="min-h-[44px] rounded-md px-2 text-[13px] font-medium text-[#1c1917] transition-colors hover:bg-[#eee9df] min-[720px]:min-h-[30px]"
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[#8c857b] bg-[#fbf9f5] px-3 py-1.5 text-[13px] font-medium text-[#1c1917] shadow-2xs transition-colors hover:bg-[#eee9df] active:scale-[0.99] min-[720px]:min-h-[34px]"
         >
-          Jump: <span className="font-semibold text-[#be123c]">Peak (D{crisisDay})</span>
+          <Flame className="h-3.5 w-3.5 shrink-0 text-[#be123c]" aria-hidden="true" />
+          <span>
+            Jump: <strong className="font-semibold text-[#be123c]">Peak (D{crisisDay})</strong>
+          </span>
         </button>
 
-        <span aria-hidden="true" className="h-4 w-px bg-[#d6d0c4]" />
-
-        <div role="group" aria-label="Playback speed" className="flex items-center gap-1">
+        <div
+          role="group"
+          aria-label="Playback speed"
+          className="inline-flex items-center gap-0.5 rounded-lg border border-[#8c857b]/80 bg-[#eee9df] p-0.5"
+        >
           {SPEEDS.map((speed) => (
             <button
               key={speed}
               type="button"
               aria-pressed={playbackSpeed === speed}
               onClick={() => onSetPlaybackSpeed(speed)}
-              className={`min-h-[44px] min-w-[44px] rounded px-1.5 font-mono text-[13px] tabular-nums transition-colors min-[720px]:min-h-[28px] min-[720px]:min-w-[30px] ${
+              className={`min-h-[44px] min-w-[44px] rounded-md px-2 font-mono text-[13px] tabular-nums transition-all min-[720px]:min-h-[28px] min-[720px]:min-w-[34px] ${
                 playbackSpeed === speed
-                  ? 'font-bold text-[#1c1917] underline decoration-[#0f766e] decoration-2 underline-offset-4'
+                  ? 'bg-[#fbf9f5] font-bold text-[#1c1917] shadow-2xs ring-1 ring-[#8c857b]/40'
                   : 'text-[#57534e] hover:text-[#1c1917]'
               }`}
             >

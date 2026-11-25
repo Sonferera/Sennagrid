@@ -1,5 +1,5 @@
 import type { OptimizationOutput, StrategyName } from '@sennagrid/engine';
-import { WifiOff } from 'lucide-react';
+import { Eye, EyeOff, Link2, Link2Off, Network, RotateCcw, WifiOff } from 'lucide-react';
 import maplibregl, {
   type ExpressionSpecification,
   type LngLatBoundsLike,
@@ -839,9 +839,9 @@ export function SplitMapView({
           </div>
         </div>
 
-        {/* Quiet Single-Line Map Utility Controls */}
-        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 text-[13px] text-[#57534e]">
-          <div className="flex flex-wrap items-center gap-3">
+        {/* Tactile Map Toolbar Buttons */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5 text-[13px]">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => {
@@ -855,41 +855,62 @@ export function SplitMapView({
                   setShowAllLabels(false);
                 }
               }}
-              className="min-h-[44px] font-medium hover:text-[#1c1917] min-[720px]:min-h-0"
+              aria-pressed={showDistrictLabels}
+              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium shadow-2xs transition-colors active:scale-[0.99] min-[720px]:min-h-[34px] ${
+                showDistrictLabels
+                  ? 'border-[#0f766e] bg-[#edf6f4] text-[#115e59] hover:bg-[#e1efec]'
+                  : 'border-[#8c857b] bg-[#fbf9f5] text-[#44403c] hover:bg-[#eee9df]'
+              }`}
             >
-              Labels: {!showDistrictLabels ? 'Off' : showAllLabels ? 'All Wards' : 'Key Wards'}
+              {showDistrictLabels ? (
+                <Eye className="h-4 w-4 shrink-0" aria-hidden="true" />
+              ) : (
+                <EyeOff className="h-4 w-4 shrink-0" aria-hidden="true" />
+              )}
+              <span>
+                Labels: {!showDistrictLabels ? 'Off' : showAllLabels ? 'All Wards' : 'Key Wards'}
+              </span>
             </button>
-            <span aria-hidden="true" className="text-[#c7c0b3]">
-              ·
-            </span>
+
             <button
               type="button"
               onClick={onToggleCommuterFlows}
               aria-pressed={showCommuterFlows}
-              className="min-h-[44px] font-medium hover:text-[#1c1917] min-[720px]:min-h-0"
+              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium shadow-2xs transition-colors active:scale-[0.99] min-[720px]:min-h-[34px] ${
+                showCommuterFlows
+                  ? 'border-[#0f766e] bg-[#edf6f4] text-[#115e59] hover:bg-[#e1efec]'
+                  : 'border-[#8c857b] bg-[#fbf9f5] text-[#44403c] hover:bg-[#eee9df]'
+              }`}
             >
-              Commuter Flows: {showCommuterFlows ? 'On' : 'Off'}
+              <Network className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Commuter Flows: {showCommuterFlows ? 'On' : 'Off'}</span>
             </button>
-            <span aria-hidden="true" className="hidden text-[#c7c0b3] min-[720px]:inline">
-              ·
-            </span>
+
             <button
               type="button"
               onClick={onToggleSyncMaps}
               aria-pressed={syncMapsLocked}
-              className="hidden font-medium hover:text-[#1c1917] min-[720px]:inline"
+              className={`hidden min-h-[34px] items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium shadow-2xs transition-colors active:scale-[0.99] min-[720px]:inline-flex ${
+                syncMapsLocked
+                  ? 'border-[#0f766e] bg-[#edf6f4] text-[#115e59] hover:bg-[#e1efec]'
+                  : 'border-[#8c857b] bg-[#fbf9f5] text-[#44403c] hover:bg-[#eee9df]'
+              }`}
             >
-              Sync Pan: {syncMapsLocked ? 'On' : 'Off'}
+              {syncMapsLocked ? (
+                <Link2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+              ) : (
+                <Link2Off className="h-4 w-4 shrink-0" aria-hidden="true" />
+              )}
+              <span>Sync Pan: {syncMapsLocked ? 'On' : 'Off'}</span>
             </button>
-            <span aria-hidden="true" className="text-[#c7c0b3]">
-              ·
-            </span>
+
             <button
               type="button"
               onClick={fitBothToDistricts}
-              className="min-h-[44px] font-medium hover:text-[#1c1917] min-[720px]:min-h-0"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[#8c857b] bg-[#fbf9f5] px-3 py-1.5 font-medium text-[#1c1917] shadow-2xs transition-colors hover:bg-[#eee9df] active:scale-[0.99] min-[720px]:min-h-[34px]"
             >
-              Reset Framing
+              <RotateCcw className="h-4 w-4 shrink-0 text-[#57534e]" aria-hidden="true" />
+              <span>Reset Framing</span>
             </button>
           </div>
 
@@ -901,7 +922,7 @@ export function SplitMapView({
               id="sg-district-select"
               value={selectedDistrictId ?? ''}
               onChange={(e) => onSelectDistrict(e.target.value || null)}
-              className="min-h-[44px] rounded-md border border-[#d6d0c4] bg-[#fbf9f5] px-2.5 py-1 text-[13px] font-medium text-[#1c1917] min-[720px]:min-h-[30px]"
+              className="min-h-[44px] rounded-lg border border-[#8c857b] bg-[#fbf9f5] px-3 py-1.5 text-[13px] font-medium text-[#1c1917] shadow-2xs transition-colors hover:bg-[#eee9df] min-[720px]:min-h-[34px]"
             >
               <option value="">None (click ward)</option>
               {output.districts.map((d) => (
