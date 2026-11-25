@@ -81,8 +81,41 @@ function computePolygonCentroid(ring: readonly [number, number][]): [number, num
 }
 
 /**
- * Generates contiguous, non-overlapping, RFC 7946 counter-clockwise polygons
- * by perturbing shared vertices within a bounded jitter ratio (< 0.22).
+ * Builds shared, subdivided administrative boundary points between two grid corners
+ * so adjacent polygons share identical vertices (reversed) with zero gaps or overlaps.
+ */
+function buildSubdividedEdge(
+  p0: [number, number],
+  p1: [number, number],
+  seed: number,
+  edgeKeyA: number,
+  edgeKeyB: number,
+  edgeType: number,
+): [number, number][] {
+  const dx = p1[0] - p0[0];
+  const dy = p1[1] - p0[1];
+  // Normal vector perpendicular to canonical edge p0 -> p1
+  const nx = -dy;
+  const ny = dx;
+
+  const amp1 = deterministicHash(seed + 101, edgeKeyA, edgeKeyB, edgeType * 2) * 0.085;
+  const amp2 = deterministicHash(seed + 211, edgeKeyA, edgeKeyB, edgeType * 2 + 1) * 0.085;
+
+  const m1: [number, number] = [
+    Number((p0[0] + dx * 0.33 + nx * amp1).toFixed(5)),
+    Number((p0[1] + dy * 0.33 + ny * amp1).toFixed(5)),
+  ];
+  const m2: [number, number] = [
+    Number((p0[0] + dx * 0.67 + nx * amp2).toFixed(5)),
+    Number((p0[1] + dy * 0.67 + ny * amp2).toFixed(5)),
+  ];
+
+  return [p0, m1, m2, p1];
+}
+
+/**
+ * Generates contiguous, non-overlapping, RFC 7946 counter-clockwise organic ward polygons
+ * while preserving exact cell centroids for deterministic mobility matrix calibration.
  */
 export function buildContiguousDistrictMesh(spec: MeshSpec): {
   districts: DistrictProperties[];
@@ -109,6 +142,25 @@ export function buildContiguousDistrictMesh(spec: MeshSpec): {
     vertices.push(rowVerts);
   }
 
+  // Precompute canonical horizontal edges (west -> east) and vertical edges (south -> north)
+  const horizEdges: [number, number][][][] = [];
+  for (let r = 0; r <= rows; r++) {
+    const rowEdges: [number, number][][] = [];
+    for (let c = 0; c < cols; c++) {
+      rowEdges.push(buildSubdividedEdge(vertices[r]![c]!, vertices[r]![c + 1]!, seed, r, c, 1));
+    }
+    horizEdges.push(rowEdges);
+  }
+
+  const vertEdges: [number, number][][][] = [];
+  for (let r = 0; r < rows; r++) {
+    const colEdges: [number, number][][] = [];
+    for (let c = 0; c <= cols; c++) {
+      colEdges.push(buildSubdividedEdge(vertices[r]![c]!, vertices[r + 1]![c]!, seed, r, c, 2));
+    }
+    vertEdges.push(colEdges);
+  }
+
   const districts: DistrictProperties[] = [];
   const features: DistrictFeature[] = [];
 
@@ -120,8 +172,24 @@ export function buildContiguousDistrictMesh(spec: MeshSpec): {
       const tr = vertices[r + 1]![c + 1]!;
       const tl = vertices[r + 1]![c]!;
 
-      const ring: [number, number][] = [bl, br, tr, tl, bl];
-      const centroid = computePolygonCentroid(ring);
+      // Preserve exact canonical 4-corner centroid so mobility calibration stays bit-identical
+      const baseRing: [number, number][] = [bl, br, tr, tl, bl];
+      const centroid = computePolygonCentroid(baseRing);
+
+      // Stitch organic counter-clockwise ring from shared canonical edges:
+      // bottom (W->E), right (S->N), top reversed (E->W), left reversed (N->S)
+      const bottom = horizEdges[r]![c]!;
+      const right = vertEdges[r]![c + 1]!;
+      const topRev = [...horizEdges[r + 1]![c]!].reverse();
+      const leftRev = [...vertEdges[r]![c]!].reverse();
+
+      const organicRing: [number, number][] = [
+        ...bottom.slice(0, -1),
+        ...right.slice(0, -1),
+        ...topRev.slice(0, -1),
+        ...leftRev.slice(0, -1),
+        bottom[0]!,
+      ];
 
       const props: DistrictProperties = {
         id: cell.id,
@@ -140,7 +208,7 @@ export function buildContiguousDistrictMesh(spec: MeshSpec): {
         properties: props,
         geometry: {
           type: 'Polygon',
-          coordinates: [ring],
+          coordinates: [organicRing],
         },
       });
     }

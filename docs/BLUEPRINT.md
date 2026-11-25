@@ -414,20 +414,20 @@ export type WorkerResponse =
 - **Latest Request Wins:** Client worker menyimpan `latestRequestId`. Saat request baru dimulai, promise request lama di-resolve dengan `null`; respons dengan `requestId !== latestRequestId` diabaikan. `terminate()` juga resolve pending request dengan `null` dan menghentikan worker.
 
 ### 5.2 Synchronized Split-Screen MapLibre (`SplitMapView.tsx`)
-- Style URL: `https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json` (fallback graceful: `background-color: #090d16` dengan batas poligon kontras tinggi bila style eksternal terblokir).
-- **Camera Lock Tanpa Infinite Loop:** Gunakan flag `isSyncingCameraRef` + `map.jumpTo({ center, zoom, bearing, pitch })` pada event `move` dari masing-masing instance `Map`.
-- **Update 60 FPS pada Timeline Scrubber:** Gunakan `map.setFeatureState({ source: 'districts', id }, { stress, treated })` (menggunakan `promoteId: 'id'`) sehingga scrub hari 0–91 tidak melakukan `setData` berulang dan tetap halus 60 FPS.
+- Style URL: `https://basemaps.cartocdn.com/gl/positron-gl-style/style.json` (fallback graceful: `background-color: #eef2f6` light cartographic canvas bila style eksternal terblokir).
+- **Camera Lock & Tight Framing:** `fitBounds` otomatis membungkus batas poligon kota; flag `isSyncingRef` + `map.jumpTo({ center, zoom, bearing, pitch })` mengunci kamera kedua peta tanpa feedback loop.
+- **Update 60 FPS pada Timeline Scrubber:** Gunakan `map.setFeatureState({ source: 'sennagrid-districts', id }, { stress, treated, selected })` (`promoteId: 'id'`) disertai lencana status distrik di centroid dan garis koridor mobilitas komuter opsional.
 - **Visual Encoding:**
-  - Fill color (`stress = H_i / C_ICU_i`): `#0f172a` (aman) $\rightarrow$ `#f59e0b` (waspada $\ge 0.6$) $\rightarrow$ `#e11d48` (kritis/kolaps $\ge 1.0$).
-  - Outline distrik intervensi aktif pada minggu `Math.min(12, Math.floor(currentDay / 7))`: Left map `#fb7185` (2.5px), Right map `#22d3ee` (2.5px).
+  - Fill color (`stress = H_i / C_ICU_i`): `#ecfdf5` (aman) -> `#bae6fd` -> `#fde68a` (waspada >= 60%) -> `#fb923c` -> `#f43f5e` (kolaps >= 100%).
+  - Outline distrik intervensi aktif pada minggu `Math.min(12, Math.floor(currentDay / 7))`: Left map `#e11d48` (3px), Right map `#0f766e` (3px), dengan halo seleksi di bawah layer intervensi agar garis aktif tidak tertutup.
 
 ### 5.3 Operational Export Contract (`src/services/export.ts`)
 - **Full-run JSON:** menyertakan parameter, climate, district, schedule, assignments, swap trace, policy gates, `impactSummary`, `impactRadar`, dan daily curves. Seluruh output harus tetap serializable menjadi JSON.
 - **Dispatch CSV:** mempertahankan satu row per assignment dan kolom dispatch yang ada. Metrik radar dan aggregate impact tidak menjadi kolom CSV.
 
 ### 5.4 Visual & Aesthetics Guidelines
-- Palet warna: Background `#090d16`, Card `#0f172a`, Inset `#162033`, Subtle Border `#1e293b`, Interactive Control Border `#64748b` (`>= 3:1` WCAG AA), Reactive `#fb7185` (Rose), SennaGrid `#22d3ee` (Cyan), Pass `#34d399` (Emerald), Trade-off / Warning `#fbbf24` (Amber).
-- Tipografi: `IBM Plex Sans` untuk UI, `IBM Plex Mono` (`font-mono tabular-nums`) untuk semua metrik, koordinat, dan jadwal (lihat juga [DESIGN_SPEC.md](./DESIGN_SPEC.md)).
+- Palet warna (Clean Editorial Light): Canvas `#f8fafc`, Card `#ffffff`, Inset `#f1f5f9`, Subtle Border `#e2e8f0`, Interactive Control Border `#64748b` (`4.76:1` WCAG AA), Primary Ink `#0f172a` (`17.85:1`), Reactive `#be123c` / `#e11d48` (Rose), SennaGrid `#0f766e` / `#0d9488` (Teal), Warning `#b45309` (Amber).
+- Tipografi: `Plus Jakarta Sans` untuk UI & judul, `IBM Plex Mono` (`font-mono tabular-nums`) untuk metrik, koordinat, dan jadwal (lihat juga [DESIGN_SPEC.md](./DESIGN_SPEC.md)).
 - **Strict No-Emoji Policy:** Gunakan hanya ikon `lucide-react`.
 
 ---

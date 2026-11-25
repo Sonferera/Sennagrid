@@ -28,16 +28,16 @@ export function TabNav() {
     },
     {
       id: 'schedule',
-      label: 'Dispatch Schedule',
+      label: 'Dispatch Plan',
       icon: CalendarRange,
-      badge: output ? `${assignmentCount} rows` : undefined,
+      badge: output ? `${assignmentCount}` : undefined,
       badgeTone: 'neutral',
     },
     {
       id: 'methodology',
-      label: 'Methodology & Math',
+      label: 'Model & Gates',
       icon: BookOpenCheck,
-      badge: gateSummary ? `${gateSummary.overallStatus} ${gateSummary.passedCount}/${gateSummary.totalGates}` : undefined,
+      badge: gateSummary ? `${gateSummary.passedCount}/${gateSummary.totalGates}` : undefined,
       badgeTone:
         gateSummary?.overallStatus === 'PASS'
           ? 'pass'
@@ -49,28 +49,31 @@ export function TabNav() {
     },
   ];
 
-  const getBadgeStyle = (tone: 'neutral' | 'pass' | 'review' | 'fail' = 'neutral') => {
+  const getBadgeStyle = (
+    isActive: boolean,
+    tone: 'neutral' | 'pass' | 'review' | 'fail' = 'neutral',
+  ) => {
+    if (isActive) {
+      return 'bg-teal-50 text-[#115e59] border border-teal-600/30';
+    }
     switch (tone) {
       case 'pass':
-        return 'bg-[#082f23] text-[#6ee7b7] border border-emerald-500/40';
+        return 'bg-emerald-50 text-[#065f46] border border-emerald-600/30';
       case 'review':
-        return 'bg-[#2e1f07] text-[#fcd34d] border border-amber-500/40';
+        return 'bg-amber-50 text-[#92400e] border border-amber-600/30';
       case 'fail':
-        return 'bg-[#3b111c] text-[#fda4af] border border-rose-500/40';
+        return 'bg-rose-50 text-[#9f1239] border border-rose-600/30';
       default:
-        return 'bg-[#162033] text-slate-300 border border-slate-600/80';
+        return 'bg-white text-slate-600 border border-slate-300';
     }
   };
 
   return (
-    <nav
-      aria-label="Workspace navigation"
-      className="border-b border-slate-800 bg-[#0b1120]"
-    >
+    <nav aria-label="Workspace navigation">
       <div
         role="tablist"
         aria-label="SennaGrid workspace views"
-        className="mx-auto flex max-w-[1440px] flex-wrap items-center gap-1 px-4 py-1.5 min-[720px]:px-6"
+        className="inline-flex flex-wrap items-center gap-1 rounded-lg border border-slate-300 bg-slate-100 p-1"
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -84,20 +87,20 @@ export function TabNav() {
               aria-selected={isActive}
               aria-controls={`panel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
-              className={`inline-flex min-h-[44px] items-center gap-2 rounded-md px-3.5 py-2 text-sm font-medium transition-colors ${
+              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all min-[720px]:min-h-[34px] ${
                 isActive
-                  ? 'bg-[#0f172a] text-cyan-300 ring-1 ring-inset ring-cyan-400/60'
-                  : 'text-slate-300 hover:bg-[#162033] hover:text-slate-100'
+                  ? 'bg-white text-[#0f172a] shadow-xs ring-1 ring-slate-300'
+                  : 'text-slate-600 hover:text-[#0f172a]'
               }`}
             >
               <Icon
-                className={`h-4 w-4 shrink-0 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`}
+                className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-[#0f766e]' : 'text-slate-500'}`}
                 aria-hidden="true"
               />
               <span>{tab.label}</span>
               {tab.badge && (
                 <span
-                  className={`rounded px-1.5 py-0.5 font-mono text-[11px] tabular-nums ${getBadgeStyle(tab.badgeTone)}`}
+                  className={`rounded-full px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums ${getBadgeStyle(isActive, tab.badgeTone)}`}
                 >
                   {tab.badge}
                 </span>

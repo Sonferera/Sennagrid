@@ -1,24 +1,24 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 :root {
-  --sg-canvas: #090d16;
-  --sg-surface: #0f172a;
-  --sg-inset: #162033;
-  --sg-border-subtle: #1e293b;
+  --sg-canvas: #f8fafc;
+  --sg-surface: #ffffff;
+  --sg-inset: #f1f5f9;
+  --sg-border-subtle: #e2e8f0;
   --sg-border-control: #64748b;
-  --sg-text-primary: #f1f5f9;
-  --sg-text-secondary: #cbd5e1;
-  --sg-text-muted: #94a3b8;
-  --sg-cyan: #22d3ee;
-  --sg-rose: #fb7185;
-  --sg-emerald: #34d399;
-  --sg-amber: #fbbf24;
-  color-scheme: dark;
+  --sg-text-primary: #0f172a;
+  --sg-text-secondary: #475569;
+  --sg-text-muted: #64748b;
+  --sg-teal: #0f766e;
+  --sg-teal-bright: #0d9488;
+  --sg-rose: #be123c;
+  --sg-amber: #b45309;
+  color-scheme: light;
 }
 
 @layer base {
@@ -46,7 +46,7 @@
   }
 
   :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-    outline: 2px solid var(--sg-cyan);
+    outline: 2px solid var(--sg-teal-bright);
     outline-offset: 2px;
   }
 }
@@ -55,6 +55,7 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Clean accessible range input with 44px vertical touch target */
 .sg-range {
   -webkit-appearance: none;
   appearance: none;
@@ -66,79 +67,137 @@
 .sg-range::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 9999px;
-  background: #334155;
+  background: #e2e8f0;
   border: 1px solid #64748b;
 }
 
 .sg-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
-  margin-top: -8px;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
   border-radius: 9999px;
-  background: #22d3ee;
-  border: 2px solid #090d16;
-  box-shadow: 0 0 0 1px #67e8f9;
+  background: #0f766e;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.28), 0 0 0 1px #0f766e;
   transition: transform 150ms ease, background-color 150ms ease;
 }
 
 .sg-range:hover:not(:disabled)::-webkit-slider-thumb {
-  background: #67e8f9;
-  transform: scale(1.06);
+  background: #0d9488;
+  transform: scale(1.08);
 }
 
 .sg-range::-moz-range-track {
   height: 6px;
   border-radius: 9999px;
-  background: #334155;
+  background: #e2e8f0;
   border: 1px solid #64748b;
 }
 
 .sg-range::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 9999px;
-  background: #22d3ee;
-  border: 2px solid #090d16;
-  box-shadow: 0 0 0 1px #67e8f9;
+  background: #0f766e;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.28), 0 0 0 1px #0f766e;
   transition: transform 150ms ease, background-color 150ms ease;
 }
 
 .sg-range:hover:not(:disabled)::-moz-range-thumb {
-  background: #67e8f9;
-  transform: scale(1.06);
+  background: #0d9488;
+  transform: scale(1.08);
 }
 
-/* Dark theme harmonization for MapLibre controls */
+/* On-map ward status pill markers */
+.sg-ward-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 4.5px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.93);
+  border: 1px solid #64748b;
+  color: #0f172a;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.sg-ward-marker:hover {
+  transform: scale(1.07);
+  z-index: 20;
+}
+
+.sg-ward-marker[data-band="overflow"] {
+  background: #fff1f2;
+  border-color: #be123c;
+  color: #9f1239;
+}
+
+.sg-ward-marker[data-band="strained"] {
+  background: #fffbeb;
+  border-color: #b45309;
+  color: #92400e;
+}
+
+.sg-ward-marker[data-selected="true"] {
+  border-width: 2px;
+  border-color: #0f172a;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.18);
+  z-index: 25;
+}
+
+.sg-ward-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  display: none;
+}
+
+.sg-ward-marker[data-treated="reactive"] .sg-ward-dot {
+  display: inline-block;
+  background: #e11d48;
+}
+
+.sg-ward-marker[data-treated="sennagrid"] .sg-ward-dot {
+  display: inline-block;
+  background: #0d9488;
+}
+
+/* Clean MapLibre controls on light Positron basemap */
 .maplibregl-ctrl-attrib {
-  background-color: rgba(9, 13, 22, 0.85) !important;
-  color: #94a3b8 !important;
+  background-color: rgba(255, 255, 255, 0.86) !important;
+  color: #475569 !important;
   font-size: 10px !important;
 }
 
 .maplibregl-ctrl-attrib a {
-  color: #cbd5e1 !important;
+  color: #0f172a !important;
 }
 
 .maplibregl-ctrl-group {
-  background: #0f172a !important;
+  background: #ffffff !important;
   border: 1px solid #64748b !important;
-  box-shadow: none !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
 }
 
 .maplibregl-ctrl-group button {
-  background-color: #0f172a !important;
-  color: #f1f5f9 !important;
-  border-color: #334155 !important;
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
 }
 
 .maplibregl-ctrl-group button:hover {
-  background-color: #162033 !important;
-}
-
-.maplibregl-ctrl-icon {
-  filter: invert(0.92);
+  background-color: #f1f5f9 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

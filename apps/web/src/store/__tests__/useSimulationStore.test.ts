@@ -9,7 +9,7 @@ import {
 } from '@sennagrid/engine';
 import { describe, expect, it } from 'vitest';
 import { HARBOR_CORRIDOR_PRESET, METRO_TROPICA_PRESET } from '../../data/regions';
-import { findReactivePeakIcuDay } from '../../lib/viewModels';
+import { findCrisisFocusDay, findReactivePeakIcuDay } from '../../lib/viewModels';
 import type { OptimizerWorkerClient } from '../../workers/optimizerClient';
 import { createSimulationStore } from '../useSimulationStore';
 
@@ -37,7 +37,7 @@ function createSyncMockWorkerClient(): OptimizerWorkerClient {
 }
 
 describe('useSimulationStore lifecycle and orchestration', () => {
-  it('runs initial optimization immediately with fallback climate without blocking on live weather', async () => {
+  it('initializes immediately on Peak Season benchmark focused at crisis day while prefetching live weather', async () => {
     const weatherDeferred = createDeferred<ClimateSeries>();
     let workerRuns = 0;
 
@@ -52,16 +52,17 @@ describe('useSimulationStore lifecycle and orchestration', () => {
       }),
     });
 
-    // initialize() must resolve even while live weather fetch is still pending.
     await store.getState().initialize();
     const afterInit = store.getState();
     expect(afterInit.output).not.toBeNull();
+    expect(afterInit.climateMode).toBe('seasonal_benchmark');
     expect(afterInit.climate?.source).toBe('fallback_climatology');
+    expect(afterInit.currentDay).toBe(findCrisisFocusDay(afterInit.output!));
     expect(afterInit.isOptimizing).toBe(false);
     expect(afterInit.weatherRefreshPending).toBe(true);
     expect(workerRuns).toBe(1);
 
-    // When Open-Meteo later resolves, store upgrades climate and re-runs cleanly.
+    // Resolve background Open-Meteo prefetch; user stays on Peak Season until they toggle Live Weather.
     const liveClimate: ClimateSeries = {
       ...getFallbackClimateSeries(
         'metro_tropica',
@@ -69,15 +70,17 @@ describe('useSimulationStore lifecycle and orchestration', () => {
         METRO_TROPICA_PRESET.anchorLng,
       ),
       source: 'open_meteo',
-      meanTemp14d: 30.2,
+      meanTemp14d: 27.4,
     };
     weatherDeferred.resolve(liveClimate);
     await new Promise((r) => setTimeout(r, 20));
+    expect(store.getState().liveClimateByRegion.metro_tropica?.source).toBe('open_meteo');
+    expect(workerRuns).toBe(1);
 
-    const afterUpgrade = store.getState();
-    expect(afterUpgrade.climate?.source).toBe('open_meteo');
-    expect(afterUpgrade.output?.climate.source).toBe('open_meteo');
-    expect(afterUpgrade.weatherRefreshPending).toBe(false);
+    // Switching explicitly to live_weather runs the prefetched Open-Meteo climate immediately.
+    await store.getState().setClimateMode('live_weather');
+    expect(store.getState().climate?.source).toBe('open_meteo');
+    expect(store.getState().output?.climate.source).toBe('open_meteo');
     expect(workerRuns).toBe(2);
 
     store.getState().dispose();
@@ -124,13 +127,11 @@ describe('useSimulationStore lifecycle and orchestration', () => {
       budgetRatio: 0.3,
     });
 
-    // Older run resolves null when superseded: isOptimizing must stay true!
     firstRun.resolve(null);
     await p1;
     expect(store.getState().isOptimizing).toBe(true);
     expect(store.getState().output).toBeNull();
 
-    // Newer run settles and populates output cleanly.
     secondRun.resolve(secondOutput);
     await p2;
     expect(store.getState().isOptimizing).toBe(false);
@@ -153,7 +154,6 @@ describe('useSimulationStore lifecycle and orchestration', () => {
     store.getState().selectDistrict(metroDistrictId);
     expect(store.getState().selectedDistrictId).toBe(metroDistrictId);
 
-    // Timeline clamping and jump to peak
     store.getState().setCurrentDay(150);
     expect(store.getState().currentDay).toBe(91);
     store.getState().stepDay(-100);
@@ -161,16 +161,14 @@ describe('useSimulationStore lifecycle and orchestration', () => {
     store.getState().jumpToPeakDay();
     expect(store.getState().currentDay).toBe(findReactivePeakIcuDay(store.getState().output!));
 
-    // Switch to Harbor Corridor
     await store.getState().setRegion('harbor_corridor');
     const harborState = store.getState();
     expect(harborState.params.regionId).toBe('harbor_corridor');
     expect(harborState.params.diseaseMode).toBe('direct_seir');
     expect(harborState.selectedDistrictId).toBeNull();
-    expect(harborState.currentDay).toBe(0);
+    expect(harborState.currentDay).toBe(findCrisisFocusDay(harborState.output!));
     expect(harborState.output?.districts).toHaveLength(HARBOR_CORRIDOR_PRESET.districts.length);
 
-    // Budget slider + resetDefaults
     store.getState().setBudgetRatio(0.35);
     expect(store.getState().params.budgetRatio).toBe(0.35);
     await store.getState().resetDefaults();
