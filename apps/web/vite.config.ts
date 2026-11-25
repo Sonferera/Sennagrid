@@ -7,4 +7,14 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-maplibre': ['maplibre-gl'],
+          'vendor-recharts': ['recharts'],
+        },
+      },
+    },
+  },
 });

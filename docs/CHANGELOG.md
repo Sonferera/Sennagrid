@@ -14,6 +14,8 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) dan wa
 - Optional `SimulationParams.interventionEfficacy` with mode-specific defaults and bounded parameter normalization.
 - Engine-owned `ImpactSummary`, `ImpactRadar`, and per-district peak comparisons in `OptimizationOutput`, including full-run JSON export coverage.
 - Deterministic worker-client lifecycle tests covering overlapping requests, stale responses, successful latest responses, termination, and late messages.
+- Complete Owner B UI & Visualization workbench (`apps/web/src/{store,lib,components}` and `App.tsx`): non-blocking Zustand store with instant fallback startup and background Open-Meteo climate upgrade, `ControlBar` with collapsible Advanced Parameters drawer, `TabNav`, `KpiStrip` with separated peak `beds` vs total `bed-days` units and honest signed `Mild-Case Trade-off` framing, dual synchronized MapLibre GL v5 `SplitMapView` with offline dark fallback and keyboard district selector, `DistrictInspector`, `TimelinePlayer` with `Jump to Peak`, Recharts v3 `EpidemicCharts` (Active Infections, City-Wide ICU vs Capacity, 5-axis engine-owned Impact Radar), responsive `DispatchSchedule` (stacked mobile cards + desktop table + CSV/JSON exports with feedback) & `SwapTracePanel`, `MethodologyView` & `PolicyGatesPanel`, and keyboard-accessible 4-step `InteractiveTour`.
+- Companion UI/UX specification (`docs/DESIGN_SPEC.md`) and Vitest suites for `viewModels` and `useSimulationStore`.
 
 ### Changed
 - Rewrote root `README.md` into the public SennaGrid project overview with verified benchmarks, quick start, and architecture documentation.

@@ -10,6 +10,7 @@ Direktori `docs/` adalah sumber kebenaran tunggal untuk spesifikasi produk, arsi
 | :--- | :--- | :--- |
 | [PRD.md](./PRD.md) | Product Requirements Document, kriteria juri, dan pembagian kerja 8 hari | Saat scope fitur, KPI, atau timeline berubah |
 | [BLUEPRINT.md](./BLUEPRINT.md) | Spesifikasi arsitektur, kontrak tipe, persamaan matematika, dan protokol worker | Saat rumus, tipe data, atau struktur modul berubah |
+| [DESIGN_SPEC.md](./DESIGN_SPEC.md) | Spesifikasi UI/UX, sistem warna, arsitektur informasi, interaksi, responsivitas, dan aksesibilitas | Saat desain antarmuka, interaksi, atau pola responsif berubah |
 | [CHANGELOG.md](./CHANGELOG.md) | Log kronologis seluruh perubahan proyek (*Keep a Changelog*) | **Wajib** di setiap update kode (`packages/` atau `apps/`) |
 | [HANDOFF.md](./HANDOFF.md) | Panduan integrasi API antar-workspace (Owner A -> Owner B) | Saat API publik `@sennagrid/engine` atau service/worker berubah |
 | [SUBMISSION_CHECKLIST.md](./SUBMISSION_CHECKLIST.md) | Aturan kompetisi *Code for Change (Global)* & checklist submit Devpost | Menjelang milestone demo, deploy, dan submission |

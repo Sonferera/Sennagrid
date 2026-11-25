@@ -426,8 +426,8 @@ export type WorkerResponse =
 - **Dispatch CSV:** mempertahankan satu row per assignment dan kolom dispatch yang ada. Metrik radar dan aggregate impact tidak menjadi kolom CSV.
 
 ### 5.4 Visual & Aesthetics Guidelines
-- Palet warna: Background `#090d16`, Card `#0f172a`, Border `#1e293b`, Reactive `#f43f5e` (Rose), SennaGrid `#06b6d4` / `#10b981` (Cyan/Emerald), Warning `#f59e0b`.
-- Tipografi: `Inter` untuk UI, `JetBrains Mono` / `font-mono tabular-nums` untuk semua metrik dan jadwal.
+- Palet warna: Background `#090d16`, Card `#0f172a`, Inset `#162033`, Subtle Border `#1e293b`, Interactive Control Border `#64748b` (`>= 3:1` WCAG AA), Reactive `#fb7185` (Rose), SennaGrid `#22d3ee` (Cyan), Pass `#34d399` (Emerald), Trade-off / Warning `#fbbf24` (Amber).
+- Tipografi: `IBM Plex Sans` untuk UI, `IBM Plex Mono` (`font-mono tabular-nums`) untuk semua metrik, koordinat, dan jadwal (lihat juga [DESIGN_SPEC.md](./DESIGN_SPEC.md)).
 - **Strict No-Emoji Policy:** Gunakan hanya ikon `lucide-react`.
 
 ---
