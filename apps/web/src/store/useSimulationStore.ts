@@ -9,7 +9,7 @@ import {
 } from '@sennagrid/engine';
 import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { getRegionPreset } from '../data/regions';
-import { findReactivePeakIcuDay } from '../lib/viewModels';
+import { findCrisisFocusDay, findReactivePeakIcuDay } from '../lib/viewModels';
 import { fetchRegionClimate } from '../services/weather';
 import {
   createOptimizerWorkerClient,
@@ -19,6 +19,7 @@ import {
 export type ActiveTab = 'simulator' | 'schedule' | 'methodology';
 export type PlaybackSpeed = 1 | 2 | 4;
 export type MobileMapStrategy = 'reactive' | 'sennagrid';
+export type ClimateMode = 'seasonal_benchmark' | 'live_weather';
 
 export interface SimulationStoreDependencies {
   fetchClimate?: (regionId: RegionId) => Promise<ClimateSeries>;
@@ -28,16 +29,20 @@ export interface SimulationStoreDependencies {
 
 export interface SimulationStoreState {
   params: SimulationParams;
+  climateMode: ClimateMode;
   advancedOpen: boolean;
   activeTab: ActiveTab;
   selectedDistrictId: string | null;
   syncMapsLocked: boolean;
+  showCommuterFlows: boolean;
+  showDistrictLabels: boolean;
   mobileMapStrategy: MobileMapStrategy;
   currentDay: number;
+  hasUserScrubbedDay: boolean;
   isPlaying: boolean;
   playbackSpeed: PlaybackSpeed;
   climate: ClimateSeries | null;
-  climateByRegion: Partial<Record<RegionId, ClimateSeries>>;
+  liveClimateByRegion: Partial<Record<RegionId, ClimateSeries>>;
   weatherRefreshPending: boolean;
   output: OptimizationOutput | null;
   isOptimizing: boolean;
@@ -49,21 +54,29 @@ export interface SimulationStoreState {
   initialize: () => Promise<void>;
   setRegion: (regionId: RegionId) => Promise<void>;
   setDiseaseMode: (diseaseMode: DiseaseMode) => Promise<void>;
+  setClimateMode: (mode: ClimateMode) => Promise<void>;
   setBudgetRatio: (budgetRatio: number) => void;
   setAdvancedParam: (
     patch: Partial<Pick<SimulationParams, 'icuRate' | 'mobilityOutflow' | 'interventionEfficacy'>>,
   ) => void;
   resetDefaults: () => Promise<void>;
-  runOptimization: (overrideParams?: SimulationParams, overrideClimate?: ClimateSeries) => Promise<void>;
+  runOptimization: (
+    overrideParams?: SimulationParams,
+    overrideClimate?: ClimateSeries,
+    focusPeakOnSettle?: boolean,
+  ) => Promise<void>;
   setActiveTab: (tab: ActiveTab) => void;
-  setCurrentDay: (day: number) => void;
+  setCurrentDay: (day: number, fromUser?: boolean) => void;
   stepDay: (delta: number) => void;
   jumpToPeakDay: () => void;
+  playFromStart: () => void;
   togglePlaying: () => void;
   setPlaying: (playing: boolean) => void;
   setPlaybackSpeed: (speed: PlaybackSpeed) => void;
   selectDistrict: (districtId: string | null) => void;
   toggleSyncMaps: () => void;
+  toggleCommuterFlows: () => void;
+  toggleDistrictLabels: () => void;
   setMobileMapStrategy: (strategy: MobileMapStrategy) => void;
   toggleAdvancedOpen: () => void;
   setAdvancedOpen: (open: boolean) => void;
@@ -104,9 +117,19 @@ export function createSimulationStore(
   }
 
   return create<SimulationStoreState>((set, get) => {
-    const refreshLiveClimateInBackground = (regionId: RegionId) => {
-      const cached = get().climateByRegion[regionId];
-      if (cached && cached.source === 'open_meteo') {
+    const resolveActiveClimate = (regionId: RegionId, mode: ClimateMode): ClimateSeries => {
+      const preset = getRegionPreset(regionId);
+      if (mode === 'live_weather') {
+        const cachedLive = get().liveClimateByRegion[regionId];
+        if (cachedLive) {
+          return cachedLive;
+        }
+      }
+      return fallbackClimateFn(regionId, preset.anchorLat, preset.anchorLng);
+    };
+
+    const prefetchLiveClimateInBackground = (regionId: RegionId) => {
+      if (get().liveClimateByRegion[regionId]) {
         return;
       }
 
@@ -115,26 +138,23 @@ export function createSimulationStore(
 
       void fetchClimateFn(regionId)
         .then((resolvedClimate) => {
-          const current = get();
-          const stillSameWeatherToken = weatherToken === activeWeatherToken;
+          const stillSameToken = weatherToken === activeWeatherToken;
           set((state) => ({
-            climateByRegion: {
-              ...state.climateByRegion,
+            liveClimateByRegion: {
+              ...state.liveClimateByRegion,
               [regionId]: resolvedClimate,
             },
-            weatherRefreshPending: stillSameWeatherToken ? false : state.weatherRefreshPending,
+            weatherRefreshPending: stillSameToken ? false : state.weatherRefreshPending,
           }));
 
-          // Only trigger a seamless background re-run if live Open-Meteo data differs from fallback
-          // and the user is still viewing this region.
+          const current = get();
           if (
-            stillSameWeatherToken &&
+            stillSameToken &&
             current.params.regionId === regionId &&
-            resolvedClimate.source === 'open_meteo' &&
-            current.climate?.source !== 'open_meteo'
+            current.climateMode === 'live_weather'
           ) {
             set({ climate: resolvedClimate });
-            void get().runOptimization(get().params, resolvedClimate);
+            void get().runOptimization(current.params, resolvedClimate, !current.hasUserScrubbedDay);
           }
         })
         .catch(() => {
@@ -146,16 +166,20 @@ export function createSimulationStore(
 
     return {
       params: { ...DEFAULT_SIMULATION_PARAMS },
+      climateMode: 'seasonal_benchmark',
       advancedOpen: false,
       activeTab: 'simulator',
       selectedDistrictId: null,
       syncMapsLocked: true,
+      showCommuterFlows: true,
+      showDistrictLabels: true,
       mobileMapStrategy: 'sennagrid',
       currentDay: 0,
+      hasUserScrubbedDay: false,
       isPlaying: false,
       playbackSpeed: 1,
       climate: null,
-      climateByRegion: {},
+      liveClimateByRegion: {},
       weatherRefreshPending: false,
       output: null,
       isOptimizing: false,
@@ -169,23 +193,12 @@ export function createSimulationStore(
           return;
         }
         set({ hasInitialized: true });
-        const { params, climateByRegion } = get();
-        const preset = getRegionPreset(params.regionId);
-        const immediateClimate =
-          climateByRegion[params.regionId] ??
-          fallbackClimateFn(params.regionId, preset.anchorLat, preset.anchorLng);
+        const { params, climateMode } = get();
+        const immediateClimate = resolveActiveClimate(params.regionId, climateMode);
+        set({ climate: immediateClimate });
 
-        set((state) => ({
-          climate: immediateClimate,
-          climateByRegion: {
-            ...state.climateByRegion,
-            [params.regionId]: immediateClimate,
-          },
-        }));
-
-        // Start initial simulation immediately without blocking on external weather latency.
-        refreshLiveClimateInBackground(params.regionId);
-        await get().runOptimization(params, immediateClimate);
+        prefetchLiveClimateInBackground(params.regionId);
+        await get().runOptimization(params, immediateClimate, true);
       },
 
       async setRegion(regionId) {
@@ -196,25 +209,19 @@ export function createSimulationStore(
           diseaseMode: preset.defaultDiseaseMode,
           interventionEfficacy: undefined,
         };
-        const immediateClimate =
-          get().climateByRegion[regionId] ??
-          fallbackClimateFn(regionId, preset.anchorLat, preset.anchorLng);
+        const immediateClimate = resolveActiveClimate(regionId, get().climateMode);
 
-        set((state) => ({
+        set({
           params: nextParams,
           selectedDistrictId: null,
           isPlaying: false,
-          currentDay: 0,
+          hasUserScrubbedDay: false,
           climate: immediateClimate,
-          climateByRegion: {
-            ...state.climateByRegion,
-            [regionId]: immediateClimate,
-          },
           error: null,
-        }));
+        });
 
-        refreshLiveClimateInBackground(regionId);
-        await get().runOptimization(nextParams, immediateClimate);
+        prefetchLiveClimateInBackground(regionId);
+        await get().runOptimization(nextParams, immediateClimate, true);
       },
 
       async setDiseaseMode(diseaseMode) {
@@ -223,8 +230,32 @@ export function createSimulationStore(
           diseaseMode,
           interventionEfficacy: undefined,
         };
-        set({ params: nextParams, isPlaying: false, error: null });
-        await get().runOptimization(nextParams);
+        set({ params: nextParams, isPlaying: false, hasUserScrubbedDay: false, error: null });
+        await get().runOptimization(nextParams, undefined, true);
+      },
+
+      async setClimateMode(mode) {
+        const { params, liveClimateByRegion } = get();
+        set({ climateMode: mode, isPlaying: false, error: null });
+
+        if (mode === 'live_weather' && !liveClimateByRegion[params.regionId]) {
+          set({ weatherRefreshPending: true });
+          const fetched = await fetchClimateFn(params.regionId);
+          set((state) => ({
+            liveClimateByRegion: {
+              ...state.liveClimateByRegion,
+              [params.regionId]: fetched,
+            },
+            weatherRefreshPending: false,
+            climate: fetched,
+          }));
+          await get().runOptimization(params, fetched, true);
+          return;
+        }
+
+        const nextClimate = resolveActiveClimate(params.regionId, mode);
+        set({ climate: nextClimate });
+        await get().runOptimization(params, nextClimate, true);
       },
 
       setBudgetRatio(budgetRatio) {
@@ -254,18 +285,25 @@ export function createSimulationStore(
           regionId,
           diseaseMode: preset.defaultDiseaseMode,
         };
-        set({ params: nextParams, isPlaying: false, error: null });
-        await get().runOptimization(nextParams);
+        const seasonalClimate = resolveActiveClimate(regionId, 'seasonal_benchmark');
+        set({
+          params: nextParams,
+          climateMode: 'seasonal_benchmark',
+          climate: seasonalClimate,
+          isPlaying: false,
+          hasUserScrubbedDay: false,
+          error: null,
+        });
+        await get().runOptimization(nextParams, seasonalClimate, true);
       },
 
-      async runOptimization(overrideParams, overrideClimate) {
+      async runOptimization(overrideParams, overrideClimate, focusPeakOnSettle = false) {
         const params = overrideParams ?? get().params;
-        const preset = getRegionPreset(params.regionId);
         const climate =
           overrideClimate ??
           get().climate ??
-          get().climateByRegion[params.regionId] ??
-          fallbackClimateFn(params.regionId, preset.anchorLat, preset.anchorLng);
+          resolveActiveClimate(params.regionId, get().climateMode);
+        const preset = getRegionPreset(params.regionId);
 
         const runToken = ++activeRunToken;
         set({
@@ -288,14 +326,18 @@ export function createSimulationStore(
               ? prevSelected
               : null;
 
-          set((state) => ({
+          const targetDay = focusPeakOnSettle
+            ? findCrisisFocusDay(result)
+            : Math.max(0, Math.min(maxDay, get().currentDay));
+
+          set({
             output: result,
             climate: result.climate,
             selectedDistrictId: validSelected,
-            currentDay: Math.max(0, Math.min(maxDay, state.currentDay)),
+            currentDay: targetDay,
             isOptimizing: false,
             error: null,
-          }));
+          });
         } catch (err) {
           if (runToken !== activeRunToken) {
             return;
@@ -313,11 +355,12 @@ export function createSimulationStore(
         set({ activeTab: tab });
       },
 
-      setCurrentDay(day) {
+      setCurrentDay(day, fromUser = true) {
         const maxDay = getMaxDay(get().output, get().params);
         const clamped = Math.max(0, Math.min(maxDay, Math.round(day)));
         set((state) => ({
           currentDay: clamped,
+          hasUserScrubbedDay: fromUser ? true : state.hasUserScrubbedDay,
           isPlaying: clamped >= maxDay ? false : state.isPlaying,
         }));
       },
@@ -328,6 +371,7 @@ export function createSimulationStore(
         const nextDay = Math.max(0, Math.min(maxDay, state.currentDay + delta));
         set({
           currentDay: nextDay,
+          hasUserScrubbedDay: true,
           isPlaying: false,
         });
       },
@@ -338,7 +382,16 @@ export function createSimulationStore(
         const peakDay = findReactivePeakIcuDay(output);
         set({
           currentDay: peakDay,
+          hasUserScrubbedDay: true,
           isPlaying: false,
+        });
+      },
+
+      playFromStart() {
+        set({
+          currentDay: 0,
+          hasUserScrubbedDay: true,
+          isPlaying: true,
         });
       },
 
@@ -346,10 +399,10 @@ export function createSimulationStore(
         const state = get();
         const maxDay = getMaxDay(state.output, state.params);
         if (!state.isPlaying && state.currentDay >= maxDay) {
-          set({ currentDay: 0, isPlaying: true });
+          set({ currentDay: 0, hasUserScrubbedDay: true, isPlaying: true });
           return;
         }
-        set({ isPlaying: !state.isPlaying });
+        set({ isPlaying: !state.isPlaying, hasUserScrubbedDay: true });
       },
 
       setPlaying(playing) {
@@ -366,6 +419,14 @@ export function createSimulationStore(
 
       toggleSyncMaps() {
         set((state) => ({ syncMapsLocked: !state.syncMapsLocked }));
+      },
+
+      toggleCommuterFlows() {
+        set((state) => ({ showCommuterFlows: !state.showCommuterFlows }));
+      },
+
+      toggleDistrictLabels() {
+        set((state) => ({ showDistrictLabels: !state.showDistrictLabels }));
       },
 
       setMobileMapStrategy(strategy) {

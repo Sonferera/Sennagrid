@@ -1,12 +1,13 @@
-import type {
-  DailyClimatePoint,
-  DispatchAssignment,
-  DistrictImpactSummary,
-  DistrictProperties,
-  OptimizationOutput,
-  RationaleTag,
-  SwapTraceEntry,
-  ZoneType,
+import {
+  buildMobilityModel,
+  type DailyClimatePoint,
+  type DispatchAssignment,
+  type DistrictImpactSummary,
+  type DistrictProperties,
+  type OptimizationOutput,
+  type RationaleTag,
+  type SwapTraceEntry,
+  type ZoneType,
 } from '@sennagrid/engine';
 
 export type MetricTone = 'positive' | 'tradeoff' | 'neutral';
@@ -51,6 +52,12 @@ export interface KpiViewModel {
   };
 }
 
+export interface ExecutiveNarrative {
+  headline: string;
+  detail: string;
+  tone: MetricTone;
+}
+
 export interface TimelineMeta {
   day: number;
   maxDay: number;
@@ -74,6 +81,7 @@ export interface StrategyDistrictDayState {
 export interface DistrictDaySnapshot {
   district: DistrictProperties;
   districtIndex: number;
+  shortCode: string;
   hubCentrality: number;
   isTopQuartileHub: boolean;
   day: number;
@@ -81,6 +89,28 @@ export interface DistrictDaySnapshot {
   reactive: StrategyDistrictDayState;
   sennagrid: StrategyDistrictDayState;
   impact: DistrictImpactSummary | null;
+}
+
+export interface DistrictWatchlistEntry {
+  district: DistrictProperties;
+  shortCode: string;
+  hubCentrality: number;
+  isTopQuartileHub: boolean;
+  reactiveStressNow: number;
+  sennagridStressNow: number;
+  reactiveTreatedNow: boolean;
+  sennagridTreatedNow: boolean;
+  reactivePeakStress: number;
+  optimizedPeakStress: number;
+  peakOverflowSavedBeds: number;
+  interventionWeeks: number;
+}
+
+export interface CommuterCorridorArc {
+  id: string;
+  from: [number, number];
+  to: [number, number];
+  strength: number; // normalized 0..1
 }
 
 export interface DailyChartPoint {
@@ -129,7 +159,7 @@ export function formatFixed(value: number, decimals = 1): string {
 export function formatZoneLabel(zone: ZoneType): string {
   switch (zone) {
     case 'core':
-      return 'Urban Core';
+      return 'Medical Core';
     case 'transit_hub':
       return 'Transit Hub';
     case 'residential':
@@ -137,6 +167,15 @@ export function formatZoneLabel(zone: ZoneType): string {
     case 'peri_urban':
       return 'Peri-Urban';
   }
+}
+
+export function buildDistrictShortCode(district: DistrictProperties, index: number): string {
+  const words = district.name.split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    const initials = `${words[0]![0] ?? ''}${words[1]![0] ?? ''}`.toUpperCase();
+    return `${initials}${String(index + 1).padStart(2, '0')}`;
+  }
+  return `${(words[0] ?? 'WD').slice(0, 2).toUpperCase()}${String(index + 1).padStart(2, '0')}`;
 }
 
 export function computeDistrictStress(icuDemand: number, icuBeds: number): number {
@@ -152,11 +191,52 @@ export function classifyStressBand(stress: number): 'safe' | 'strained' | 'overf
   return 'safe';
 }
 
+export function buildExecutiveNarrative(output: OptimizationOutput): ExecutiveNarrative {
+  const { impactSummary, reactive, sennagrid, weeklyQuotaK, districts } = output;
+  const quotaPhrase = `${weeklyQuotaK} of ${districts.length} districts per week`;
+
+  if (impactSummary.collapseDaysSaved > 0 && sennagrid.icuCollapseDays === 0) {
+    return {
+      headline: `Eliminated all ${reactive.icuCollapseDays} hospital collapse days using the same ${quotaPhrase} capacity.`,
+      detail: `Reactive Baseline suffered ${formatFixed(reactive.totalIcuOverflowCost, 1)} ICU overflow bed-days chasing current case counts. SennaGrid reduced ICU overflow to 0.0 bed-days by pre-emptively containing mobility hubs and low-bed wards.`,
+      tone: 'positive',
+    };
+  }
+
+  if (reactive.totalIcuOverflowCost > sennagrid.totalIcuOverflowCost + 0.1) {
+    const pctSaved =
+      reactive.totalIcuOverflowCost > 0
+        ? ((reactive.totalIcuOverflowCost - sennagrid.totalIcuOverflowCost) /
+            reactive.totalIcuOverflowCost) *
+          100
+        : 0;
+    return {
+      headline: `Cut cumulative ICU overflow by ${pctSaved.toFixed(1)}% (${formatFixed(reactive.totalIcuOverflowCost, 1)} down to ${formatFixed(sennagrid.totalIcuOverflowCost, 1)} bed-days) at identical budget.`,
+      detail: `Under ${quotaPhrase} capacity, predictive multi-pass scheduling lowered peak hospital overflow by ${formatFixed(impactSummary.peakIcuOverflowPrevented, 1)} beds compared with Reactive Baseline.`,
+      tone: 'positive',
+    };
+  }
+
+  if (impactSummary.casesAverted > 0) {
+    return {
+      headline: `Averted ${formatInt(impactSummary.casesAverted)} cumulative infections (${impactSummary.casesAvertedPct.toFixed(1)}% reduction) with zero ICU breaches.`,
+      detail: `Both strategies remained within local ICU bed capacity across the 91-day horizon, while SennaGrid intercepted transmission earlier along commuter corridors (${quotaPhrase}).`,
+      tone: 'positive',
+    };
+  }
+
+  return {
+    headline: `Reduced composite epidemic cost by ${impactSummary.costReductionPct.toFixed(2)}% within the ${quotaPhrase} operational quota.`,
+    detail: `Deterministic 13-week schedule verified across ${output.gates.passedCount}/${output.gates.totalGates} Policy Gates in ${output.solveTimeMs} ms.`,
+    tone: 'neutral',
+  };
+}
+
 export function buildKpiViewModel(output: OptimizationOutput): KpiViewModel {
   const { impactSummary, reactive, sennagrid, gates } = output;
 
   const savedDays = impactSummary.collapseDaysSaved;
-  let collapseBadgeText = 'No collapse days';
+  let collapseBadgeText = '0 breaches in both';
   let collapseTone: MetricTone = 'neutral';
   if (savedDays > 0) {
     collapseBadgeText = `${savedDays} ${savedDays === 1 ? 'day' : 'days'} saved`;
@@ -196,7 +276,7 @@ export function buildKpiViewModel(output: OptimizationOutput): KpiViewModel {
         optimizedCumulative: sennagrid.cumulativeCases,
         signedHeadline: `+${formatInt(absCases)} cases`,
         signedPctLabel: `+${absPct.toFixed(2)}%`,
-        contextNote: 'ICU-first scheduling accepted mild case drift to reduce hospital overflow.',
+        contextNote: 'Accepted minor mild-case drift to prioritize protecting scarce ICU beds.',
         tone: 'tradeoff',
       }
     : {
@@ -208,7 +288,7 @@ export function buildKpiViewModel(output: OptimizationOutput): KpiViewModel {
         optimizedCumulative: sennagrid.cumulativeCases,
         signedHeadline: formatInt(absCases),
         signedPctLabel: `${absPct.toFixed(2)}% fewer`,
-        contextNote: 'Cumulative infections reduced under the identical weekly district quota.',
+        contextNote: 'Cumulative infections prevented under the exact same weekly budget.',
         tone: impactSummary.casesAverted > 0 ? 'positive' : 'neutral',
       };
 
@@ -269,6 +349,9 @@ export function getTimelineMeta(output: OptimizationOutput, rawDay: number): Tim
   };
 }
 
+/**
+ * Returns the engine-derived Reactive peak ICU demand day (tie-breaking on highest overflow).
+ */
 export function findReactivePeakIcuDay(output: OptimizationOutput): number {
   const demands = output.reactive.dailyTotalIcuDemand;
   const overflows = output.reactive.dailyCityOverflow;
@@ -289,6 +372,26 @@ export function findReactivePeakIcuDay(output: OptimizationOutput): number {
   }
 
   return bestDay;
+}
+
+/**
+ * Returns the day where Reactive local ICU overflow peaks (if any breach occurs),
+ * falling back to Reactive peak city-wide ICU demand day.
+ */
+export function findCrisisFocusDay(output: OptimizationOutput): number {
+  const overflows = output.reactive.dailyCityOverflow;
+  let bestOverflowDay = -1;
+  let bestOverflow = 1e-6;
+
+  for (let d = 0; d < overflows.length; d++) {
+    const ov = overflows[d] ?? 0;
+    if (ov > bestOverflow) {
+      bestOverflow = ov;
+      bestOverflowDay = d;
+    }
+  }
+
+  return bestOverflowDay >= 0 ? bestOverflowDay : findReactivePeakIcuDay(output);
 }
 
 export function getTopQuartileHubThreshold(hubCentrality: readonly number[]): number {
@@ -331,6 +434,7 @@ export function getDistrictSnapshotAtDay(
   return {
     district,
     districtIndex,
+    shortCode: buildDistrictShortCode(district, districtIndex),
     hubCentrality,
     isTopQuartileHub: hubCentrality >= hubThreshold,
     day: meta.day,
@@ -351,6 +455,116 @@ export function getDistrictSnapshotAtDay(
     },
     impact,
   };
+}
+
+export function buildDistrictWatchlist(
+  output: OptimizationOutput,
+  rawDay: number,
+): DistrictWatchlistEntry[] {
+  const meta = getTimelineMeta(output, rawDay);
+  const n = output.districts.length;
+  const hubThreshold = getTopQuartileHubThreshold(output.hubCentrality);
+
+  const entries: DistrictWatchlistEntry[] = output.districts.map((district, i) => {
+    const flatIdx = meta.day * n + i;
+    const rIcu = output.reactive.districtIcuDemand[flatIdx] ?? 0;
+    const sIcu = output.sennagrid.districtIcuDemand[flatIdx] ?? 0;
+    const impact = output.impactSummary.districtImpacts[i];
+    const rPeakIcu = impact?.reactivePeakIcuDemand ?? rIcu;
+    const sPeakIcu = impact?.optimizedPeakIcuDemand ?? sIcu;
+    const hub = output.hubCentrality[i] ?? 0;
+
+    return {
+      district,
+      shortCode: buildDistrictShortCode(district, i),
+      hubCentrality: hub,
+      isTopQuartileHub: hub >= hubThreshold,
+      reactiveStressNow: computeDistrictStress(rIcu, district.icuBeds),
+      sennagridStressNow: computeDistrictStress(sIcu, district.icuBeds),
+      reactiveTreatedNow: (output.reactive.schedule[meta.weekIndex]?.[i] ?? 0) === 1,
+      sennagridTreatedNow: (output.sennagrid.schedule[meta.weekIndex]?.[i] ?? 0) === 1,
+      reactivePeakStress: computeDistrictStress(rPeakIcu, district.icuBeds),
+      optimizedPeakStress: computeDistrictStress(sPeakIcu, district.icuBeds),
+      peakOverflowSavedBeds: Math.max(
+        0,
+        (impact?.reactivePeakIcuOverflow ?? 0) - (impact?.optimizedPeakIcuOverflow ?? 0),
+      ),
+      interventionWeeks: impact?.interventionWeeks ?? 0,
+    };
+  });
+
+  return entries.sort((a, b) => {
+    if (b.reactivePeakStress !== a.reactivePeakStress) {
+      return b.reactivePeakStress - a.reactivePeakStress;
+    }
+    return b.hubCentrality - a.hubCentrality;
+  });
+}
+
+export function getDispatchedDistrictsForWeek(
+  output: OptimizationOutput,
+  strategy: 'reactive' | 'sennagrid',
+  weekIndex: number,
+): Array<{ id: string; name: string; shortCode: string }> {
+  const row =
+    strategy === 'reactive'
+      ? output.reactive.schedule[weekIndex]
+      : output.sennagrid.schedule[weekIndex];
+  if (!row) return [];
+
+  const result: Array<{ id: string; name: string; shortCode: string }> = [];
+  for (let i = 0; i < output.districts.length; i++) {
+    if (row[i] === 1) {
+      const d = output.districts[i];
+      if (d) {
+        result.push({
+          id: d.id,
+          name: d.name,
+          shortCode: buildDistrictShortCode(d, i),
+        });
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Extracts the top symmetric commuter coupling corridors from the engine's gravity matrix
+ * so users can visualize cross-district transmission bridges on the map.
+ */
+export function buildTopCommuterCorridors(
+  output: OptimizationOutput,
+  maxCorridors = 18,
+): CommuterCorridorArc[] {
+  const { districts, params } = output;
+  const n = districts.length;
+  if (n < 2 || params.mobilityOutflow <= 0) return [];
+
+  const mobility = buildMobilityModel(districts, { outflow: params.mobilityOutflow });
+  const rawPairs: Array<{ i: number; j: number; flow: number }> = [];
+
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const flowIJ = (mobility.weights[i * n + j] ?? 0) * districts[i]!.population;
+      const flowJI = (mobility.weights[j * n + i] ?? 0) * districts[j]!.population;
+      rawPairs.push({ i, j, flow: flowIJ + flowJI });
+    }
+  }
+
+  rawPairs.sort((a, b) => b.flow - a.flow);
+  const top = rawPairs.slice(0, maxCorridors);
+  const maxFlow = top[0]?.flow ?? 1;
+
+  return top.map((pair) => {
+    const dA = districts[pair.i]!;
+    const dB = districts[pair.j]!;
+    return {
+      id: `${dA.id}-${dB.id}`,
+      from: dA.centroid,
+      to: dB.centroid,
+      strength: maxFlow > 0 ? pair.flow / maxFlow : 0.5,
+    };
+  });
 }
 
 export function buildDailyChartSeries(output: OptimizationOutput): DailyChartPoint[] {
@@ -379,22 +593,16 @@ export function buildRadarSeries(output: OptimizationOutput): RadarChartDatum[] 
   const r = output.impactRadar;
   return [
     {
-      key: 'casesControl',
-      axis: 'Cases Control',
-      score: r.casesControl,
-      description: 'Relative cumulative case reduction vs Reactive Baseline (0 to 100).',
+      key: 'collapsePrevention',
+      axis: 'Collapse Prevention',
+      score: r.collapsePrevention,
+      description: 'Relative reduction in hospital collapse days vs Reactive Baseline (0 to 100).',
     },
     {
       key: 'peakIcuSafety',
       axis: 'Peak ICU Safety',
       score: r.peakIcuSafety,
       description: 'Relative peak ICU overflow reduction vs Reactive Baseline (0 to 100).',
-    },
-    {
-      key: 'collapsePrevention',
-      axis: 'Collapse Prevention',
-      score: r.collapsePrevention,
-      description: 'Relative reduction in hospital collapse days vs Reactive Baseline (0 to 100).',
     },
     {
       key: 'hubContainment',
@@ -404,9 +612,15 @@ export function buildRadarSeries(output: OptimizationOutput): RadarChartDatum[] 
     },
     {
       key: 'budgetEfficiency',
-      axis: 'Budget Efficiency',
+      axis: 'Cost Efficiency',
       score: r.budgetEfficiency,
       description: 'Relative composite objective cost reduction vs Reactive Baseline (0 to 100).',
+    },
+    {
+      key: 'casesControl',
+      axis: 'Cases Control',
+      score: r.casesControl,
+      description: 'Relative cumulative case reduction vs Reactive Baseline (0 to 100).',
     },
   ];
 }

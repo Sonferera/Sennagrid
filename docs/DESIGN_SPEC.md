@@ -2,186 +2,42 @@
 
 **Document:** `DESIGN_SPEC.md`  
 **Project:** SennaGrid  
-**Scope:** UI/UX Design & Interaction Specification  
-**Status:** Approved  
+**Scope:** UI/UX Design & Cartographic Interaction Specification  
+**Status:** Approved (v2 Clean Editorial Spatial Workbench)  
 **Related documents:** [BLUEPRINT.md](./BLUEPRINT.md), [HANDOFF.md](./HANDOFF.md), [PRD.md](./PRD.md)
 
 ---
 
-## 1. Overview
+## 1. Visual Direction: Clean Editorial Spatial Workbench
 
-### 1.1 Purpose
-
-This document defines the visual design, information architecture, interaction behavior, responsive behavior, and accessibility standards for the SennaGrid application. It is the primary UI/UX reference for implementation and review.
-
-### 1.2 Product Context
-
-SennaGrid is a client-side spatial epidemic digital twin and constrained resource optimizer for public health planners, epidemiologists, and technical evaluators.
-
-The interface must allow users to:
-
-- Understand simulation outcomes quickly.
-- Compare Reactive Baseline against SennaGrid Optimized.
-- Explore epidemic conditions through interactive maps.
-- Inspect district-level conditions and interventions.
-- Control simulation playback and parameters.
-- Review and export operational dispatch schedules.
-- Understand optimization methodology and policy verification results.
-
-### 1.3 Design Principles
-
-1. **Clarity first:** Prioritize understandable information over decoration.
-2. **Data integrity:** Do not fabricate, reinterpret, or independently recalculate engine metrics.
-3. **Operational focus:** Prioritize information that supports analysis and decisions.
-4. **Consistent interaction:** Use predictable controls and interaction patterns.
-5. **Responsive by design:** Maintain usability across desktop, tablet, and mobile.
-6. **Accessibility:** Support keyboard navigation, readable contrast, and reduced motion.
-7. **Performance conscious:** Avoid unnecessary animations, rendering, and layout shifts.
+Following team review, SennaGrid uses a **Clean Editorial Light** spatial analytics language inspired by modern public-health journalism (*Our World in Data*) and cloud GIS (*Felt*):
+- **Canvas & Surfaces:** Cool alabaster canvas (`#f8fafc`), pure crisp white cards (`#ffffff`), subtle `#e2e8f0` dividers, and `#64748b` (`4.76:1` WCAG AA) interactive control borders.
+- **Semantic Strategy Colors:**
+  - **SennaGrid Optimized:** Deep Clinical Teal (`#0f766e` / `#0d9488`, `#115e59` on `#f0fdfa`).
+  - **Reactive Baseline:** Urgent Crimson Rose (`#be123c` / `#e11d48`, `#9f1239` on `#fff1f2`).
+  - **Caution / Trade-off:** Warm Amber (`#b45309`, `#92400e` on `#fffbeb`).
+  - **Verified Pass:** Emerald (`#065f46` on `#ecfdf5`).
+- **Typography:** `Plus Jakarta Sans` for approachable, high-legibility headings and labels paired with `IBM Plex Mono` (`tabular-nums`) strictly for metrics, formulas, and counters. Zero decorative emojis, zero em dashes, and zero raw ASCII `->` arrows.
 
 ---
 
-## 2. Visual Identity
+## 2. Information Architecture & Immediate Comprehension
 
-### 2.1 Design Direction
-
-**Spatial Epidemic Digital Twin & Scientific Telemetry Workbench**
-
-SennaGrid uses a dark scientific Emergency Operations Center (EOC) aesthetic. The visual language communicates technical credibility, analytical precision, operational readiness, and scientific transparency.
-
-### 2.2 Design Characteristics
-
-| Property | Specification |
-| :--- | :--- |
-| Theme | Dark |
-| Visual style | Scientific telemetry workbench |
-| Density | Balanced |
-| Motion | Restrained |
-| Layout | Structured analytical sections |
-| Decoration | Minimal |
-| Iconography | Lucide icons |
-| UI language | English |
-
-Avoid unnecessary gradients, decorative illustrations, excessive glassmorphism, oversized typography, and decorative dashboard cards.
-
----
-
-## 3. Design System
-
-### 3.1 Color Palette
-
-#### Foundation
-
-| Token | Hex | Usage |
-| :--- | :--- | :--- |
-| Canvas | `#090d16` | Main application background |
-| Surface | `#0f172a` | Primary panels and cards |
-| Inset | `#162033` | Nested surfaces |
-| Border Subtle | `#1e293b` | Decorative separators |
-| Border Control | `#64748b` | Interactive control boundaries |
-
-#### Semantic Colors
-
-| Token | Hex | Meaning |
-| :--- | :--- | :--- |
-| Reactive Rose | `#fb7185` | Reactive Baseline |
-| SennaGrid Cyan | `#22d3ee` | SennaGrid optimization |
-| Emerald | `#34d399` | Verified PASS |
-| Amber | `#fbbf24` | Warning and trade-off |
-| Primary Text | `#f1f5f9` | Main content |
-| Secondary Text | `#cbd5e1` | Supporting content |
-| Muted Text | `#94a3b8` | Labels and metadata |
-
-### 3.2 Semantic Color Rules
-
-- Rose always represents Reactive Baseline.
-- Cyan always represents SennaGrid optimization.
-- Emerald represents successful verification or positive status.
-- Amber represents warnings, trade-offs, or conditions requiring attention.
-- Neutral slate colors represent structural and informational elements.
-- Never communicate status using color alone; include text labels, icons, or other visual indicators.
-
-### 3.3 Interactive Borders
-
-- Use `#64748b` or a higher-contrast color for interactive borders (`>= 3:1` non-text contrast).
-- Do not use `#475569` on `#0f172a` (`2.36:1`) for interactive control boundaries.
-- Decorative separators may use `#1e293b`.
-
-### 3.4 Typography
-
-| Font | Usage |
-| :--- | :--- |
-| IBM Plex Sans | General UI, headings, labels, descriptions |
-| IBM Plex Mono | Metrics, coordinates, counters, formulas, and numerical values |
-
-Typography rules:
-
-- Use tabular numbers (`tabular-nums`) for changing numerical values.
-- Maintain a consistent heading hierarchy.
-- Keep labels concise and descriptive.
-- Use monospace typography for technical values and data tables.
-
-### 3.5 Iconography
-
-- Use Lucide icons with consistent stroke weight (16 to 18px).
-- Icons support meaning, never replace labels.
-- Zero decorative emojis.
-
----
-
-## 4. Information Architecture
-
-```text
-SennaGrid
-├── Application Header
-│   ├── Brand
-│   ├── Weather Status
-│   ├── Policy Gate Status
-│   └── Guided Tour
-├── Simulation Controls
-│   ├── Scenario Selector
-│   ├── Disease Model
-│   ├── Weekly Budget
-│   └── Advanced Parameters (Collapsible)
-├── Workspace Navigation
-│   ├── Simulator
-│   ├── Dispatch Schedule
-│   └── Methodology & Math
-├── Main Content
-│   ├── Simulator (KPIs, Dual Maps, District Inspector, Timeline Player, Charts)
-│   ├── Dispatch Schedule (Summary, Filters, Responsive Cards/Table, Export, Swap Trace)
-│   └── Methodology & Math (Policy Gates, Mathematical Models, Limitations)
-└── Application Footer
-    └── Synthetic Benchmark Disclaimer
-```
-
----
-
-## 5. Simulator View & Engine Contract Reconciliation
-
-1. **KPI Overview:** Four cards reading strictly from `OptimizationOutput`:
-   - *Hospital Collapse Days*: `Reactive: Xd -> SennaGrid: Yd`
-   - *Peak ICU Overflow*: Peak overflow in **`beds`** separated clearly from cumulative total overflow in **`bed-days`**.
-   - *Cumulative Cases Impact*: `Cases Averted` when non-negative; `Mild-Case Trade-off` in Amber with context when negative.
-   - *Solver & Policy Readiness*: Objective cost reduction, evaluation count, solve latency, and clickable Policy Gate readiness pill.
-2. **Spatial Comparison (`SplitMapView`):** Synchronized MapLibre GL v5 maps using the documented engine stress formula `stress = icuDemand / icuBeds` (`< 60%` Safe, `60 to 99%` Strained, `>= 100%` ICU Overflow) with offline dark canvas fallback, `Camera Sync` toggle, `Reset View`, hover tooltip, and a keyboard-accessible district selector.
-3. **District Inspector:** Explicit empty state when no district is selected; side-by-side Reactive vs SennaGrid day snapshot and 91-day peak comparison from `output.impactSummary.districtImpacts`; dismissible via button or `Escape`.
-4. **Timeline Player:** Derives `maxDay` and `totalWeeks` dynamically from `OptimizationOutput` (`Day 0..91`, `92` snapshots, `13` weeks, Day `91` labeled `End of Week 13`), with `Play/Pause`, `Previous/Next Day`, `Jump to Peak`, and `1x / 2x / 4x` speeds.
-5. **Epidemic Charts:** Active Infections, City-Wide ICU Demand vs Capacity (with local district overflow surfaced in tooltips), and 5-axis engine-owned Impact Radar (`0..100`, zero fabricated comparison polygon or arbitrary benchmark line).
-
----
-
-## 6. Dispatch Schedule, Methodology, & Guided Tour
-
-- **Dispatch Schedule:** Filterable by Week, Zone Type, Rationale, and District Search; stacked assignment cards on mobile (`< 720px`) and 8-column table on tablet/desktop (`>= 720px`); `Export Plan (CSV)` and `Export Full Run (JSON)` with accessible success and failure feedback; Stage 2 `SwapTracePanel` with empty state.
-- **Methodology & Math:** Live 5-gate `PolicyGatesPanel` (`PASS / REVIEW / FAIL`), structured formula sections synced with `EPIDEMIC_CONSTANTS`, and explicit synthetic benchmark / non-clinical disclaimer.
-- **Guided Tour:** Optional 4-step walkthrough launched from the header (`control-bar`, `split-map`, `timeline-player`, `dispatch-export`), closed by default, keyboard-navigable (`ArrowLeft`, `ArrowRight`, `Escape`), and reduced-motion aware.
-
----
-
-## 7. Interaction, Responsive, & Accessibility Standards
-
-- **Non-Blocking Startup:** Initial simulation launches immediately with deterministic fallback climatology and upgrades silently in the background if Open-Meteo responds with live weather.
-- **Budget Slider:** `10%` to `40%` (step `5%`), immediate readout with controlled debounce / release trigger and explicit `Run Optimization` button.
-- **Keyboard Shortcuts:** `Space` (Play/Pause), `ArrowLeft` / `ArrowRight` (Previous/Next Day when tour is closed; tour navigation when tour is open), `Escape` (close tour, advanced drawer, or inspector), safely ignored inside editable inputs/controls.
-- **Breakpoints:** Mobile `< 720px` (single map toggle, stacked dispatch cards, `>= 44x44px` tap targets, zero horizontal overflow), Tablet `720px–1179px`, Desktop `>= 1180px`.
-- **Accessibility & Copy:** WCAG 2.1 AA contrast verified (`>= 4.5:1` text, `>= 3.0:1` interactive borders), visible cyan focus rings, `prefers-reduced-motion` support, semantic landmarks, color-independent status indicators, English UI copy, zero emojis, zero em dashes.
+1. **Unified Top Header & Scenario Ribbon:** Combines brand identity, workspace navigation (`Simulator`, `Dispatch Plan`, `Model & Gates`), Policy Gate status, Guided Tour, and single-ribbon controls (`City Scenario`, `Transmission Model`, `Climate Forcing`: `Peak Season` vs `Live Weather`, `Weekly Team Quota`, `Tune`, and `Optimize`).
+2. **Plain-Language Executive Takeaway + Visual Comparison KPIs:**
+   - Top banner states the headline public-health result in one clear human sentence derived deterministically from `OptimizationOutput`.
+   - Four white KPI cards pair numbers with visual Reactive-vs-SennaGrid comparison bars, separating peak overflow (`beds`) from cumulative total overflow (`bed-days`) and framing case deltas honestly (`Cases Averted` vs `Mild-Case Trade-off`).
+3. **Cohesive 12-Column Spatial Stage (Fits Laptop Screens Cleanly):**
+   - **Left 9 Columns (`SplitMapView` + attached `TimelinePlayer`):**
+     - Carto Positron light basemap (`fitBounds` framed tightly around organic subdivided ward boundaries) with offline light fallback (`#eef2f6`).
+     - Active week's dispatched ward names displayed as clickable chips directly above each map.
+     - On-map clickable ward short-code & live ICU `%` badges, toggleable gravity commuter flow corridors, and non-overlapping selection halos beneath active dispatch borders.
+     - Auto-focuses timeline on the **Peak Surge Day** (`findCrisisFocusDay`) on load so spatial contrast is immediately visible, with `Replay D0` and `Peak Surge` buttons right below the maps.
+   - **Right 3 Columns (`DistrictInspector`):**
+     - Defaults to a ranked **District ICU Watchlist** sorted by peak baseline ICU stress; clicking any ward on the map or watchlist opens the side-by-side district comparison and 91-day horizon peak summary.
+4. **Analytical Charts & Scorecard:**
+   - Toggleable **Hospital ICU Overflow (`beds`) / City-Wide ICU Demand** `AreaChart`, **Active Infections Trajectory** `AreaChart`, and **5-Axis Strategy Scorecard** pairing the engine-owned `0..100` `RadarChart` with explicit horizontal score bars.
+5. **Dispatch Plan (`DispatchSchedule` & `SwapTracePanel`):**
+   - **13-Week Spatial Deployment Matrix** (`Districts x W1..W13`) color-coded by deterministic rationale (`Mobility Hub Containment`, `Pre-emptive Surge Intercept`, `ICU Capacity Shield`), followed by filterable cards (mobile `< 720px`) / table (`>= 720px`), CSV/JSON exports with status feedback, and Stage 2 coordinate-descent swap audit log.
+6. **Model & Gates (`MethodologyView` & `PolicyGatesPanel`):**
+   - Five deterministic Policy Gate cards (`PASS / REVIEW / FAIL`) + clean typographic equations ($G_{ij}, W_{ij}, \phi_T, J(U)$) + explicit synthetic benchmark disclaimer.
