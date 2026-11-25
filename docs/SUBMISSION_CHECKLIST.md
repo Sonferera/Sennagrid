@@ -15,7 +15,7 @@
 
 ## 2. Deliverable Wajib Devpost
 - [x] **Source Code & Build Instructions:** Monorepo bersih dengan `README.md` publik, `npm run test`, `npm run build`, dan `vercel.json`.
-- [ ] **UI End-to-End Lengkap (Owner B):** Split-Screen MapLibre, Timeline 91 hari, KPI Strip, Epidemic Charts + Impact Radar, Dispatch Schedule + Export CSV/JSON, Methodology + Policy Gates, Interactive 4-Step Tour.
+- [x] **UI End-to-End Lengkap (Owner B):** Split-Screen MapLibre, Timeline 91 hari, KPI Strip, Epidemic Charts + Impact Radar, Dispatch Schedule + Export CSV/JSON, Methodology + Policy Gates, Interactive 4-Step Tour.
 - [ ] **Live Deployment (Vercel):** URL produksi aktif, auto-run simulasi default saat halaman dibuka tanpa login.
 - [ ] **Demo Video (2–3 menit):** Menunjukkan langsung kontras Reactive vs SennaGrid pada `Metro Tropica (20%)`, pergeseran budget slider, timeline playback, ekspor jadwal CSV, dan verifikasi Policy Gates.
 - [ ] **Halaman Proyek Devpost:** Deskripsi masalah sosial, target pengguna, arsitektur teknis, hasil kuantitatif terverifikasi, tantangan, langkah selanjutnya, dan nama anggota tim.

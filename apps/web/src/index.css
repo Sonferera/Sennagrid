@@ -1,6 +1,35 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:root {
+  --sg-canvas: #090d16;
+  --sg-surface: #0f172a;
+  --sg-inset: #162033;
+  --sg-border-subtle: #1e293b;
+  --sg-border-control: #64748b;
+  --sg-text-primary: #f1f5f9;
+  --sg-text-secondary: #cbd5e1;
+  --sg-text-muted: #94a3b8;
+  --sg-cyan: #22d3ee;
+  --sg-rose: #fb7185;
+  --sg-emerald: #34d399;
+  --sg-amber: #fbbf24;
+  color-scheme: dark;
+}
+
 @layer base {
+  html,
+  body {
+    background-color: var(--sg-canvas);
+    color: var(--sg-text-primary);
+    font-family: var(--font-sans);
+    overflow-x: clip;
+  }
+
   a[href],
   button:not(:disabled),
   select:not(:disabled),
@@ -15,8 +44,110 @@
   input:disabled {
     cursor: not-allowed;
   }
+
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--sg-cyan);
+    outline-offset: 2px;
+  }
 }
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+.sg-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 44px;
+  background: transparent;
+}
+
+.sg-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #334155;
+  border: 1px solid #64748b;
+}
+
+.sg-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 9999px;
+  background: #22d3ee;
+  border: 2px solid #090d16;
+  box-shadow: 0 0 0 1px #67e8f9;
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.sg-range:hover:not(:disabled)::-webkit-slider-thumb {
+  background: #67e8f9;
+  transform: scale(1.06);
+}
+
+.sg-range::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #334155;
+  border: 1px solid #64748b;
+}
+
+.sg-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: #22d3ee;
+  border: 2px solid #090d16;
+  box-shadow: 0 0 0 1px #67e8f9;
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.sg-range:hover:not(:disabled)::-moz-range-thumb {
+  background: #67e8f9;
+  transform: scale(1.06);
+}
+
+/* Dark theme harmonization for MapLibre controls */
+.maplibregl-ctrl-attrib {
+  background-color: rgba(9, 13, 22, 0.85) !important;
+  color: #94a3b8 !important;
+  font-size: 10px !important;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: #cbd5e1 !important;
+}
+
+.maplibregl-ctrl-group {
+  background: #0f172a !important;
+  border: 1px solid #64748b !important;
+  box-shadow: none !important;
+}
+
+.maplibregl-ctrl-group button {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+.maplibregl-ctrl-group button:hover {
+  background-color: #162033 !important;
+}
+
+.maplibregl-ctrl-icon {
+  filter: invert(0.92);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
