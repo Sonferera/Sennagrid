@@ -52,7 +52,6 @@ export default function App() {
     showCommuterFlows,
     showDistrictLabels,
     mobileMapStrategy,
-    advancedOpen,
     tourOpen,
     tourStep,
     initialize,
@@ -69,7 +68,6 @@ export default function App() {
     toggleCommuterFlows,
     toggleDistrictLabels,
     setMobileMapStrategy,
-    setAdvancedOpen,
     closeTour,
     setTourStep,
   } = useSimulationStore(
@@ -86,7 +84,6 @@ export default function App() {
       showCommuterFlows: s.showCommuterFlows,
       showDistrictLabels: s.showDistrictLabels,
       mobileMapStrategy: s.mobileMapStrategy,
-      advancedOpen: s.advancedOpen,
       tourOpen: s.tourOpen,
       tourStep: s.tourStep,
       initialize: s.initialize,
@@ -103,7 +100,6 @@ export default function App() {
       toggleCommuterFlows: s.toggleCommuterFlows,
       toggleDistrictLabels: s.toggleDistrictLabels,
       setMobileMapStrategy: s.setMobileMapStrategy,
-      setAdvancedOpen: s.setAdvancedOpen,
       closeTour: s.closeTour,
       setTourStep: s.setTourStep,
     })),
@@ -118,10 +114,6 @@ export default function App() {
       if (e.key === 'Escape') {
         if (tourOpen) {
           closeTour();
-          return;
-        }
-        if (advancedOpen) {
-          setAdvancedOpen(false);
           return;
         }
         if (selectedDistrictId) {
@@ -162,12 +154,10 @@ export default function App() {
   }, [
     tourOpen,
     tourStep,
-    advancedOpen,
     selectedDistrictId,
     output,
     activeTab,
     closeTour,
-    setAdvancedOpen,
     selectDistrict,
     setTourStep,
     togglePlaying,
@@ -224,7 +214,7 @@ export default function App() {
                 id="panel-simulator"
                 role="tabpanel"
                 aria-labelledby="tab-simulator"
-                className="grid grid-cols-1 gap-6 lg:grid-cols-[284px_minmax(0,1fr)] lg:items-start"
+                className="grid grid-cols-1 gap-6 lg:grid-cols-[284px_minmax(0,1fr)] lg:items-stretch"
               >
                 <ControlBar />
 

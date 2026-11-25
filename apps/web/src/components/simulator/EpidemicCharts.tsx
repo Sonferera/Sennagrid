@@ -103,7 +103,7 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
     >
       <div className="grid grid-cols-1 gap-8 min-[960px]:grid-cols-12 min-[960px]:items-start">
         {/* Left: Clean OWID Trajectory Chart */}
-        <article className="min-[960px]:col-span-7">
+        <article className="min-w-0 min-[960px]:col-span-7">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-base font-semibold text-[#1c1917]">
@@ -178,8 +178,8 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
             </div>
           </div>
 
-          <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-56 w-full min-w-0 overflow-hidden">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               {chartTab === 'overflow' ? (
                 <AreaChart
                   data={dailySeries}
@@ -275,7 +275,7 @@ export function EpidemicCharts({ output, currentDay, onSelectDay }: EpidemicChar
         </article>
 
         {/* Right: Clean 5-Bar Strategy Fit */}
-        <article className="min-[960px]:col-span-5">
+        <article className="min-w-0 min-[960px]:col-span-5">
           <h2 className="mb-4 text-base font-semibold text-[#1c1917]">
             Strategy Fit (vs Reactive Baseline)
           </h2>

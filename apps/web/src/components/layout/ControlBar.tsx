@@ -4,7 +4,7 @@ import {
   type DiseaseMode,
   type RegionId,
 } from '@sennagrid/engine';
-import { Check, ChevronDown, ChevronRight, Loader2, RotateCcw } from 'lucide-react';
+import { Check, Loader2, RotateCcw } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { getRegionPreset, REGION_PRESET_LIST } from '../../data/regions';
@@ -17,7 +17,6 @@ export function ControlBar() {
   const {
     params,
     climateMode,
-    advancedOpen,
     climate,
     liveClimateByRegion,
     weatherRefreshPending,
@@ -30,12 +29,10 @@ export function ControlBar() {
     setAdvancedParam,
     resetDefaults,
     runOptimization,
-    toggleAdvancedOpen,
   } = useSimulationStore(
     useShallow((s) => ({
       params: s.params,
       climateMode: s.climateMode,
-      advancedOpen: s.advancedOpen,
       climate: s.climate,
       liveClimateByRegion: s.liveClimateByRegion,
       weatherRefreshPending: s.weatherRefreshPending,
@@ -48,7 +45,6 @@ export function ControlBar() {
       setAdvancedParam: s.setAdvancedParam,
       resetDefaults: s.resetDefaults,
       runOptimization: s.runOptimization,
-      toggleAdvancedOpen: s.toggleAdvancedOpen,
     })),
   );
 
@@ -125,18 +121,11 @@ export function ControlBar() {
     void setClimateMode(mode);
   };
 
-  const summaryClimate =
-    climateMode === 'live_weather'
-      ? climate?.source === 'open_meteo'
-        ? `Live ${climate.meanTemp14d.toFixed(0)}°C`
-        : 'Live'
-      : 'Peak';
-
   return (
     <aside
       aria-label="Simulation controls"
       data-tour="control-bar"
-      className="w-full shrink-0 rounded-xl border border-[#e0dbd0] bg-[#fbf9f5] p-5"
+      className="flex h-full w-full shrink-0 flex-col justify-between gap-5 rounded-xl border border-[#e0dbd0] bg-[#fbf9f5] p-5"
     >
       <div className="space-y-5">
         {/* 1. City Scenario */}
@@ -159,7 +148,7 @@ export function ControlBar() {
                   className={`flex min-h-[48px] w-full items-start justify-between gap-2 rounded-lg border px-3.5 py-3 text-left transition-colors ${
                     selected
                       ? 'border-[#0f766e] bg-[#edf6f4]'
-                      : 'border-[#e0dbd0] bg-[#fbf9f5] hover:border-[#c7c0b3]'
+                      : 'border-[#e0dbd0] bg-[#fbf9f5] hover:border-[#8c857b]'
                   }`}
                 >
                   <div>
@@ -274,159 +263,164 @@ export function ControlBar() {
           </p>
         </div>
 
-        {/* 5. Collapsible Parameters & Climate Disclosure */}
-        <div className="border-t border-[#e0dbd0] pt-3.5">
+        {/* 5. Always-Visible Model Parameters (No Dropdown) */}
+        <div className="border-t border-[#e0dbd0] pt-4">
+          <h2 className="mb-3 text-[13px] font-semibold text-[#1c1917]">Model Parameters</h2>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            {/* Climate Forcing */}
+            <div>
+              <span className="mb-1.5 block text-[13px] font-medium text-[#57534e]">
+                Climate Forcing
+              </span>
+              <div
+                role="group"
+                aria-label="Climate data source"
+                className="grid grid-cols-2 gap-1 rounded-lg border border-[#e0dbd0] bg-[#eee9df] p-1"
+              >
+                <button
+                  type="button"
+                  aria-pressed={climateMode === 'seasonal_benchmark'}
+                  onClick={() => handleClimateModeChange('seasonal_benchmark')}
+                  className={`min-h-[44px] rounded-md px-2 py-1 text-xs font-semibold transition-all lg:min-h-[32px] ${
+                    climateMode === 'seasonal_benchmark'
+                      ? 'bg-[#fbf9f5] text-[#1c1917] shadow-2xs ring-1 ring-[#d6d0c4]'
+                      : 'text-[#57534e] hover:text-[#1c1917]'
+                  }`}
+                >
+                  Peak Season
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={climateMode === 'live_weather'}
+                  onClick={() => handleClimateModeChange('live_weather')}
+                  className={`min-h-[44px] rounded-md px-2 py-1 text-xs font-semibold transition-all lg:min-h-[32px] ${
+                    climateMode === 'live_weather'
+                      ? 'bg-[#fbf9f5] text-[#1c1917] shadow-2xs ring-1 ring-[#d6d0c4]'
+                      : 'text-[#57534e] hover:text-[#1c1917]'
+                  }`}
+                >
+                  {liveWeatherLabel}
+                </button>
+              </div>
+              {climate && (
+                <p className="mt-1.5 font-mono text-xs tabular-nums text-[#57534e]">
+                  {climate.meanTemp14d.toFixed(1)}°C · {climate.meanPrecip14d.toFixed(1)} mm/d
+                </p>
+              )}
+            </div>
+
+            {/* ICU Rate */}
+            <div>
+              <div className="flex justify-between text-[13px]">
+                <label htmlFor="sg-icu-rate" className="font-medium text-[#57534e]">
+                  ICU Rate
+                </label>
+                <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
+                  {(params.icuRate * 100).toFixed(2)}%
+                </span>
+              </div>
+              <input
+                id="sg-icu-rate"
+                type="range"
+                min={0.5}
+                max={3.5}
+                step={0.1}
+                value={Number((params.icuRate * 100).toFixed(1))}
+                onChange={(e) => {
+                  setAdvancedParam({ icuRate: Number(e.target.value) / 100 });
+                  scheduleOptimization();
+                }}
+                onPointerUp={flushOptimizationNow}
+                className="sg-range -my-2"
+              />
+            </div>
+
+            {/* Mobility Outflow */}
+            <div>
+              <div className="flex justify-between text-[13px]">
+                <label htmlFor="sg-mobility-outflow" className="font-medium text-[#57534e]">
+                  Commuter Outflow
+                </label>
+                <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
+                  {Math.round(params.mobilityOutflow * 100)}%
+                </span>
+              </div>
+              <input
+                id="sg-mobility-outflow"
+                type="range"
+                min={0}
+                max={40}
+                step={2}
+                value={Math.round(params.mobilityOutflow * 100)}
+                onChange={(e) => {
+                  setAdvancedParam({ mobilityOutflow: Number(e.target.value) / 100 });
+                  scheduleOptimization();
+                }}
+                onPointerUp={flushOptimizationNow}
+                className="sg-range -my-2"
+              />
+            </div>
+
+            {/* Efficacy */}
+            <div>
+              <div className="flex justify-between text-[13px]">
+                <label htmlFor="sg-efficacy" className="font-medium text-[#57534e]">
+                  Team Efficacy
+                </label>
+                <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
+                  {Math.round(activeEfficacy * 100)}%
+                </span>
+              </div>
+              <input
+                id="sg-efficacy"
+                type="range"
+                min={30}
+                max={90}
+                step={5}
+                value={Math.round(activeEfficacy * 100)}
+                onChange={(e) => {
+                  setAdvancedParam({ interventionEfficacy: Number(e.target.value) / 100 });
+                  scheduleOptimization();
+                }}
+                onPointerUp={flushOptimizationNow}
+                className="sg-range -my-2"
+              />
+            </div>
+          </div>
+
           <button
             type="button"
-            onClick={toggleAdvancedOpen}
-            aria-expanded={advancedOpen}
-            aria-controls="sg-advanced-params"
-            className="flex min-h-[44px] w-full items-center gap-1.5 text-left text-[13px] font-medium text-[#57534e] transition-colors hover:text-[#1c1917] lg:min-h-[34px]"
+            onClick={() => void resetDefaults()}
+            className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-lg border border-[#8c857b] bg-[#fbf9f5] px-3 py-1.5 text-[13px] font-medium text-[#1c1917] shadow-2xs transition-colors hover:bg-[#eee9df] lg:min-h-[36px]"
           >
-            {advancedOpen ? (
-              <ChevronDown className="h-4 w-4 shrink-0 text-[#57534e]" aria-hidden="true" />
-            ) : (
-              <ChevronRight className="h-4 w-4 shrink-0 text-[#57534e]" aria-hidden="true" />
-            )}
-            <span>
-              Parameters ({summaryClimate} · {(params.icuRate * 100).toFixed(1)}% ICU)
-            </span>
+            <RotateCcw className="h-3.5 w-3.5 text-[#57534e]" aria-hidden="true" />
+            <span>Reset Defaults</span>
           </button>
-
-          {advancedOpen && (
-            <div id="sg-advanced-params" className="mt-3 space-y-4 border-t border-[#e0dbd0] pt-3.5">
-              {/* Climate Forcing */}
-              <div>
-                <span className="mb-1.5 block text-[13px] font-medium text-[#57534e]">
-                  Climate Forcing
-                </span>
-                <div
-                  role="group"
-                  aria-label="Climate data source"
-                  className="grid grid-cols-2 gap-1 rounded-lg border border-[#e0dbd0] bg-[#eee9df] p-1"
-                >
-                  <button
-                    type="button"
-                    aria-pressed={climateMode === 'seasonal_benchmark'}
-                    onClick={() => handleClimateModeChange('seasonal_benchmark')}
-                    className={`min-h-[44px] rounded-md px-2 py-1 text-xs font-semibold transition-all lg:min-h-[32px] ${
-                      climateMode === 'seasonal_benchmark'
-                        ? 'bg-[#fbf9f5] text-[#1c1917] shadow-2xs ring-1 ring-[#d6d0c4]'
-                        : 'text-[#57534e] hover:text-[#1c1917]'
-                    }`}
-                  >
-                    Peak Season
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={climateMode === 'live_weather'}
-                    onClick={() => handleClimateModeChange('live_weather')}
-                    className={`min-h-[44px] rounded-md px-2 py-1 text-xs font-semibold transition-all lg:min-h-[32px] ${
-                      climateMode === 'live_weather'
-                        ? 'bg-[#fbf9f5] text-[#1c1917] shadow-2xs ring-1 ring-[#d6d0c4]'
-                        : 'text-[#57534e] hover:text-[#1c1917]'
-                    }`}
-                  >
-                    {liveWeatherLabel}
-                  </button>
-                </div>
-                {climate && (
-                  <p className="mt-1.5 font-mono text-xs tabular-nums text-[#57534e]">
-                    {climate.meanTemp14d.toFixed(1)}°C · {climate.meanPrecip14d.toFixed(1)} mm/d
-                  </p>
-                )}
-              </div>
-
-              {/* ICU Rate */}
-              <div>
-                <div className="flex justify-between text-[13px]">
-                  <label htmlFor="sg-icu-rate" className="font-medium text-[#57534e]">
-                    ICU Rate
-                  </label>
-                  <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
-                    {(params.icuRate * 100).toFixed(2)}%
-                  </span>
-                </div>
-                <input
-                  id="sg-icu-rate"
-                  type="range"
-                  min={0.5}
-                  max={3.5}
-                  step={0.1}
-                  value={Number((params.icuRate * 100).toFixed(1))}
-                  onChange={(e) => {
-                    setAdvancedParam({ icuRate: Number(e.target.value) / 100 });
-                    scheduleOptimization();
-                  }}
-                  onPointerUp={flushOptimizationNow}
-                  className="sg-range -my-2"
-                />
-              </div>
-
-              {/* Mobility Outflow */}
-              <div>
-                <div className="flex justify-between text-[13px]">
-                  <label htmlFor="sg-mobility-outflow" className="font-medium text-[#57534e]">
-                    Commuter Outflow
-                  </label>
-                  <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
-                    {Math.round(params.mobilityOutflow * 100)}%
-                  </span>
-                </div>
-                <input
-                  id="sg-mobility-outflow"
-                  type="range"
-                  min={0}
-                  max={40}
-                  step={2}
-                  value={Math.round(params.mobilityOutflow * 100)}
-                  onChange={(e) => {
-                    setAdvancedParam({ mobilityOutflow: Number(e.target.value) / 100 });
-                    scheduleOptimization();
-                  }}
-                  onPointerUp={flushOptimizationNow}
-                  className="sg-range -my-2"
-                />
-              </div>
-
-              {/* Efficacy */}
-              <div>
-                <div className="flex justify-between text-[13px]">
-                  <label htmlFor="sg-efficacy" className="font-medium text-[#57534e]">
-                    Team Efficacy
-                  </label>
-                  <span className="font-mono font-semibold tabular-nums text-[#0f766e]">
-                    {Math.round(activeEfficacy * 100)}%
-                  </span>
-                </div>
-                <input
-                  id="sg-efficacy"
-                  type="range"
-                  min={30}
-                  max={90}
-                  step={5}
-                  value={Math.round(activeEfficacy * 100)}
-                  onChange={(e) => {
-                    setAdvancedParam({ interventionEfficacy: Number(e.target.value) / 100 });
-                    scheduleOptimization();
-                  }}
-                  onPointerUp={flushOptimizationNow}
-                  className="sg-range -my-2"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => void resetDefaults()}
-                className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-lg border border-[#e0dbd0] bg-[#fbf9f5] px-3 py-1.5 text-[13px] font-medium text-[#44403c] transition-colors hover:bg-[#eee9df] lg:min-h-[36px]"
-              >
-                <RotateCcw className="h-3.5 w-3.5 text-[#57534e]" aria-hidden="true" />
-                <span>Reset Defaults</span>
-              </button>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Anchored Footer Run Summary (aligns left sidebar height cleanly with right column) */}
+      <dl className="mt-auto space-y-2 border-t border-[#e0dbd0] pt-4 text-[13px]">
+        <div className="flex justify-between gap-2">
+          <dt className="text-[#57534e]">Horizon</dt>
+          <dd className="font-mono font-medium tabular-nums text-[#1c1917]">
+            {params.horizonDays}d ({output?.sennagrid.schedule.length ?? 13} weeks)
+          </dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-[#57534e]">Solver</dt>
+          <dd className="font-mono font-medium tabular-nums text-[#1c1917]">
+            RK4 · dt={params.dt}d
+          </dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-[#57534e]">City Beds</dt>
+          <dd className="font-mono font-medium tabular-nums text-[#1c1917]">
+            {output ? `${output.totalIcuCapacity} ICU beds` : 'Calculating'}
+          </dd>
+        </div>
+      </dl>
     </aside>
   );
 }

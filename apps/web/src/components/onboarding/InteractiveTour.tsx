@@ -18,7 +18,7 @@ const TOUR_STEPS: readonly TourStepSpec[] = [
   {
     target: 'control-bar',
     title: '1. Configure Scenario & Weekly Budget',
-    body: 'Choose Metro Tropica or Harbor Corridor, switch Dengue vs Respiratory mode, adjust the team quota (10% to 40%), or expand Parameters for Live Open-Meteo weather.',
+    body: 'Choose Metro Tropica or Harbor Corridor, switch Dengue vs Respiratory mode, adjust the team quota (10% to 40%), or tune Climate Forcing, ICU rate, mobility, and efficacy.',
   },
   {
     target: 'split-map',
