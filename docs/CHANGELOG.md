@@ -24,6 +24,7 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) dan wa
 - Updated the public benchmark table to report signed case changes from ICU-first search, including the small Metro Vector case increase paired with substantially lower ICU pressure.
 
 ### Fixed
+- Enforced the Hospital Safety Guardrail (`totalOverflow <= reactive` and `collapseDays <= reactive`) on the Stage 2 `bestCostDomSchedule` fallback candidate in `packages/engine/src/optimizer.ts`, with OOD multi-seed regression coverage.
 - Restored pure TypeScript engine typechecking by removing the optimizer's dependency on the browser-only `performance` global.
 - Added a scoped timeout to the aggregate 12-scenario preset calibration test so its default Vitest run completes without changing global test timeouts.
 

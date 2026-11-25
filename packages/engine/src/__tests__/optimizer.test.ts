@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getFallbackClimateSeries } from '../climate';
+import { buildClimateSeriesFromSamples, getFallbackClimateSeries } from '../climate';
 import { computeWeeklyQuota, optimizeResourceAllocation } from '../optimizer';
 import {
   DEFAULT_SIMULATION_PARAMS,
@@ -385,4 +385,59 @@ describe('resource allocation optimizer', () => {
       expect(passArray[i]!).toBe(passArray[i - 1]! + 1);
     }
   });
+
+  it('never violates Hospital Safety Guardrail via cost-dominance fallback across unseen OOD cities', () => {
+    const createRng = (seed: number) => {
+      let a = seed;
+      return () => {
+        a |= 0;
+        a = (a + 0x6d2b79f5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    };
+
+    for (let seed = 101; seed <= 110; seed++) {
+      const rng = createRng(seed);
+      const n = 12 + Math.floor(rng() * 11);
+      const districts: DistrictProperties[] = Array.from({ length: n }, (_, i) => {
+        const isCore = i < 2;
+        const isHub = i >= 2 && i < 5;
+        return {
+          id: `ood-${seed}-${i}`,
+          name: `District ${i}`,
+          population: isCore ? Math.round(90_000 + rng() * 90_000) : Math.round(25_000 + rng() * 95_000),
+          icuBeds: isCore ? Math.round(28 + rng() * 35) : Math.round(6 + rng() * 16),
+          centroid: [100 + rng() * 0.4, -5 + rng() * 0.4],
+          initialCases: i < 5 ? Math.round(8 + rng() * 30) : rng() < 0.2 ? Math.round(rng() * 15) : 0,
+          zoneType: isCore ? 'core' : isHub ? 'transit_hub' : 'residential',
+        };
+      });
+
+      const baseTemp = 24 + rng() * 7;
+      const climate = buildClimateSeriesFromSamples({
+        source: 'fallback_climatology',
+        anchorLat: -5,
+        anchorLng: 100,
+        pastPrecip7dMm: Array.from({ length: 7 }, () => rng() * 20),
+        forecastTempsC: Array.from({ length: 14 }, () => baseTemp + (rng() - 0.5) * 3),
+        forecastPrecipMm: Array.from({ length: 14 }, () => rng() * 18),
+      });
+
+      for (const diseaseMode of ['vector_seir_sei', 'direct_seir'] as const) {
+        const output = optimizeResourceAllocation(
+          districts,
+          { ...DEFAULT_SIMULATION_PARAMS, diseaseMode, budgetRatio: 0.2 },
+          climate,
+        );
+
+        expect(output.sennagrid.totalIcuOverflowCost).toBeLessThanOrEqual(
+          output.reactive.totalIcuOverflowCost + 1e-6,
+        );
+        expect(output.sennagrid.icuCollapseDays).toBeLessThanOrEqual(output.reactive.icuCollapseDays);
+        expect(output.sennagrid.totalCostJ).toBeLessThanOrEqual(output.reactive.totalCostJ + 1e-6);
+      }
+    }
+  }, 20_000);
 });

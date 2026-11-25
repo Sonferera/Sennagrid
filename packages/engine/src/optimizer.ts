@@ -541,6 +541,9 @@ export function optimizeResourceAllocation(
               swapEvals++;
               evaluationsCount++;
 
+              const withinSafetyGuardrail =
+                cand.totalOverflow <= maxAllowedOverflow &&
+                cand.collapseDays <= maxAllowedCollapseDays;
               const overflowImproved = cand.totalOverflow < bestOverflow - 1e-9;
               const overflowEqual = Math.abs(cand.totalOverflow - bestOverflow) <= 1e-9;
               const costImproved = cand.totalCostJ < bestCost - 1e-6;
@@ -548,11 +551,7 @@ export function optimizeResourceAllocation(
 
               // Prefer lower ICU overflow; use objective cost only to break equal-overflow ties.
               const icuFirstAccept = overflowImproved || (overflowEqual && costImproved);
-              if (
-                cand.totalOverflow <= maxAllowedOverflow &&
-                cand.collapseDays <= maxAllowedCollapseDays &&
-                icuFirstAccept
-              ) {
+              if (withinSafetyGuardrail && icuFirstAccept) {
                 const costBefore = bestCost;
                 const overflowBefore = bestOverflow;
                 bestCost = cand.totalCostJ;
@@ -593,8 +592,8 @@ export function optimizeResourceAllocation(
                 break;
               }
 
-              // Keep cost-dominating candidates even when ICU-first rejects them.
-              if (costDominates && cand.totalCostJ < bestCostDomCost) {
+              // Keep safe cost-dominating candidates even when ICU-first rejects them.
+              if (withinSafetyGuardrail && costDominates && cand.totalCostJ < bestCostDomCost) {
                 bestCostDomCost = cand.totalCostJ;
                 bestCostDomSchedule = cloneSchedule(bestSchedule);
               }
