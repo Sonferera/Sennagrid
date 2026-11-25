@@ -5,19 +5,90 @@
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-:root {
-  --sg-canvas: #f8fafc;
-  --sg-surface: #ffffff;
-  --sg-inset: #f1f5f9;
-  --sg-border-subtle: #e2e8f0;
-  --sg-border-control: #64748b;
-  --sg-text-primary: #0f172a;
-  --sg-text-secondary: #475569;
-  --sg-text-muted: #64748b;
+/* Obsidian Dark (Default) semantic palette: zero pitch-black glare, WCAG AA verified */
+:root,
+html[data-theme="dark"] {
+  --sg-canvas: #121110;
+  --sg-surface: #1a1917;
+  --sg-header-bg: rgba(26, 25, 23, 0.94);
+  --sg-footer: #161513;
+  --sg-inset: #24221f;
+  --sg-hover: #2b2824;
+  --sg-border-subtle: #2f2c27;
+  --sg-border-row: #262420;
+  --sg-border-control: #756e65;
+  --sg-track: #36332e;
+  --sg-text-primary: #f3efe6;
+  --sg-text-secondary: #d6d0c4;
+  --sg-text-muted: #a8a29e;
+  --sg-text-dim: #8f8880;
+  --sg-teal: #2dd4bf;
+  --sg-teal-bright: #2dd4bf;
+  --sg-teal-fill: #0f766e;
+  --sg-teal-fill-hover: #115e59;
+  --sg-teal-fill-ink: #f3efe6;
+  --sg-teal-tint: #142d29;
+  --sg-teal-tint-hover: #1a3a35;
+  --sg-teal-ink: #5eead4;
+  --sg-teal-border: #115e59;
+  --sg-rose: #fb7185;
+  --sg-rose-dot: #e11d48;
+  --sg-rose-tint: #381922;
+  --sg-rose-border: #9f354b;
+  --sg-rose-ink: #fda4af;
+  --sg-amber: #fbbf24;
+  --sg-amber-dot: #f59e0b;
+  --sg-amber-tint: #332512;
+  --sg-amber-border: #a16c1b;
+  --sg-amber-ink: #fcd34d;
+  --sg-safe-dot: #34d399;
+  --sg-safe-tint: #142d26;
+  --sg-safe-border: #1f6e58;
+  --sg-safe-ink: #6ee7b7;
+  --sg-map-well: #161513;
+  color-scheme: dark;
+}
+
+/* Warm Paper Light fallback palette toggled cleanly via data-theme="light" */
+html[data-theme="light"] {
+  --sg-canvas: #f5f2eb;
+  --sg-surface: #fbf9f5;
+  --sg-header-bg: rgba(251, 249, 245, 0.94);
+  --sg-footer: #eee9df;
+  --sg-inset: #eee9df;
+  --sg-hover: #f5f2eb;
+  --sg-border-subtle: #e0dbd0;
+  --sg-border-row: #ebe6dc;
+  --sg-border-control: #8c857b;
+  --sg-track: #ddd7ca;
+  --sg-text-primary: #1c1917;
+  --sg-text-secondary: #44403c;
+  --sg-text-muted: #57534e;
+  --sg-text-dim: #57534e;
   --sg-teal: #0f766e;
   --sg-teal-bright: #0d9488;
+  --sg-teal-fill: #0f766e;
+  --sg-teal-fill-hover: #115e59;
+  --sg-teal-fill-ink: #fbf9f5;
+  --sg-teal-tint: #edf6f4;
+  --sg-teal-tint-hover: #e1efec;
+  --sg-teal-ink: #115e59;
+  --sg-teal-border: #0f766e;
   --sg-rose: #be123c;
+  --sg-rose-dot: #e11d48;
+  --sg-rose-tint: #fdf0f2;
+  --sg-rose-border: #e7b4bd;
+  --sg-rose-ink: #9f1239;
   --sg-amber: #b45309;
+  --sg-amber-dot: #d97706;
+  --sg-amber-tint: #fcf6e8;
+  --sg-amber-border: #ebd69c;
+  --sg-amber-ink: #92400e;
+  --sg-safe-dot: #059669;
+  --sg-safe-tint: #e9f5ef;
+  --sg-safe-border: #b9dfd0;
+  --sg-safe-ink: #065f46;
+  --sg-map-well: #efebe2;
   color-scheme: light;
 }
 
@@ -27,6 +98,7 @@
     background-color: var(--sg-canvas);
     color: var(--sg-text-primary);
     font-family: var(--font-sans);
+    font-size: 16px;
     overflow-x: clip;
   }
 
@@ -55,7 +127,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Clean accessible range input with 44px vertical touch target */
+/* Slim accessible range slider calibrated to active theme tokens */
 .sg-range {
   -webkit-appearance: none;
   appearance: none;
@@ -65,10 +137,9 @@
 }
 
 .sg-range::-webkit-slider-runnable-track {
-  height: 6px;
+  height: 5px;
   border-radius: 9999px;
-  background: #e2e8f0;
-  border: 1px solid #64748b;
+  background: var(--sg-track);
 }
 
 .sg-range::-webkit-slider-thumb {
@@ -76,128 +147,146 @@
   appearance: none;
   width: 18px;
   height: 18px;
-  margin-top: -7px;
+  margin-top: -6.5px;
   border-radius: 9999px;
-  background: #0f766e;
-  border: 2px solid #ffffff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.28), 0 0 0 1px #0f766e;
-  transition: transform 150ms ease, background-color 150ms ease;
+  background: var(--sg-surface);
+  border: 2.5px solid var(--sg-teal);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.32);
+  transition: transform 150ms ease, border-color 150ms ease;
 }
 
 .sg-range:hover:not(:disabled)::-webkit-slider-thumb {
-  background: #0d9488;
+  border-color: var(--sg-teal-bright);
   transform: scale(1.08);
 }
 
 .sg-range::-moz-range-track {
-  height: 6px;
+  height: 5px;
   border-radius: 9999px;
-  background: #e2e8f0;
-  border: 1px solid #64748b;
+  background: var(--sg-track);
 }
 
 .sg-range::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 9999px;
-  background: #0f766e;
-  border: 2px solid #ffffff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.28), 0 0 0 1px #0f766e;
-  transition: transform 150ms ease, background-color 150ms ease;
+  background: var(--sg-surface);
+  border: 2.5px solid var(--sg-teal);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.32);
+  transition: transform 150ms ease, border-color 150ms ease;
 }
 
 .sg-range:hover:not(:disabled)::-moz-range-thumb {
-  background: #0d9488;
+  border-color: var(--sg-teal-bright);
   transform: scale(1.08);
 }
 
-/* On-map ward status pill markers */
+/* Soft paper toning applies only in Light mode; Dark mode keeps crisp Carto Dark Matter contrast */
+html[data-theme="light"] .maplibregl-canvas {
+  filter: sepia(0.08) brightness(0.975) contrast(0.985);
+}
+
+/* Readable on-map priority ward badges */
 .sg-ward-marker {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 1px 4.5px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.93);
-  border: 1px solid #64748b;
-  color: #0f172a;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
+  gap: 5px;
+  padding: 2.5px 7.5px;
+  border-radius: 6px;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-border-control);
+  color: var(--sg-text-primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: -0.02em;
   line-height: 1.25;
   white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   cursor: pointer;
   user-select: none;
   transition: transform 120ms ease, border-color 120ms ease;
 }
 
 .sg-ward-marker:hover {
-  transform: scale(1.07);
+  transform: scale(1.05);
   z-index: 20;
 }
 
 .sg-ward-marker[data-band="overflow"] {
-  background: #fff1f2;
-  border-color: #be123c;
-  color: #9f1239;
+  background: var(--sg-rose-tint);
+  border-color: var(--sg-rose);
+  color: var(--sg-rose-ink);
 }
 
 .sg-ward-marker[data-band="strained"] {
-  background: #fffbeb;
-  border-color: #b45309;
-  color: #92400e;
+  background: var(--sg-amber-tint);
+  border-color: var(--sg-amber);
+  color: var(--sg-amber-ink);
+}
+
+.sg-ward-marker[data-treated="sennagrid"][data-band="safe"] {
+  background: var(--sg-teal-tint);
+  border-color: var(--sg-teal);
+  color: var(--sg-teal-ink);
 }
 
 .sg-ward-marker[data-selected="true"] {
   border-width: 2px;
-  border-color: #0f172a;
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.18);
+  border-color: var(--sg-text-primary);
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.22);
   z-index: 25;
 }
 
 .sg-ward-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 9999px;
   display: none;
+  flex-shrink: 0;
 }
 
 .sg-ward-marker[data-treated="reactive"] .sg-ward-dot {
   display: inline-block;
-  background: #e11d48;
+  background: var(--sg-rose-dot);
 }
 
 .sg-ward-marker[data-treated="sennagrid"] .sg-ward-dot {
   display: inline-block;
-  background: #0d9488;
+  background: var(--sg-teal);
 }
 
-/* Clean MapLibre controls on light Positron basemap */
+/* MapLibre navigation & attribution controls */
 .maplibregl-ctrl-attrib {
-  background-color: rgba(255, 255, 255, 0.86) !important;
-  color: #475569 !important;
-  font-size: 10px !important;
+  background-color: var(--sg-header-bg) !important;
+  color: var(--sg-text-muted) !important;
+  font-size: 11px !important;
 }
 
 .maplibregl-ctrl-attrib a {
-  color: #0f172a !important;
+  color: var(--sg-text-primary) !important;
 }
 
 .maplibregl-ctrl-group {
-  background: #ffffff !important;
-  border: 1px solid #64748b !important;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+  background: var(--sg-surface) !important;
+  border: 1px solid var(--sg-border-control) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22) !important;
 }
 
 .maplibregl-ctrl-group button {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
+  background-color: var(--sg-surface) !important;
+  border-color: var(--sg-border-subtle) !important;
+}
+
+.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: invert(0.9);
+}
+
+html[data-theme="light"] .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: none;
 }
 
 .maplibregl-ctrl-group button:hover {
-  background-color: #f1f5f9 !important;
+  background-color: var(--sg-inset) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

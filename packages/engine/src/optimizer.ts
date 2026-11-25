@@ -11,6 +11,7 @@ import {
   type SolverContext,
 } from './solver';
 import {
+  DEFAULT_SIMULATION_PARAMS,
   EPIDEMIC_CONSTANTS,
   type ClimateSeries,
   type DispatchAssignment,
@@ -31,8 +32,9 @@ function nowMs(): number {
 }
 
 export function computeWeeklyQuota(districtCount: number, budgetRatio: number): number {
-  if (districtCount <= 0) return 0;
-  const clampedRatio = Math.max(0.05, Math.min(1, budgetRatio));
+  if (!Number.isFinite(districtCount) || districtCount <= 0) return 0;
+  const safeRatio = Number.isFinite(budgetRatio) ? budgetRatio : 0.2;
+  const clampedRatio = Math.max(0.05, Math.min(1, safeRatio));
   return Math.min(districtCount, Math.max(1, Math.floor(clampedRatio * districtCount)));
 }
 
@@ -387,11 +389,18 @@ export function optimizeResourceAllocation(
   climate: ClimateSeries,
 ): OptimizationOutput {
   const startedAt = nowMs();
+  const safeBudgetRatio = Number.isFinite(params.budgetRatio)
+    ? Math.max(0.05, Math.min(1, params.budgetRatio))
+    : DEFAULT_SIMULATION_PARAMS.budgetRatio;
+  const normalizedParams: SimulationParams = {
+    ...params,
+    budgetRatio: safeBudgetRatio,
+  };
   const n = districts.length;
-  const mobility = buildMobilityModel(districts, { outflow: params.mobilityOutflow });
-  const ctx = createSolverContext(districts, mobility, climate, params);
+  const mobility = buildMobilityModel(districts, { outflow: normalizedParams.mobilityOutflow });
+  const ctx = createSolverContext(districts, mobility, climate, normalizedParams);
   const initialState = createInitialState(districts, ctx);
-  const weeklyQuotaK = computeWeeklyQuota(n, params.budgetRatio);
+  const weeklyQuotaK = computeWeeklyQuota(n, normalizedParams.budgetRatio);
 
   let totalIcuCapacity = 0;
   for (const d of districts) {
@@ -647,7 +656,7 @@ export function optimizeResourceAllocation(
   const solveTimeMs = Number((nowMs() - startedAt).toFixed(1));
 
   return {
-    params,
+    params: normalizedParams,
     climate,
     districts: [...districts],
     hubCentrality: hubCentralityArr,

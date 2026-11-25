@@ -440,4 +440,26 @@ describe('resource allocation optimizer', () => {
       }
     }
   }, 20_000);
+
+  it('sanitizes non-finite budgetRatio without producing NaN quotas or gate failures', () => {
+    const climate = getFallbackClimateSeries('metro_tropica', -6.208, 106.845);
+    expect(computeWeeklyQuota(18, Number.NaN)).toBe(3);
+
+    const output = optimizeResourceAllocation(
+      BENCHMARK_CITY,
+      {
+        ...DEFAULT_SIMULATION_PARAMS,
+        budgetRatio: Number.NaN,
+        icuRate: -0.2,
+        mobilityOutflow: Number.POSITIVE_INFINITY,
+        interventionEfficacy: Number.NaN,
+      },
+      climate,
+    );
+
+    expect(output.weeklyQuotaK).toBe(2);
+    expect(output.params.budgetRatio).toBe(DEFAULT_SIMULATION_PARAMS.budgetRatio);
+    expect(output.sennagrid.hasNaN).toBe(false);
+    expect(output.gates.gates.find((g) => g.id === 'BUDGET_COMPLIANCE')?.passed).toBe(true);
+  });
 });

@@ -4,24 +4,12 @@ import {
   type DiseaseMode,
   type RegionId,
 } from '@sennagrid/engine';
-import {
-  ChevronDown,
-  ChevronUp,
-  CloudSun,
-  Compass,
-  Loader2,
-  Play,
-  RotateCcw,
-  ShieldAlert,
-  ShieldCheck,
-  SlidersHorizontal,
-  SunMedium,
-} from 'lucide-react';
+import { Check, Loader2, RotateCcw } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { getRegionPreset, REGION_PRESET_LIST } from '../../data/regions';
+import { formatPopulationCompact } from '../../lib/viewModels';
 import { useSimulationStore, type ClimateMode } from '../../store/useSimulationStore';
-import { TabNav } from './TabNav';
 
 const BUDGET_DEBOUNCE_MS = 180;
 
@@ -29,7 +17,6 @@ export function ControlBar() {
   const {
     params,
     climateMode,
-    advancedOpen,
     climate,
     liveClimateByRegion,
     weatherRefreshPending,
@@ -42,14 +29,10 @@ export function ControlBar() {
     setAdvancedParam,
     resetDefaults,
     runOptimization,
-    toggleAdvancedOpen,
-    setActiveTab,
-    openTour,
   } = useSimulationStore(
     useShallow((s) => ({
       params: s.params,
       climateMode: s.climateMode,
-      advancedOpen: s.advancedOpen,
       climate: s.climate,
       liveClimateByRegion: s.liveClimateByRegion,
       weatherRefreshPending: s.weatherRefreshPending,
@@ -62,9 +45,6 @@ export function ControlBar() {
       setAdvancedParam: s.setAdvancedParam,
       resetDefaults: s.resetDefaults,
       runOptimization: s.runOptimization,
-      toggleAdvancedOpen: s.toggleAdvancedOpen,
-      setActiveTab: s.setActiveTab,
-      openTour: s.openTour,
     })),
   );
 
@@ -111,20 +91,15 @@ export function ControlBar() {
     liveSample?.source === 'open_meteo'
       ? `Live (${liveSample.meanTemp14d.toFixed(0)}°C)`
       : weatherRefreshPending
-        ? 'Live...'
+        ? 'Fetching...'
         : 'Live Weather';
 
-  const gateSummary = output?.gates;
-  const gatePillClasses =
-    gateSummary?.overallStatus === 'PASS'
-      ? 'border-emerald-600/40 bg-emerald-50 text-[#065f46]'
-      : gateSummary?.overallStatus === 'REVIEW'
-        ? 'border-amber-600/40 bg-amber-50 text-[#92400e]'
-        : gateSummary?.overallStatus === 'FAIL'
-          ? 'border-rose-600/40 bg-rose-50 text-[#9f1239]'
-          : 'border-slate-400 bg-slate-100 text-slate-700';
+  const solveSecondsText = output
+    ? `${output.evaluationsCount} plans · ${(output.solveTimeMs / 1000).toFixed(2)}s`
+    : 'Initializing...';
 
   const handleRegionChange = (regionId: RegionId) => {
+    if (regionId === params.regionId) return;
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
@@ -147,381 +122,319 @@ export function ControlBar() {
   };
 
   return (
-    <div className="border-b border-slate-200 bg-white shadow-2xs">
-      {/* Unified Clean Top Navigation Header */}
-      <header className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 px-4 py-2.5 min-[720px]:px-6">
-        {/* Brand Identity */}
-        <div className="flex items-center gap-2.5">
-          <span
-            aria-hidden="true"
-            className="grid h-7 w-7 grid-cols-2 gap-0.5 rounded-md bg-[#0f766e] p-1.5 shadow-2xs"
-          >
-            <span className="rounded-[1px] bg-white" />
-            <span className="rounded-[1px] bg-teal-200" />
-            <span className="rounded-[1px] bg-teal-200" />
-            <span className="rounded-[1px] bg-white" />
+    <aside
+      aria-label="Simulation controls"
+      data-tour="control-bar"
+      className="flex h-full w-full shrink-0 flex-col justify-between gap-5 rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-5 transition-colors"
+    >
+      <div className="space-y-5">
+        {/* 1. City Scenario */}
+        <div>
+          <span className="mb-2 block text-[13px] font-medium text-[var(--sg-text-muted)]">
+            City Scenario
           </span>
-          <div>
-            <div className="flex items-baseline gap-2">
-              <h1 className="text-base font-bold tracking-tight text-[#0f172a]">
-                Senna<span className="text-[#0f766e]">Grid</span>
-              </h1>
-              <span className="hidden text-xs font-medium text-slate-500 sm:inline">
-                Spatial Epidemic Resource Optimizer
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Center Workspace Tabs */}
-        <TabNav />
-
-        {/* Right Telemetry & Guided Tour */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab('methodology')}
-            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors hover:brightness-95 min-[720px]:min-h-[34px] ${gatePillClasses}`}
-            aria-label="Inspect Policy Gates verification"
-          >
-            {gateSummary?.overallStatus === 'PASS' ? (
-              <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            ) : (
-              <ShieldAlert className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            )}
-            <span>
-              {gateSummary
-                ? `Gates ${gateSummary.passedCount}/${gateSummary.totalGates} ${gateSummary.overallStatus}`
-                : 'Verifying...'}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={openTour}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-slate-500 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#0f172a] min-[720px]:min-h-[34px]"
-          >
-            <Compass className="h-3.5 w-3.5 shrink-0 text-[#0f766e]" aria-hidden="true" />
-            <span>Guided Tour</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Clean Single-Ribbon Scenario & Capacity Controls */}
-      <section
-        aria-label="Simulation controls"
-        data-tour="control-bar"
-        className="mx-auto max-w-[1440px] px-4 py-3 min-[720px]:px-6"
-      >
-        <div className="grid grid-cols-1 gap-3 min-[720px]:grid-cols-2 min-[1180px]:grid-cols-12 min-[1180px]:items-end">
-          {/* 1. City Scenario */}
-          <div className="min-[1180px]:col-span-3">
-            <label
-              htmlFor="sg-region-select"
-              className="mb-1 block text-xs font-semibold text-slate-700"
-            >
-              City Scenario
-            </label>
-            <select
-              id="sg-region-select"
-              value={params.regionId}
-              onChange={(e) => handleRegionChange(e.target.value as RegionId)}
-              className="min-h-[44px] w-full rounded-lg border border-slate-500 bg-white px-3 py-1.5 text-xs font-semibold text-[#0f172a] transition-colors hover:border-slate-700 min-[720px]:min-h-[38px]"
-            >
-              {REGION_PRESET_LIST.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} ({item.districts.length} districts)
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 2. Transmission Mode */}
-          <div className="min-[1180px]:col-span-3">
-            <span className="mb-1 block text-xs font-semibold text-slate-700">
-              Transmission Model
-            </span>
-            <div
-              role="group"
-              aria-label="Transmission model"
-              className="grid grid-cols-2 gap-1 rounded-lg border border-slate-500 bg-slate-100 p-0.5"
-            >
-              <button
-                type="button"
-                aria-pressed={params.diseaseMode === 'vector_seir_sei'}
-                onClick={() => handleDiseaseModeChange('vector_seir_sei')}
-                className={`min-h-[44px] rounded-md px-2.5 py-1 text-xs font-semibold transition-all min-[720px]:min-h-[34px] ${
-                  params.diseaseMode === 'vector_seir_sei'
-                    ? 'bg-white text-[#0f766e] shadow-2xs ring-1 ring-slate-300'
-                    : 'text-slate-600 hover:text-[#0f172a]'
-                }`}
-              >
-                Dengue (Vector)
-              </button>
-              <button
-                type="button"
-                aria-pressed={params.diseaseMode === 'direct_seir'}
-                onClick={() => handleDiseaseModeChange('direct_seir')}
-                className={`min-h-[44px] rounded-md px-2.5 py-1 text-xs font-semibold transition-all min-[720px]:min-h-[34px] ${
-                  params.diseaseMode === 'direct_seir'
-                    ? 'bg-white text-[#0f766e] shadow-2xs ring-1 ring-slate-300'
-                    : 'text-slate-600 hover:text-[#0f172a]'
-                }`}
-              >
-                Respiratory (Direct)
-              </button>
-            </div>
-          </div>
-
-          {/* 3. Climate Profile */}
-          <div className="min-[1180px]:col-span-2">
-            <span className="mb-1 block text-xs font-semibold text-slate-700">
-              Climate Forcing
-            </span>
-            <div
-              role="group"
-              aria-label="Climate data source"
-              className="grid grid-cols-2 gap-1 rounded-lg border border-slate-500 bg-slate-100 p-0.5"
-            >
-              <button
-                type="button"
-                aria-pressed={climateMode === 'seasonal_benchmark'}
-                onClick={() => handleClimateModeChange('seasonal_benchmark')}
-                title="Calibrated peak outbreak season climatology"
-                className={`inline-flex min-h-[44px] items-center justify-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-all min-[720px]:min-h-[34px] ${
-                  climateMode === 'seasonal_benchmark'
-                    ? 'bg-white text-[#0f766e] shadow-2xs ring-1 ring-slate-300'
-                    : 'text-slate-600 hover:text-[#0f172a]'
-                }`}
-              >
-                <SunMedium className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                <span>Peak Season</span>
-              </button>
-              <button
-                type="button"
-                aria-pressed={climateMode === 'live_weather'}
-                onClick={() => handleClimateModeChange('live_weather')}
-                title="Real-time 14-day Open-Meteo temperature and precipitation"
-                className={`inline-flex min-h-[44px] items-center justify-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-all min-[720px]:min-h-[34px] ${
-                  climateMode === 'live_weather'
-                    ? 'bg-white text-[#0f766e] shadow-2xs ring-1 ring-slate-300'
-                    : 'text-slate-600 hover:text-[#0f172a]'
-                }`}
-              >
-                <CloudSun className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                <span>{liveWeatherLabel}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* 4. Weekly Capacity Quota Slider */}
-          <div className="min-[1180px]:col-span-2">
-            <div className="flex items-baseline justify-between gap-1">
-              <label
-                htmlFor="sg-budget-slider"
-                className="text-xs font-semibold text-slate-700"
-              >
-                Weekly Team Quota
-              </label>
-              <span className="rounded-full bg-teal-50 px-2 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-[#115e59]">
-                {budgetPct}% ({quotaK}/{districtCount})
-              </span>
-            </div>
-            <input
-              id="sg-budget-slider"
-              type="range"
-              min={10}
-              max={40}
-              step={5}
-              value={budgetPct}
-              onChange={(e) => {
-                setBudgetRatio(Number(e.target.value) / 100);
-                scheduleOptimization();
-              }}
-              onPointerUp={flushOptimizationNow}
-              onKeyUp={(e) => {
-                if (
-                  e.key === 'ArrowLeft' ||
-                  e.key === 'ArrowRight' ||
-                  e.key === 'Home' ||
-                  e.key === 'End'
-                ) {
-                  flushOptimizationNow();
-                }
-              }}
-              className="sg-range -my-1"
-              aria-valuetext={`${budgetPct} percent, ${quotaK} of ${districtCount} districts per week`}
-            />
-          </div>
-
-          {/* 5. Parameters Drawer + Re-Run CTA */}
-          <div className="flex items-center gap-2 min-[1180px]:col-span-2 min-[1180px]:justify-end">
-            <button
-              type="button"
-              onClick={toggleAdvancedOpen}
-              aria-expanded={advancedOpen}
-              aria-controls="sg-advanced-params"
-              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-slate-500 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#0f172a] min-[720px]:min-h-[38px]"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
-              <span>Tune</span>
-              {advancedOpen ? (
-                <ChevronUp className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={flushOptimizationNow}
-              disabled={isOptimizing}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#0f766e] px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-[#0d9488] disabled:opacity-70 min-[720px]:min-h-[38px] min-[1180px]:flex-initial"
-            >
-              {isOptimizing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-              ) : (
-                <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
-              )}
-              <span>{isOptimizing ? 'Solving...' : 'Optimize'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Subtle Context & Compute Readout */}
-        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
-          <p>
-            <strong className="font-semibold text-slate-800">{preset.name}:</strong>{' '}
-            {preset.description}
-          </p>
-          <span className="font-mono text-[11px] tabular-nums text-slate-500">
-            {climate && (
-              <>
-                {climate.source === 'open_meteo' ? 'Open-Meteo' : 'Seasonal Benchmark'}{' '}
-                {climate.meanTemp14d.toFixed(1)}°C / {climate.meanPrecip14d.toFixed(1)} mm ·{' '}
-              </>
-            )}
-            {isOptimizing
-              ? 'Solving...'
-              : output
-                ? `${output.evaluationsCount} schedules in ${output.solveTimeMs} ms`
-                : 'Initializing...'}
-          </span>
-        </div>
-
-        {/* Collapsible Advanced Parameters Drawer */}
-        {advancedOpen && (
           <div
-            id="sg-advanced-params"
-            className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-4"
+            role="radiogroup"
+            aria-label="City scenario"
+            className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1"
           >
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h2 className="text-xs font-bold text-[#0f172a]">
-                  Epidemiological Sensitivity Parameters
-                </h2>
-                <p className="text-xs text-slate-600">
-                  Stress-test how hospitalization severity, commuter coupling, and intervention
-                  strength shift optimal district priority.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => void resetDefaults()}
-                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-slate-500 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-[#0f172a] min-[720px]:min-h-[34px]"
+            {REGION_PRESET_LIST.map((item) => {
+              const selected = item.id === params.regionId;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => handleRegionChange(item.id)}
+                  className={`flex min-h-[48px] w-full items-start justify-between gap-2 rounded-lg border px-3.5 py-3 text-left transition-colors ${
+                    selected
+                      ? 'border-[var(--sg-teal)] bg-[var(--sg-teal-tint)]'
+                      : 'border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] hover:border-[var(--sg-border-control)]'
+                  }`}
+                >
+                  <div>
+                    <div className="text-[15px] font-semibold text-[var(--sg-text-primary)]">
+                      {item.name}
+                    </div>
+                    <div className="mt-0.5 text-[13px] text-[var(--sg-text-muted)]">
+                      {item.districts.length} districts · {formatPopulationCompact(item.districts)}
+                    </div>
+                  </div>
+                  {selected && (
+                    <Check
+                      className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sg-teal)]"
+                      aria-hidden="true"
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 2. Disease Model */}
+        <div>
+          <span className="mb-2 block text-[13px] font-medium text-[var(--sg-text-muted)]">
+            Disease Model
+          </span>
+          <div
+            role="group"
+            aria-label="Transmission model"
+            className="grid grid-cols-2 gap-1 rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-inset)] p-1"
+          >
+            <button
+              type="button"
+              aria-pressed={params.diseaseMode === 'vector_seir_sei'}
+              onClick={() => handleDiseaseModeChange('vector_seir_sei')}
+              title="Vector-borne SEIR-SEI (climate-modulated Dengue)"
+              className={`min-h-[44px] rounded-md px-2 py-1.5 text-sm font-semibold transition-all lg:min-h-[36px] ${
+                params.diseaseMode === 'vector_seir_sei'
+                  ? 'bg-[var(--sg-surface)] text-[var(--sg-text-primary)] shadow-2xs ring-1 ring-[var(--sg-border-control)]/50'
+                  : 'text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
+              }`}
+            >
+              Dengue
+            </button>
+            <button
+              type="button"
+              aria-pressed={params.diseaseMode === 'direct_seir'}
+              onClick={() => handleDiseaseModeChange('direct_seir')}
+              title="Direct-contact SEIR (respiratory corridor spread)"
+              className={`min-h-[44px] rounded-md px-2 py-1.5 text-sm font-semibold transition-all lg:min-h-[36px] ${
+                params.diseaseMode === 'direct_seir'
+                  ? 'bg-[var(--sg-surface)] text-[var(--sg-text-primary)] shadow-2xs ring-1 ring-[var(--sg-border-control)]/50'
+                  : 'text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
+              }`}
+            >
+              Respiratory
+            </button>
+          </div>
+        </div>
+
+        {/* 3. Weekly Budget Quota */}
+        <div>
+          <div className="flex items-baseline justify-between gap-2">
+            <label
+              htmlFor="sg-budget-slider"
+              className="text-[13px] font-medium text-[var(--sg-text-muted)]"
+            >
+              Budget
+            </label>
+            <span className="font-mono text-sm font-semibold tabular-nums text-[var(--sg-teal)]">
+              {budgetPct}% · {quotaK} {quotaK === 1 ? 'ward' : 'wards'}
+            </span>
+          </div>
+          <input
+            id="sg-budget-slider"
+            type="range"
+            min={10}
+            max={40}
+            step={5}
+            value={budgetPct}
+            onChange={(e) => {
+              setBudgetRatio(Number(e.target.value) / 100);
+              scheduleOptimization();
+            }}
+            onPointerUp={flushOptimizationNow}
+            onKeyUp={(e) => {
+              if (
+                e.key === 'ArrowLeft' ||
+                e.key === 'ArrowRight' ||
+                e.key === 'Home' ||
+                e.key === 'End'
+              ) {
+                flushOptimizationNow();
+              }
+            }}
+            className="sg-range -my-2"
+            aria-valuetext={`${budgetPct} percent, ${quotaK} of ${districtCount} districts per week`}
+          />
+          <div className="flex justify-between font-mono text-xs tabular-nums text-[var(--sg-text-muted)]">
+            <span>10%</span>
+            <span>40%</span>
+          </div>
+        </div>
+
+        {/* 4. Primary Run CTA + Quiet Telemetry */}
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={flushOptimizationNow}
+            disabled={isOptimizing}
+            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-[var(--sg-teal-fill)] px-4 py-2.5 text-sm font-semibold text-[var(--sg-teal-fill-ink)] transition-colors hover:bg-[var(--sg-teal-fill-hover)] disabled:opacity-70 lg:min-h-[42px]"
+          >
+            {isOptimizing && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            <span>{isOptimizing ? 'Optimizing...' : 'Run Optimization'}</span>
+          </button>
+          <p className="text-center font-mono text-[13px] tabular-nums text-[var(--sg-text-muted)]">
+            {isOptimizing ? 'Running Web Worker...' : solveSecondsText}
+          </p>
+        </div>
+
+        {/* 5. Always-Visible Model Parameters */}
+        <div className="border-t border-[var(--sg-border-subtle)] pt-4">
+          <h2 className="mb-3 text-[13px] font-semibold text-[var(--sg-text-primary)]">
+            Model Parameters
+          </h2>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            {/* Climate Forcing */}
+            <div>
+              <span className="mb-1.5 block text-[13px] font-medium text-[var(--sg-text-muted)]">
+                Climate Forcing
+              </span>
+              <div
+                role="group"
+                aria-label="Climate data source"
+                className="grid grid-cols-2 gap-1 rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-inset)] p-1"
               >
-                <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Reset Defaults</span>
-              </button>
+                <button
+                  type="button"
+                  aria-pressed={climateMode === 'seasonal_benchmark'}
+                  onClick={() => handleClimateModeChange('seasonal_benchmark')}
+                  className={`min-h-[44px] rounded-md px-2 py-1 text-xs font-semibold transition-all lg:min-h-[32px] ${
+                    climateMode === 'seasonal_benchmark'
+                      ? 'bg-[var(--sg-surface)] text-[var(--sg-text-primary)] shadow-2xs ring-1 ring-[var(--sg-border-control)]/50'
+                      : 'text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
+                  }`}
+                >
+                  Peak Season
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={climateMode === 'live_weather'}
+                  onClick={() => handleClimateModeChange('live_weather')}
+                  className={`min-h-[44px] rounded-md px-2 py-1 text-xs font-semibold transition-all lg:min-h-[32px] ${
+                    climateMode === 'live_weather'
+                      ? 'bg-[var(--sg-surface)] text-[var(--sg-text-primary)] shadow-2xs ring-1 ring-[var(--sg-border-control)]/50'
+                      : 'text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
+                  }`}
+                >
+                  {liveWeatherLabel}
+                </button>
+              </div>
+              {climate && (
+                <p className="mt-1.5 font-mono text-xs tabular-nums text-[var(--sg-text-muted)]">
+                  {climate.meanTemp14d.toFixed(1)}°C · {climate.meanPrecip14d.toFixed(1)} mm/d
+                </p>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 gap-4 min-[720px]:grid-cols-3">
-              <div className="rounded-lg border border-slate-200 bg-white p-3">
-                <div className="flex items-baseline justify-between gap-2">
-                  <label htmlFor="sg-icu-rate" className="text-xs font-semibold text-slate-700">
-                    ICU Hospitalization Rate
-                  </label>
-                  <span className="font-mono text-xs font-semibold tabular-nums text-[#0f766e]">
-                    {(params.icuRate * 100).toFixed(2)}%
-                  </span>
-                </div>
-                <input
-                  id="sg-icu-rate"
-                  type="range"
-                  min={0.5}
-                  max={3.5}
-                  step={0.1}
-                  value={Number((params.icuRate * 100).toFixed(1))}
-                  onChange={(e) => {
-                    setAdvancedParam({ icuRate: Number(e.target.value) / 100 });
-                    scheduleOptimization();
-                  }}
-                  onPointerUp={flushOptimizationNow}
-                  className="sg-range -my-1"
-                />
-                <p className="text-[11px] text-slate-500">Default: 1.50% of active cases need ICU.</p>
+            {/* ICU Rate */}
+            <div>
+              <div className="flex justify-between text-[13px]">
+                <label htmlFor="sg-icu-rate" className="font-medium text-[var(--sg-text-muted)]">
+                  ICU Rate
+                </label>
+                <span className="font-mono font-semibold tabular-nums text-[var(--sg-teal)]">
+                  {(params.icuRate * 100).toFixed(2)}%
+                </span>
               </div>
+              <input
+                id="sg-icu-rate"
+                type="range"
+                min={0.5}
+                max={3.5}
+                step={0.1}
+                value={Number((params.icuRate * 100).toFixed(1))}
+                onChange={(e) => {
+                  setAdvancedParam({ icuRate: Number(e.target.value) / 100 });
+                  scheduleOptimization();
+                }}
+                onPointerUp={flushOptimizationNow}
+                className="sg-range -my-2"
+              />
+            </div>
 
-              <div className="rounded-lg border border-slate-200 bg-white p-3">
-                <div className="flex items-baseline justify-between gap-2">
-                  <label
-                    htmlFor="sg-mobility-outflow"
-                    className="text-xs font-semibold text-slate-700"
-                  >
-                    Daily Commuter Outflow
-                  </label>
-                  <span className="font-mono text-xs font-semibold tabular-nums text-[#0f766e]">
-                    {Math.round(params.mobilityOutflow * 100)}%
-                  </span>
-                </div>
-                <input
-                  id="sg-mobility-outflow"
-                  type="range"
-                  min={0}
-                  max={40}
-                  step={2}
-                  value={Math.round(params.mobilityOutflow * 100)}
-                  onChange={(e) => {
-                    setAdvancedParam({ mobilityOutflow: Number(e.target.value) / 100 });
-                    scheduleOptimization();
-                  }}
-                  onPointerUp={flushOptimizationNow}
-                  className="sg-range -my-1"
-                />
-                <p className="text-[11px] text-slate-500">Default: 18% cross-district commuting.</p>
+            {/* Mobility Outflow */}
+            <div>
+              <div className="flex justify-between text-[13px]">
+                <label
+                  htmlFor="sg-mobility-outflow"
+                  className="font-medium text-[var(--sg-text-muted)]"
+                >
+                  Commuter Outflow
+                </label>
+                <span className="font-mono font-semibold tabular-nums text-[var(--sg-teal)]">
+                  {Math.round(params.mobilityOutflow * 100)}%
+                </span>
               </div>
+              <input
+                id="sg-mobility-outflow"
+                type="range"
+                min={0}
+                max={40}
+                step={2}
+                value={Math.round(params.mobilityOutflow * 100)}
+                onChange={(e) => {
+                  setAdvancedParam({ mobilityOutflow: Number(e.target.value) / 100 });
+                  scheduleOptimization();
+                }}
+                onPointerUp={flushOptimizationNow}
+                className="sg-range -my-2"
+              />
+            </div>
 
-              <div className="rounded-lg border border-slate-200 bg-white p-3">
-                <div className="flex items-baseline justify-between gap-2">
-                  <label htmlFor="sg-efficacy" className="text-xs font-semibold text-slate-700">
-                    Intervention Efficacy
-                  </label>
-                  <span className="font-mono text-xs font-semibold tabular-nums text-[#0f766e]">
-                    {Math.round(activeEfficacy * 100)}%
-                  </span>
-                </div>
-                <input
-                  id="sg-efficacy"
-                  type="range"
-                  min={30}
-                  max={90}
-                  step={5}
-                  value={Math.round(activeEfficacy * 100)}
-                  onChange={(e) => {
-                    setAdvancedParam({ interventionEfficacy: Number(e.target.value) / 100 });
-                    scheduleOptimization();
-                  }}
-                  onPointerUp={flushOptimizationNow}
-                  className="sg-range -my-1"
-                />
-                <p className="text-[11px] text-slate-500">
-                  Default: {Math.round(defaultEfficacy * 100)}% suppression in treated wards.
-                </p>
+            {/* Efficacy */}
+            <div>
+              <div className="flex justify-between text-[13px]">
+                <label htmlFor="sg-efficacy" className="font-medium text-[var(--sg-text-muted)]">
+                  Team Efficacy
+                </label>
+                <span className="font-mono font-semibold tabular-nums text-[var(--sg-teal)]">
+                  {Math.round(activeEfficacy * 100)}%
+                </span>
               </div>
+              <input
+                id="sg-efficacy"
+                type="range"
+                min={30}
+                max={90}
+                step={5}
+                value={Math.round(activeEfficacy * 100)}
+                onChange={(e) => {
+                  setAdvancedParam({ interventionEfficacy: Number(e.target.value) / 100 });
+                  scheduleOptimization();
+                }}
+                onPointerUp={flushOptimizationNow}
+                className="sg-range -my-2"
+              />
             </div>
           </div>
-        )}
-      </section>
-    </div>
+
+          <button
+            type="button"
+            onClick={() => void resetDefaults()}
+            className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-surface)] px-3 py-1.5 text-[13px] font-medium text-[var(--sg-text-primary)] shadow-2xs transition-colors hover:bg-[var(--sg-hover)] lg:min-h-[36px]"
+          >
+            <RotateCcw className="h-3.5 w-3.5 text-[var(--sg-text-muted)]" aria-hidden="true" />
+            <span>Reset Defaults</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Anchored Footer Run Summary */}
+      <dl className="mt-auto space-y-2 border-t border-[var(--sg-border-subtle)] pt-4 text-[13px]">
+        <div className="flex justify-between gap-2">
+          <dt className="text-[var(--sg-text-muted)]">Horizon</dt>
+          <dd className="font-mono font-medium tabular-nums text-[var(--sg-text-primary)]">
+            {params.horizonDays}d ({output?.sennagrid.schedule.length ?? 13} weeks)
+          </dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-[var(--sg-text-muted)]">Solver</dt>
+          <dd className="font-mono font-medium tabular-nums text-[var(--sg-text-primary)]">
+            RK4 · dt={params.dt}d
+          </dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-[var(--sg-text-muted)]">City Beds</dt>
+          <dd className="font-mono font-medium tabular-nums text-[var(--sg-text-primary)]">
+            {output ? `${output.totalIcuCapacity} ICU beds` : 'Calculating'}
+          </dd>
+        </div>
+      </dl>
+    </aside>
   );
 }

@@ -3,15 +3,14 @@ import {
   AlertCircle,
   CheckCircle2,
   Download,
-  ExternalLink,
   FileJson,
   FileSpreadsheet,
-  FilterX,
   Search,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { getRegionPreset } from '../../data/regions';
 import {
-  buildDistrictShortCode,
+  computeDistrictStress,
   filterDispatchAssignments,
   formatFixed,
   formatZoneLabel,
@@ -42,15 +41,43 @@ const RATIONALE_OPTIONS: readonly RationaleTag[] = [
 ];
 
 const ZONE_OPTIONS: readonly ZoneType[] = ['core', 'transit_hub', 'residential', 'peri_urban'];
+const PAGE_SIZE = 10;
 
-function getRationaleBadgeClass(rationale: RationaleTag): string {
+function getRationaleIndicator(rationale: RationaleTag): {
+  letter: 'H' | 'S' | 'I';
+  cellClass: string;
+  dotColor: string;
+  textColor: string;
+  shortLabel: string;
+} {
   switch (rationale) {
-    case 'ICU Capacity Shield':
-      return 'border-rose-500/40 bg-rose-50 text-[#9f1239]';
     case 'Mobility Hub Containment':
-      return 'border-teal-600/40 bg-teal-50 text-[#115e59]';
+      return {
+        letter: 'H',
+        cellClass:
+          'border border-[var(--sg-teal-border)] bg-[var(--sg-teal-tint)] text-[var(--sg-teal-ink)] hover:opacity-90',
+        dotColor: 'bg-[var(--sg-teal)]',
+        textColor: 'text-[var(--sg-teal)]',
+        shortLabel: 'Hub Containment',
+      };
     case 'Pre-emptive Surge Intercept':
-      return 'border-amber-600/40 bg-amber-50 text-[#92400e]';
+      return {
+        letter: 'S',
+        cellClass:
+          'border border-[var(--sg-amber-border)] bg-[var(--sg-amber-tint)] text-[var(--sg-amber-ink)] hover:opacity-90',
+        dotColor: 'bg-[var(--sg-amber-dot)]',
+        textColor: 'text-[var(--sg-amber)]',
+        shortLabel: 'Surge Intercept',
+      };
+    case 'ICU Capacity Shield':
+      return {
+        letter: 'I',
+        cellClass:
+          'border border-[var(--sg-rose-border)] bg-[var(--sg-rose-tint)] text-[var(--sg-rose-ink)] hover:opacity-90',
+        dotColor: 'bg-[var(--sg-rose-dot)]',
+        textColor: 'text-[var(--sg-rose)]',
+        shortLabel: 'ICU Shield',
+      };
   }
 }
 
@@ -59,29 +86,51 @@ export function DispatchSchedule({
   onInspectDistrictAtWeek,
 }: DispatchScheduleProps) {
   const [filters, setFilters] = useState<DispatchFilterState>(INITIAL_FILTERS);
+  const [showAllMatrixWards, setShowAllMatrixWards] = useState(false);
+  const [page, setPage] = useState(1);
   const [exportFeedback, setExportFeedback] = useState<{
     tone: 'success' | 'error';
     message: string;
   } | null>(null);
 
+  const preset = getRegionPreset(output.params.regionId);
   const totalWeeks = Math.max(1, output.sennagrid.schedule.length);
   const weekOptions = useMemo(
     () => Array.from({ length: totalWeeks }, (_, idx) => idx + 1),
     [totalWeeks],
   );
 
-  const assignmentMap = useMemo(() => {
+  const { assignmentMap, activeDistrictCountMap } = useMemo(() => {
     const map = new Map<string, RationaleTag>();
+    const counts = new Map<string, number>();
     for (const a of output.assignments) {
       map.set(`${a.week}:${a.districtId}`, a.rationale);
+      counts.set(a.districtId, (counts.get(a.districtId) ?? 0) + 1);
     }
-    return map;
+    return { assignmentMap: map, activeDistrictCountMap: counts };
   }, [output.assignments]);
+
+  const matrixDistricts = useMemo(() => {
+    const active = output.districts.filter((d) => (activeDistrictCountMap.get(d.id) ?? 0) > 0);
+    if (showAllMatrixWards || active.length === 0) {
+      return output.districts;
+    }
+    return [...active].sort(
+      (a, b) => (activeDistrictCountMap.get(b.id) ?? 0) - (activeDistrictCountMap.get(a.id) ?? 0),
+    );
+  }, [output.districts, activeDistrictCountMap, showAllMatrixWards]);
 
   const filteredRows = useMemo(
     () => filterDispatchAssignments(output.assignments, filters),
     [output.assignments, filters],
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedRows = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return filteredRows.slice(start, start + PAGE_SIZE);
+  }, [filteredRows, safePage]);
 
   const hasActiveFilters =
     filters.week !== 'all' ||
@@ -92,8 +141,13 @@ export function DispatchSchedule({
   const budgetPct = Math.round(output.params.budgetRatio * 100);
   const interventionLabel =
     output.params.diseaseMode === 'vector_seir_sei'
-      ? 'Vector Control / Fogging'
-      : 'Targeted Vaccination';
+      ? 'Dengue · Vector Control'
+      : 'Respiratory · Targeted Vaccination';
+
+  const handleFilterChange = (updater: (prev: DispatchFilterState) => DispatchFilterState) => {
+    setFilters(updater);
+    setPage(1);
+  };
 
   const handleExportCsv = () => {
     try {
@@ -135,95 +189,138 @@ export function DispatchSchedule({
     }
   };
 
+  const rangeStart = filteredRows.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(filteredRows.length, safePage * PAGE_SIZE);
+
   return (
-    <div className="space-y-4">
-      {/* Visual 13-Week Deployment Matrix */}
+    <div className="space-y-6">
+      {/* Page Title & Export Bar */}
+      <div
+        data-tour="dispatch-export"
+        className="flex flex-wrap items-end justify-between gap-4"
+      >
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-[var(--sg-text-primary)] sm:text-[26px]">
+            13-Week Dispatch Schedule
+          </h2>
+          <p className="mt-1 text-sm text-[var(--sg-text-muted)]">
+            {preset.name} · {interventionLabel} · {output.weeklyQuotaK} of {output.districts.length}{' '}
+            districts per week ({output.assignments.length} deployments)
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleExportJson}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-surface)] px-4 py-2 text-[13px] font-semibold text-[var(--sg-text-primary)] transition-colors hover:bg-[var(--sg-hover)] min-[720px]:min-h-[38px]"
+          >
+            <FileJson className="h-4 w-4 text-[var(--sg-text-muted)]" aria-hidden="true" />
+            <span>Export JSON</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-[var(--sg-teal-fill)] px-4 py-2 text-[13px] font-semibold text-[var(--sg-teal-fill-ink)] transition-colors hover:bg-[var(--sg-teal-fill-hover)] min-[720px]:min-h-[38px]"
+          >
+            <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
+            <span>Export CSV</span>
+          </button>
+        </div>
+      </div>
+
+      {exportFeedback && (
+        <div
+          role={exportFeedback.tone === 'error' ? 'alert' : 'status'}
+          className={`flex items-center justify-between gap-2 rounded-xl border px-4 py-3 text-[13px] font-medium ${
+            exportFeedback.tone === 'success'
+              ? 'border-[var(--sg-safe-border)] bg-[var(--sg-safe-tint)] text-[var(--sg-safe-ink)]'
+              : 'border-[var(--sg-rose-border)] bg-[var(--sg-rose-tint)] text-[var(--sg-rose-ink)]'
+          }`}
+        >
+          <span className="inline-flex items-center gap-2">
+            {exportFeedback.tone === 'success' ? (
+              <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+            ) : (
+              <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            )}
+            <span>{exportFeedback.message}</span>
+          </span>
+          <Download className="h-4 w-4 shrink-0 opacity-70" aria-hidden="true" />
+        </div>
+      )}
+
+      {/* Card 1: Calm Weekly Coverage Matrix */}
       <section
         aria-label="13-week spatial deployment matrix"
-        className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs"
+        className="rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-5 sm:p-6 transition-colors"
       >
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-bold text-[#0f172a]">
-              13-Week Deployment Matrix ({output.weeklyQuotaK} wards/week)
-            </h2>
-            <p className="text-xs text-slate-600">
-              Overview of which districts receive field teams each week. Click any active cell to
-              inspect that ward on the Simulator map.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
-            <span className="inline-flex items-center gap-1.5 text-[#115e59]">
-              <span className="h-3 w-3 rounded-xs bg-[#0f766e]" aria-hidden="true" />
-              Hub Containment
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-base font-semibold text-[var(--sg-text-primary)]">
+            Weekly Coverage Matrix (W01–W{String(totalWeeks).padStart(2, '0')})
+          </h3>
+
+          <div className="flex flex-wrap items-center gap-4 text-[13px] text-[var(--sg-text-muted)]">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--sg-teal)]" aria-hidden="true" />
+              <span>Hub Containment (H)</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 text-[#92400e]">
-              <span className="h-3 w-3 rounded-xs bg-amber-500" aria-hidden="true" />
-              Surge Intercept
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--sg-amber-dot)]" aria-hidden="true" />
+              <span>Surge Intercept (S)</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 text-[#9f1239]">
-              <span className="h-3 w-3 rounded-xs bg-rose-500" aria-hidden="true" />
-              ICU Shield
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--sg-rose-dot)]" aria-hidden="true" />
+              <span>ICU Shield (I)</span>
             </span>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-left text-xs">
+          <table className="w-full min-w-[660px] border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 font-mono text-[11px] text-slate-500">
-                <th scope="col" className="py-2 pr-3 font-semibold text-slate-700">
-                  District
-                </th>
-                <th scope="col" className="px-2 py-2 font-semibold text-slate-700">
-                  Zone
+              <tr className="border-b border-[var(--sg-border-subtle)] font-mono text-xs font-medium text-[var(--sg-text-muted)]">
+                <th scope="col" className="py-2.5 pr-4">
+                  DISTRICT
                 </th>
                 {weekOptions.map((w) => (
-                  <th key={w} scope="col" className="px-1 py-2 text-center font-semibold">
-                    W{w}
+                  <th key={w} scope="col" className="px-1 py-2.5 text-center font-mono">
+                    W{String(w).padStart(2, '0')}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {output.districts.map((district, dIdx) => (
-                <tr key={district.id} className="hover:bg-slate-50/80">
-                  <td className="whitespace-nowrap py-1.5 pr-3">
-                    <span className="mr-1.5 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600">
-                      {buildDistrictShortCode(district, dIdx)}
-                    </span>
-                    <span className="font-semibold text-[#0f172a]">{district.name}</span>
-                  </td>
-                  <td className="whitespace-nowrap px-2 py-1.5 text-[11px] text-slate-500">
-                    {formatZoneLabel(district.zoneType)}
+            <tbody className="divide-y divide-[var(--sg-border-row)]">
+              {matrixDistricts.map((district) => (
+                <tr key={district.id} className="hover:bg-[var(--sg-hover)]">
+                  <td className="whitespace-nowrap py-3 pr-4 font-medium text-[var(--sg-text-primary)]">
+                    {district.name}
                   </td>
                   {weekOptions.map((w) => {
                     const rationale = assignmentMap.get(`${w}:${district.id}`);
                     if (!rationale) {
                       return (
-                        <td key={w} className="px-1 py-1.5 text-center">
-                          <span
-                            className="inline-block h-4 w-5 rounded-xs bg-slate-100"
-                            aria-label={`Week ${w} standby`}
-                          />
+                        <td
+                          key={w}
+                          className="px-1 py-2.5 text-center font-mono text-[var(--sg-border-control)]"
+                        >
+                          ·
                         </td>
                       );
                     }
-                    const cellColor =
-                      rationale === 'ICU Capacity Shield'
-                        ? 'bg-rose-500 hover:bg-rose-600'
-                        : rationale === 'Pre-emptive Surge Intercept'
-                          ? 'bg-amber-500 hover:bg-amber-600'
-                          : 'bg-[#0f766e] hover:bg-[#0d9488]';
+                    const style = getRationaleIndicator(rationale);
                     return (
-                      <td key={w} className="px-1 py-1.5 text-center">
+                      <td key={w} className="px-1 py-2 text-center">
                         <button
                           type="button"
                           title={`Week ${w} · ${district.name}: ${rationale}`}
                           aria-label={`Inspect ${district.name} in Week ${w} (${rationale})`}
                           onClick={() => onInspectDistrictAtWeek(district.id, w)}
-                          className={`inline-block h-4 w-5 rounded-xs transition-transform hover:scale-110 ${cellColor}`}
-                        />
+                          className={`inline-flex h-7 w-7 items-center justify-center rounded-md font-mono text-xs font-semibold transition-colors ${style.cellClass}`}
+                        >
+                          {style.letter}
+                        </button>
                       </td>
                     );
                   })}
@@ -232,112 +329,70 @@ export function DispatchSchedule({
             </tbody>
           </table>
         </div>
+
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--sg-border-subtle)] pt-3.5 text-[13px] text-[var(--sg-text-muted)]">
+          <span className="font-mono tabular-nums">
+            {output.weeklyQuotaK} / {output.weeklyQuotaK} teams per week ·{' '}
+            {output.assignments.length} total allocations
+          </span>
+          {output.districts.length > matrixDistricts.length || showAllMatrixWards ? (
+            <button
+              type="button"
+              onClick={() => setShowAllMatrixWards((v) => !v)}
+              className="min-h-[44px] font-medium text-[var(--sg-teal)] hover:underline min-[720px]:min-h-0"
+            >
+              {showAllMatrixWards
+                ? 'Show active wards only'
+                : `Show all ${output.districts.length} wards`}
+            </button>
+          ) : null}
+        </div>
       </section>
 
-      {/* Filterable Operational Dispatch Schedule & Exports */}
+      {/* Card 2: Clean 5-Column Dispatch Table */}
       <section
-        aria-label="Weekly operational dispatch schedule"
-        data-tour="dispatch-export"
-        className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs"
+        aria-label="Weekly field assignments"
+        className="rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-5 sm:p-6 transition-colors"
       >
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 p-4">
-          <div>
-            <h2 className="text-base font-bold text-[#0f172a]">
-              Operational Field Schedule (Weeks 1 to {totalWeeks})
-            </h2>
-            <p className="mt-0.5 text-xs text-slate-600">
-              Action: <strong className="text-[#0f766e]">{interventionLabel}</strong> · Quota:{' '}
-              <strong className="font-mono text-[#0f172a]">{output.weeklyQuotaK} wards/wk</strong> ·
-              Showing{' '}
-              <span className="font-mono font-semibold tabular-nums text-[#0f172a]">
-                {filteredRows.length} of {output.assignments.length}
-              </span>{' '}
-              dispatches
-            </p>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-base font-semibold text-[var(--sg-text-primary)]">Field Assignments</h3>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={handleExportCsv}
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-[#0f766e] px-3.5 py-2 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-[#0d9488] min-[720px]:min-h-[36px]"
-            >
-              <FileSpreadsheet className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>Export Plan (CSV)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleExportJson}
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-slate-500 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#0f172a] min-[720px]:min-h-[36px]"
-            >
-              <FileJson className="h-4 w-4 shrink-0 text-[#0f766e]" aria-hidden="true" />
-              <span>Export Full Run (JSON)</span>
-            </button>
-          </div>
-        </div>
-
-        {exportFeedback && (
-          <div
-            role={exportFeedback.tone === 'error' ? 'alert' : 'status'}
-            className={`flex items-center justify-between gap-2 border-b px-4 py-2.5 text-xs font-medium ${
-              exportFeedback.tone === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-[#065f46]'
-                : 'border-rose-200 bg-rose-50 text-[#9f1239]'
-            }`}
-          >
-            <span className="inline-flex items-center gap-2">
-              {exportFeedback.tone === 'success' ? (
-                <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-              ) : (
-                <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
-              )}
-              <span>{exportFeedback.message}</span>
-            </span>
-            <Download className="h-3.5 w-3.5 shrink-0 opacity-75" aria-hidden="true" />
-          </div>
-        )}
-
-        {/* Filter Toolbar */}
-        <div className="grid grid-cols-1 gap-3 border-b border-slate-200 bg-slate-50 p-4 min-[720px]:grid-cols-2 min-[1180px]:grid-cols-12 min-[1180px]:items-end">
-          <div className="min-[1180px]:col-span-2">
-            <label htmlFor="sg-filter-week" className="mb-1 block text-xs font-semibold text-slate-700">
-              Week
+            <label htmlFor="sg-filter-week" className="sr-only">
+              Filter by week
             </label>
             <select
               id="sg-filter-week"
               value={filters.week === 'all' ? 'all' : String(filters.week)}
               onChange={(e) =>
-                setFilters((prev) => ({
+                handleFilterChange((prev) => ({
                   ...prev,
                   week: e.target.value === 'all' ? 'all' : Number(e.target.value),
                 }))
               }
-              className="min-h-[44px] w-full rounded-lg border border-slate-500 bg-white px-2.5 py-1.5 text-xs font-medium text-[#0f172a] min-[720px]:min-h-[36px]"
+              className="min-h-[44px] rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-inset)] px-3 py-1 text-[13px] font-medium text-[var(--sg-text-primary)] min-[720px]:min-h-[36px]"
             >
-              <option value="all">All Weeks (1 to {totalWeeks})</option>
+              <option value="all">All Weeks</option>
               {weekOptions.map((w) => (
                 <option key={w} value={w}>
                   Week {w}
                 </option>
               ))}
             </select>
-          </div>
 
-          <div className="min-[1180px]:col-span-2">
-            <label htmlFor="sg-filter-zone" className="mb-1 block text-xs font-semibold text-slate-700">
-              Zone Type
+            <label htmlFor="sg-filter-zone" className="sr-only">
+              Filter by zone type
             </label>
             <select
               id="sg-filter-zone"
               value={filters.zoneType}
               onChange={(e) =>
-                setFilters((prev) => ({
+                handleFilterChange((prev) => ({
                   ...prev,
                   zoneType: e.target.value as DispatchFilterState['zoneType'],
                 }))
               }
-              className="min-h-[44px] w-full rounded-lg border border-slate-500 bg-white px-2.5 py-1.5 text-xs font-medium text-[#0f172a] min-[720px]:min-h-[36px]"
+              className="min-h-[44px] rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-inset)] px-3 py-1 text-[13px] font-medium text-[var(--sg-text-primary)] min-[720px]:min-h-[36px]"
             >
               <option value="all">All Zones</option>
               {ZONE_OPTIONS.map((z) => (
@@ -346,25 +401,20 @@ export function DispatchSchedule({
                 </option>
               ))}
             </select>
-          </div>
 
-          <div className="min-[1180px]:col-span-3">
-            <label
-              htmlFor="sg-filter-rationale"
-              className="mb-1 block text-xs font-semibold text-slate-700"
-            >
-              Rationale
+            <label htmlFor="sg-filter-rationale" className="sr-only">
+              Filter by rationale
             </label>
             <select
               id="sg-filter-rationale"
               value={filters.rationale}
               onChange={(e) =>
-                setFilters((prev) => ({
+                handleFilterChange((prev) => ({
                   ...prev,
                   rationale: e.target.value as DispatchFilterState['rationale'],
                 }))
               }
-              className="min-h-[44px] w-full rounded-lg border border-slate-500 bg-white px-2.5 py-1.5 text-xs font-medium text-[#0f172a] min-[720px]:min-h-[36px]"
+              className="min-h-[44px] rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-inset)] px-3 py-1 text-[13px] font-medium text-[var(--sg-text-primary)] min-[720px]:min-h-[36px]"
             >
               <option value="all">All Rationales</option>
               {RATIONALE_OPTIONS.map((r) => (
@@ -373,192 +423,186 @@ export function DispatchSchedule({
                 </option>
               ))}
             </select>
-          </div>
 
-          <div className="min-[1180px]:col-span-3">
-            <label
-              htmlFor="sg-filter-search"
-              className="mb-1 block text-xs font-semibold text-slate-700"
-            >
-              District Search
-            </label>
             <div className="relative">
+              <label htmlFor="sg-filter-search" className="sr-only">
+                Filter district
+              </label>
               <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--sg-text-muted)]"
                 aria-hidden="true"
               />
               <input
                 id="sg-filter-search"
                 type="search"
                 value={filters.search}
-                onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                placeholder="Search ward name or ID..."
-                className="min-h-[44px] w-full rounded-lg border border-slate-500 bg-white py-1.5 pl-9 pr-3 text-xs text-[#0f172a] placeholder:text-slate-400 min-[720px]:min-h-[36px]"
+                onChange={(e) =>
+                  handleFilterChange((prev) => ({ ...prev, search: e.target.value }))
+                }
+                placeholder="Filter district..."
+                className="min-h-[44px] w-48 rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-inset)] py-1 pl-9 pr-3 text-[13px] text-[var(--sg-text-primary)] placeholder:text-[var(--sg-text-muted)] min-[720px]:min-h-[36px]"
               />
             </div>
-          </div>
 
-          <div className="min-[1180px]:col-span-2 min-[1180px]:flex min-[1180px]:justify-end">
-            <button
-              type="button"
-              disabled={!hasActiveFilters}
-              onClick={() => setFilters(INITIAL_FILTERS)}
-              className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-lg border border-slate-500 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-40 min-[720px]:min-h-[36px] min-[1180px]:w-auto"
-            >
-              <FilterX className="h-4 w-4" aria-hidden="true" />
-              <span>Clear Filters</span>
-            </button>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={() => handleFilterChange(() => INITIAL_FILTERS)}
+                className="min-h-[44px] rounded-lg px-3 py-1 text-[13px] font-medium text-[var(--sg-teal)] hover:bg-[var(--sg-teal-tint)] min-[720px]:min-h-[36px]"
+              >
+                Clear
+              </button>
+            )}
           </div>
         </div>
 
         {filteredRows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
-            <p className="text-sm font-bold text-[#0f172a]">
-              No dispatch assignments match your current filter selection.
+          <div className="py-12 text-center">
+            <p className="text-base font-medium text-[var(--sg-text-primary)]">
+              No assignments match your current filter.
             </p>
             <button
               type="button"
-              onClick={() => setFilters(INITIAL_FILTERS)}
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-slate-500 bg-white px-4 py-2 text-xs font-semibold text-[#0f766e] hover:bg-teal-50"
+              onClick={() => handleFilterChange(() => INITIAL_FILTERS)}
+              className="mt-2 min-h-[44px] text-sm font-semibold text-[var(--sg-teal)] hover:underline min-[720px]:min-h-0"
             >
-              <FilterX className="h-4 w-4" aria-hidden="true" />
-              <span>Clear Filters</span>
+              Reset filters
             </button>
           </div>
         ) : (
           <>
-            {/* Mobile Stacked Cards (< 720px) */}
-            <div className="divide-y divide-slate-200 min-[720px]:hidden">
-              {filteredRows.map((row) => (
-                <article key={`${row.week}-${row.districtId}`} className="space-y-2.5 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-teal-50 px-2.5 py-0.5 font-mono text-xs font-semibold tabular-nums text-[#115e59]">
-                        Week {row.week}
-                      </span>
+            {/* Mobile Stacked List (< 720px) */}
+            <div className="mt-4 divide-y divide-[var(--sg-border-row)] min-[720px]:hidden">
+              {pagedRows.map((row) => {
+                const style = getRationaleIndicator(row.rationale);
+                const icuPct = Math.round(
+                  computeDistrictStress(row.icuLoadAtWeekStart, row.icuCapacity) * 100,
+                );
+                return (
+                  <article key={`${row.week}-${row.districtId}`} className="space-y-2 py-4">
+                    <div className="flex items-baseline justify-between gap-2">
                       <button
                         type="button"
                         onClick={() => onInspectDistrictAtWeek(row.districtId, row.week)}
-                        className="inline-flex min-h-[44px] items-center gap-1 text-left text-sm font-bold text-[#0f172a] underline decoration-slate-400 underline-offset-4 hover:text-[#0f766e]"
+                        className="min-h-[44px] text-left text-[15px] font-semibold text-[var(--sg-text-primary)] hover:text-[var(--sg-teal)]"
                       >
-                        <span>{row.districtName}</span>
-                        <ExternalLink className="h-3.5 w-3.5 text-[#0f766e]" aria-hidden="true" />
+                        <span className="mr-2 font-mono text-[13px] text-[var(--sg-text-muted)]">
+                          W{String(row.week).padStart(2, '0')}
+                        </span>
+                        {row.districtName}
                       </button>
+                      <span className="font-mono text-[13px] tabular-nums text-[var(--sg-text-primary)]">
+                        {icuPct}% ({formatFixed(row.icuLoadAtWeekStart, 1)} / {row.icuCapacity})
+                      </span>
                     </div>
-                    <span className="rounded-full border border-slate-300 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                      {formatZoneLabel(row.zoneType)}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${getRationaleBadgeClass(row.rationale)}`}
-                    >
-                      {row.rationale}
-                    </span>
-                    <span className="text-xs text-slate-600">{row.interventionType}</span>
-                  </div>
-
-                  <dl className="grid grid-cols-3 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5 font-mono text-[11px] tabular-nums">
-                    <div>
-                      <dt className="text-slate-500">ICU / Cap</dt>
-                      <dd className="mt-0.5 font-semibold text-[#0f172a]">
-                        {formatFixed(row.icuLoadAtWeekStart, 1)} / {row.icuCapacity}
-                      </dd>
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+                      <span className={`inline-flex items-center gap-1.5 font-medium ${style.textColor}`}>
+                        <span className={`h-2 w-2 rounded-full ${style.dotColor}`} aria-hidden="true" />
+                        <span>{style.shortLabel}</span>
+                      </span>
+                      <span className="text-[var(--sg-text-muted)]">{row.interventionType}</span>
                     </div>
-                    <div>
-                      <dt className="text-slate-500">Hub Index</dt>
-                      <dd className="mt-0.5 font-semibold text-[#0f172a]">
-                        {row.hubCentrality.toFixed(3)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-slate-500">Risk Score</dt>
-                      <dd className="mt-0.5 font-semibold text-[#0f766e]">
-                        {formatFixed(row.projectedRiskScore, 1)}
-                      </dd>
-                    </div>
-                  </dl>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
 
-            {/* Tablet & Desktop Table (>= 720px) */}
-            <div className="hidden overflow-x-auto min-[720px]:block">
-              <table className="w-full border-collapse text-left text-xs">
+            {/* Clean 5-Column Desktop Table (>= 720px) */}
+            <div className="mt-4 hidden overflow-x-auto min-[720px]:block">
+              <table className="w-full border-collapse text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-600">
-                    <th scope="col" className="px-4 py-3">
-                      Week
+                  <tr className="border-b border-[var(--sg-border-subtle)] text-xs font-medium text-[var(--sg-text-muted)]">
+                    <th scope="col" className="py-3 pr-3 font-mono">
+                      WEEK
                     </th>
-                    <th scope="col" className="px-4 py-3">
-                      District
+                    <th scope="col" className="px-3 py-3">
+                      DISTRICT
                     </th>
-                    <th scope="col" className="px-4 py-3">
-                      Zone
+                    <th scope="col" className="px-3 py-3">
+                      RATIONALE
                     </th>
-                    <th scope="col" className="px-4 py-3">
-                      Action
+                    <th scope="col" className="px-3 py-3">
+                      PROTOCOL
                     </th>
-                    <th scope="col" className="px-4 py-3">
-                      Rationale
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-right">
-                      ICU Load / Cap
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-right">
-                      Hub Index
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-right">
-                      Risk Score
+                    <th scope="col" className="py-3 pl-3 text-right font-mono">
+                      FORECAST ICU
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredRows.map((row) => (
-                    <tr
-                      key={`${row.week}-${row.districtId}`}
-                      className="transition-colors hover:bg-slate-50"
-                    >
-                      <td className="whitespace-nowrap px-4 py-2.5 font-mono font-semibold tabular-nums text-[#0f766e]">
-                        W{row.week}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <button
-                          type="button"
-                          onClick={() => onInspectDistrictAtWeek(row.districtId, row.week)}
-                          className="inline-flex items-center gap-1.5 font-semibold text-[#0f172a] underline decoration-slate-300 underline-offset-4 transition-colors hover:text-[#0f766e]"
-                        >
-                          <span>{row.districtName}</span>
-                          <ExternalLink className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
-                        </button>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-slate-600">
-                        {formatZoneLabel(row.zoneType)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-slate-600">
-                        {row.interventionType}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-2.5">
-                        <span
-                          className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${getRationaleBadgeClass(row.rationale)}`}
-                        >
-                          {row.rationale}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-right font-mono tabular-nums text-slate-700">
-                        {formatFixed(row.icuLoadAtWeekStart, 1)} / {row.icuCapacity}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-right font-mono tabular-nums text-slate-600">
-                        {row.hubCentrality.toFixed(3)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-right font-mono font-semibold tabular-nums text-[#0f766e]">
-                        {formatFixed(row.projectedRiskScore, 1)}
-                      </td>
-                    </tr>
-                  ))}
+                <tbody className="divide-y divide-[var(--sg-border-row)]">
+                  {pagedRows.map((row) => {
+                    const style = getRationaleIndicator(row.rationale);
+                    const icuPct = Math.round(
+                      computeDistrictStress(row.icuLoadAtWeekStart, row.icuCapacity) * 100,
+                    );
+                    return (
+                      <tr
+                        key={`${row.week}-${row.districtId}`}
+                        className="transition-colors hover:bg-[var(--sg-hover)]"
+                      >
+                        <td className="whitespace-nowrap py-3.5 pr-3 font-mono font-semibold tabular-nums text-[var(--sg-text-primary)]">
+                          W{String(row.week).padStart(2, '0')}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5">
+                          <button
+                            type="button"
+                            onClick={() => onInspectDistrictAtWeek(row.districtId, row.week)}
+                            className="font-semibold text-[var(--sg-text-primary)] hover:text-[var(--sg-teal)] hover:underline"
+                          >
+                            {row.districtName}
+                          </button>{' '}
+                          <span className="text-[var(--sg-text-muted)]">
+                            ({formatZoneLabel(row.zoneType)})
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5">
+                          <span className={`inline-flex items-center gap-1.5 font-medium ${style.textColor}`}>
+                            <span className={`h-2 w-2 rounded-full ${style.dotColor}`} aria-hidden="true" />
+                            <span>{style.shortLabel}</span>
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5 text-[var(--sg-text-muted)]">
+                          {row.interventionType}
+                        </td>
+                        <td className="whitespace-nowrap py-3.5 pl-3 text-right font-mono tabular-nums text-[var(--sg-text-primary)]">
+                          <strong>{icuPct}%</strong>{' '}
+                          <span className="text-[var(--sg-text-muted)]">
+                            ({formatFixed(row.icuLoadAtWeekStart, 1)} / {row.icuCapacity})
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Clean Pagination Bar */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--sg-border-subtle)] pt-3.5 text-[13px] text-[var(--sg-text-muted)]">
+              <span className="tabular-nums">
+                Showing {rangeStart}–{rangeEnd} of {filteredRows.length} assignments
+              </span>
+              <div className="flex items-center gap-2 font-mono">
+                <button
+                  type="button"
+                  disabled={safePage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="min-h-[44px] rounded-md border border-[var(--sg-border-control)] bg-[var(--sg-inset)] px-2.5 font-sans font-medium text-[var(--sg-text-primary)] hover:bg-[var(--sg-hover)] disabled:opacity-40 min-[720px]:min-h-[30px]"
+                >
+                  Prev
+                </button>
+                <span className="tabular-nums">
+                  Page {safePage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={safePage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="min-h-[44px] rounded-md border border-[var(--sg-border-control)] bg-[var(--sg-inset)] px-2.5 font-sans font-medium text-[var(--sg-text-primary)] hover:bg-[var(--sg-hover)] disabled:opacity-40 min-[720px]:min-h-[30px]"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </>
         )}

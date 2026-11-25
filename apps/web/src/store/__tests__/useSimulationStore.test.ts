@@ -210,4 +210,18 @@ describe('useSimulationStore lifecycle and orchestration', () => {
 
     store.getState().dispose();
   });
+
+  it('defaults to dark theme and switches cleanly between dark and light modes', () => {
+    const store = createSimulationStore({
+      createWorkerClient: createSyncMockWorkerClient,
+    });
+
+    expect(store.getState().theme).toBe('dark');
+    store.getState().toggleTheme();
+    expect(store.getState().theme).toBe('light');
+    store.getState().setTheme('dark');
+    expect(store.getState().theme).toBe('dark');
+
+    store.getState().dispose();
+  });
 });
