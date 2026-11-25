@@ -41,12 +41,12 @@ export function KpiStrip({ output, isOptimizing, onInspectGates }: KpiStripProps
           <div className="mt-2 flex flex-wrap items-baseline gap-2.5 font-mono tabular-nums">
             <del
               aria-label={`Reactive baseline ${vm.collapse.reactiveDays} days`}
-              className="text-xl font-medium text-[var(--sg-rose)]"
+              className="whitespace-nowrap text-xl font-medium text-[var(--sg-rose)]"
             >
               {vm.collapse.reactiveDays}d
             </del>
             <ArrowRight className="h-4 w-4 text-[var(--sg-text-muted)]" aria-hidden="true" />
-            <span className="text-3xl font-bold tracking-tight text-[var(--sg-teal)] sm:text-4xl">
+            <span className="whitespace-nowrap text-[28px] font-bold tracking-tight text-[var(--sg-teal)] sm:text-[32px]">
               {vm.collapse.optimizedDays} {vm.collapse.optimizedDays === 1 ? 'day' : 'days'}
             </span>
           </div>
@@ -67,12 +67,12 @@ export function KpiStrip({ output, isOptimizing, onInspectGates }: KpiStripProps
           <div className="mt-2 flex flex-wrap items-baseline gap-2.5 font-mono tabular-nums">
             <del
               aria-label={`Reactive peak overflow ${formatFixed(vm.icuOverflow.reactivePeakBeds, 1)} beds`}
-              className="text-xl font-medium text-[var(--sg-rose)]"
+              className="whitespace-nowrap text-xl font-medium text-[var(--sg-rose)]"
             >
               {formatFixed(vm.icuOverflow.reactivePeakBeds, 1)}
             </del>
             <ArrowRight className="h-4 w-4 text-[var(--sg-text-muted)]" aria-hidden="true" />
-            <span className="text-3xl font-bold tracking-tight text-[var(--sg-teal)] sm:text-4xl">
+            <span className="whitespace-nowrap text-[28px] font-bold tracking-tight text-[var(--sg-teal)] sm:text-[32px]">
               {formatFixed(vm.icuOverflow.optimizedPeakBeds, 1)} beds
             </span>
           </div>
@@ -92,13 +92,13 @@ export function KpiStrip({ output, isOptimizing, onInspectGates }: KpiStripProps
             <button
               type="button"
               onClick={onInspectGates}
-              aria-label={`Policy gates: ${vm.readiness.passedCount} of ${vm.readiness.totalGates} passed. Open methodology gates.`}
-              className={`inline-flex min-h-[44px] items-baseline gap-1 font-mono text-3xl font-bold tracking-tight transition-opacity hover:opacity-80 sm:text-4xl min-[720px]:min-h-0 ${gateHeadlineColor}`}
+              aria-label={`Policy gates: ${vm.readiness.passedCount} of ${vm.readiness.totalGates} ${vm.readiness.gateStatus}. Open methodology gates.`}
+              className={`inline-flex min-h-[44px] items-baseline gap-1.5 whitespace-nowrap font-mono text-[28px] font-bold tracking-tight transition-opacity hover:opacity-80 sm:text-[32px] min-[720px]:min-h-0 ${gateHeadlineColor}`}
             >
               <span>
                 {vm.readiness.passedCount} / {vm.readiness.totalGates}
               </span>
-              <span className="ml-1.5 text-2xl font-bold sm:text-3xl">
+              <span className="text-2xl font-bold sm:text-[28px]">
                 {vm.readiness.gateStatus === 'PASS' ? 'Passed' : vm.readiness.gateStatus}
               </span>
             </button>

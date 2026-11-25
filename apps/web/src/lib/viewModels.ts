@@ -663,7 +663,7 @@ export function summarizeSwapTrace(swapTrace: readonly SwapTraceEntry[]): SwapTr
 /**
  * Selects a compact, non-overlapping set of key district IDs to label on a strategy map
  * at a given day: prioritizing selected wards, breached wards (>=100% ICU), active weekly teams,
- * or highest-stress wards when no breach or active focus exists.
+ * or highest-stress wards while enforcing minimum centroid spacing so map pills never stack.
  */
 export function selectPriorityBadgeDistrictIds(
   output: OptimizationOutput,
@@ -680,24 +680,58 @@ export function selectPriorityBadgeDistrictIds(
   const rowBase = meta.day * n;
   const weekRow = strat.schedule[meta.weekIndex];
 
+  let minLng = Number.POSITIVE_INFINITY;
+  let maxLng = Number.NEGATIVE_INFINITY;
+  let minLat = Number.POSITIVE_INFINITY;
+  let maxLat = Number.NEGATIVE_INFINITY;
+  for (const d of output.districts) {
+    const [lng, lat] = d.centroid;
+    if (lng < minLng) minLng = lng;
+    if (lng > maxLng) maxLng = lng;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+  }
+  const lngSpan = Math.max(0.01, maxLng - minLng);
+  const latSpan = Math.max(0.01, maxLat - minLat);
+
   const scored = output.districts.map((district, i) => {
     const icuDemand = strat.districtIcuDemand[rowBase + i] ?? 0;
     const stress = computeDistrictStress(icuDemand, district.icuBeds);
     const treated = (weekRow?.[i] ?? 0) === 1;
     const selected = district.id === selectedDistrictId;
-    return { id: district.id, stress, treated, selected };
+    return { id: district.id, centroid: district.centroid, stress, treated, selected };
   });
 
   const chosen = new Set<string>();
-  if (selectedDistrictId && scored.some((s) => s.id === selectedDistrictId)) {
-    chosen.add(selectedDistrictId);
+  const chosenCentroids: Array<readonly [number, number]> = [];
+
+  const collidesWithChosen = (centroid: readonly [number, number]): boolean =>
+    chosenCentroids.some(([cLng, cLat]) => {
+      const dx = Math.abs(centroid[0] - cLng) / lngSpan;
+      const dy = Math.abs(centroid[1] - cLat) / latSpan;
+      // Label pills are wider (~95px) than tall (~24px); prevent horizontal & vertical overlap
+      return dx < 0.25 && dy < 0.14;
+    });
+
+  const tryAdd = (item: (typeof scored)[number], enforceSpacing = true): void => {
+    if (chosen.size >= maxBadges || chosen.has(item.id)) return;
+    if (enforceSpacing && collidesWithChosen(item.centroid)) return;
+    chosen.add(item.id);
+    chosenCentroids.push(item.centroid);
+  };
+
+  if (selectedDistrictId) {
+    const selectedItem = scored.find((s) => s.id === selectedDistrictId);
+    if (selectedItem) {
+      tryAdd(selectedItem, false);
+    }
   }
 
-  // Always surface breaching wards first (highest stress first)
+  // Surface highest-stress breaching wards first while keeping labels separated
   const breaching = scored.filter((s) => s.stress >= 1.0).sort((a, b) => b.stress - a.stress);
   for (const item of breaching) {
     if (chosen.size >= maxBadges) break;
-    chosen.add(item.id);
+    tryAdd(item, true);
   }
 
   // For SennaGrid (and Reactive when below breach), surface active weekly interventions
@@ -705,16 +739,20 @@ export function selectPriorityBadgeDistrictIds(
   if (strategy === 'sennagrid' || breaching.length === 0) {
     for (const item of treatedList) {
       if (chosen.size >= maxBadges) break;
-      chosen.add(item.id);
+      tryAdd(item, true);
     }
   }
 
-  // Fallback to top stressed wards so maps never appear unlabeled
-  if (chosen.size === 0) {
-    const topStress = [...scored].sort((a, b) => b.stress - a.stress).slice(0, Math.min(3, maxBadges));
-    for (const item of topStress) {
-      chosen.add(item.id);
-    }
+  // Fill remaining slots with spatially separated top-stressed wards
+  const topStress = [...scored].sort((a, b) => b.stress - a.stress);
+  for (const item of topStress) {
+    if (chosen.size >= maxBadges) break;
+    tryAdd(item, true);
+  }
+
+  // Ensure at least 1 badge even on degenerate single-cluster maps
+  if (chosen.size === 0 && topStress[0]) {
+    tryAdd(topStress[0], false);
   }
 
   return chosen;

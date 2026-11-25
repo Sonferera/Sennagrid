@@ -222,7 +222,7 @@ export function ControlBar() {
               Budget
             </label>
             <span className="font-mono text-sm font-semibold tabular-nums text-[var(--sg-teal)]">
-              {budgetPct}% · {quotaK} wards
+              {budgetPct}% · {quotaK} {quotaK === 1 ? 'ward' : 'wards'}
             </span>
           </div>
           <input

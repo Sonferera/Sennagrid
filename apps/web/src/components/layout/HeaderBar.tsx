@@ -31,6 +31,13 @@ export function HeaderBar() {
         ? 'text-[var(--sg-amber-ink)]'
         : 'text-[var(--sg-safe-ink)]';
 
+  const gateStatusLabel =
+    gates?.overallStatus === 'FAIL'
+      ? 'Fail'
+      : gates?.overallStatus === 'REVIEW'
+        ? 'Review'
+        : 'Pass';
+
   const isDark = theme === 'dark';
 
   return (
@@ -96,7 +103,7 @@ export function HeaderBar() {
               {gates ? (
                 <>
                   {gates.passedCount}/{gates.totalGates}
-                  <span className="hidden min-[440px]:inline"> Gates</span> Pass
+                  <span className="hidden min-[440px]:inline"> Gates</span> {gateStatusLabel}
                 </>
               ) : (
                 'Verifying'

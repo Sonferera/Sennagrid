@@ -188,6 +188,37 @@ describe('viewModels deterministic transformations', () => {
     expect(optBadges.size).toBeLessThanOrEqual(4);
     expect(optBadges.size).toBeGreaterThanOrEqual(2);
 
+    // Harbor Corridor severe scenario & Metro Tropica Day 0 must not cluster colliding priority pills
+    const harborBadges = selectPriorityBadgeDistrictIds(harborOut, 'reactive', findCrisisFocusDay(harborOut), null, 3);
+    const day0Badges = selectPriorityBadgeDistrictIds(metroOut, 'reactive', 0, null, 3);
+    expect(harborBadges.size).toBeGreaterThanOrEqual(2);
+    expect(day0Badges.size).toBeGreaterThanOrEqual(2);
+
+    const checkSeparated = (ids: Set<string>, districts: typeof harborOut.districts) => {
+      const picked = districts.filter((d) => ids.has(d.id));
+      let minLng = Number.POSITIVE_INFINITY;
+      let maxLng = Number.NEGATIVE_INFINITY;
+      let minLat = Number.POSITIVE_INFINITY;
+      let maxLat = Number.NEGATIVE_INFINITY;
+      for (const d of districts) {
+        minLng = Math.min(minLng, d.centroid[0]);
+        maxLng = Math.max(maxLng, d.centroid[0]);
+        minLat = Math.min(minLat, d.centroid[1]);
+        maxLat = Math.max(maxLat, d.centroid[1]);
+      }
+      const lngSpan = Math.max(0.01, maxLng - minLng);
+      const latSpan = Math.max(0.01, maxLat - minLat);
+      for (let i = 0; i < picked.length; i++) {
+        for (let j = i + 1; j < picked.length; j++) {
+          const dx = Math.abs(picked[i]!.centroid[0] - picked[j]!.centroid[0]) / lngSpan;
+          const dy = Math.abs(picked[i]!.centroid[1] - picked[j]!.centroid[1]) / latSpan;
+          expect(dx >= 0.25 || dy >= 0.14).toBe(true);
+        }
+      }
+    };
+    checkSeparated(harborBadges, harborOut.districts);
+    checkSeparated(day0Badges, metroOut.districts);
+
     expect(formatPopulationCompact(METRO_TROPICA_PRESET.districts)).toMatch(/M pop$/);
     expect(formatPopulationCompact(HARBOR_CORRIDOR_PRESET.districts)).toMatch(/K pop$/);
   });

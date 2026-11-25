@@ -404,11 +404,12 @@ export function SplitMapView({
   const latestThemeRef = useRef(theme);
   latestThemeRef.current = theme;
   const prevThemeRef = useRef(theme);
+  const lastRenderedRegionRef = useRef(output.params.regionId);
   const onSelectDistrictRef = useRef(onSelectDistrict);
   onSelectDistrictRef.current = onSelectDistrict;
 
   const [offlineFallback, setOfflineFallback] = useState(false);
-  const [mapsReady, setMapsReady] = useState(false);
+  const [styleEpoch, setStyleEpoch] = useState(0);
   const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null);
 
   const preset = getRegionPreset(output.params.regionId);
@@ -436,7 +437,6 @@ export function SplitMapView({
     const initialBounds = computeFeatureCollectionBounds(initialPreset.featureCollection);
     let disposed = false;
     let fallbackTriggered = false;
-    let loadedCount = 0;
 
     const initMap = (
       container: HTMLDivElement,
@@ -463,7 +463,7 @@ export function SplitMapView({
       };
 
       const styleTimer = setTimeout(() => {
-        if (!disposed && !map.isStyleLoaded()) {
+        if (!disposed && !map.getStyle()?.layers?.length) {
           activateFallback();
         }
       }, BASEMAP_LOAD_TIMEOUT_MS);
@@ -474,6 +474,7 @@ export function SplitMapView({
         const curOut = latestOutputRef.current;
         const curPreset = getRegionPreset(curOut.params.regionId);
         const curFlows = buildFlowsFeatureCollection(curOut);
+        lastRenderedRegionRef.current = curOut.params.regionId;
         attachDistrictLayers(
           map,
           curPreset.featureCollection,
@@ -493,14 +494,33 @@ export function SplitMapView({
           latestShowLabelsRef.current,
           latestShowAllLabelsRef.current,
         );
-        loadedCount++;
-        if (loadedCount >= 2) {
-          setMapsReady(true);
-        }
+        setStyleEpoch((epoch) => epoch + 1);
       });
 
-      map.on('error', () => {
-        if (!map.isStyleLoaded()) {
+      // Keep GeoJSON feature states synced right after setData() finishes background worker tiling
+      map.on('sourcedata', (ev) => {
+        if (disposed || ev.sourceId !== SOURCE_ID || !ev.isSourceLoaded) return;
+        applyFeatureStatesAndMarkers(
+          map,
+          markersRef.current,
+          latestOutputRef.current,
+          strategy,
+          latestDayRef.current,
+          latestSelectedRef.current,
+          latestShowLabelsRef.current,
+          latestShowAllLabelsRef.current,
+        );
+      });
+
+      map.on('error', (ev) => {
+        const mapErr = ev as { error?: { name?: string; message?: string }; sourceId?: string };
+        const errName = mapErr.error?.name ?? '';
+        const errMsg = mapErr.error?.message ?? '';
+        if (errName === 'AbortError' || errMsg.toLowerCase().includes('abort')) {
+          return;
+        }
+        // Only fall back when initial style JSON fails before any layer attaches
+        if (!map.getStyle()?.layers?.length && !mapErr.sourceId) {
           clearTimeout(styleTimer);
           activateFallback();
         }
@@ -583,35 +603,66 @@ export function SplitMapView({
 
   useEffect(() => {
     const activePreset = getRegionPreset(output.params.regionId);
-    const updateRegionOnMap = (
+    const regionChanged = lastRenderedRegionRef.current !== output.params.regionId;
+    const countMismatch =
+      leftMarkersRef.current.length !== output.districts.length ||
+      rightMarkersRef.current.length !== output.districts.length;
+    const needsRegionSync = regionChanged || countMismatch;
+
+    const syncMapData = (
       map: maplibregl.Map | null,
       handlesRef: { current: MarkerHandle[] },
       strategy: StrategyName,
     ) => {
-      if (!map || !map.isStyleLoaded()) return;
-      const distSrc = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-      if (distSrc) {
-        distSrc.setData(activePreset.featureCollection as unknown as GeoJSON.FeatureCollection);
-      } else {
-        attachDistrictLayers(
-          map,
-          activePreset.featureCollection,
-          flowsGeoJson,
-          strategy,
-          showCommuterFlows,
-          latestThemeRef.current,
-        );
+      if (!map || !map.getStyle()?.layers?.length) return;
+      if (needsRegionSync) {
+        const distSrc = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+        if (distSrc) {
+          distSrc.setData(activePreset.featureCollection as unknown as GeoJSON.FeatureCollection);
+        } else {
+          attachDistrictLayers(
+            map,
+            activePreset.featureCollection,
+            flowsGeoJson,
+            strategy,
+            latestShowFlowsRef.current,
+            latestThemeRef.current,
+          );
+        }
+        const flowSrc = map.getSource(FLOWS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+        flowSrc?.setData(flowsGeoJson);
+        syncMarkersForMap(map, handlesRef, output, (id) => onSelectDistrictRef.current(id));
       }
-      const flowSrc = map.getSource(FLOWS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-      flowSrc?.setData(flowsGeoJson);
-      syncMarkersForMap(map, handlesRef, output, (id) => onSelectDistrictRef.current(id));
+      applyFeatureStatesAndMarkers(
+        map,
+        handlesRef.current,
+        output,
+        strategy,
+        currentDay,
+        selectedDistrictId,
+        showDistrictLabels,
+        showAllLabels,
+      );
     };
 
-    updateRegionOnMap(leftMapRef.current, leftMarkersRef, 'reactive');
-    updateRegionOnMap(rightMapRef.current, rightMarkersRef, 'sennagrid');
-    fitBothToDistricts();
-    setHoverInfo(null);
-  }, [output.params.regionId, fitBothToDistricts]);
+    syncMapData(leftMapRef.current, leftMarkersRef, 'reactive');
+    syncMapData(rightMapRef.current, rightMarkersRef, 'sennagrid');
+
+    if (needsRegionSync) {
+      lastRenderedRegionRef.current = output.params.regionId;
+      fitBothToDistricts();
+      setHoverInfo(null);
+    }
+  }, [
+    output,
+    currentDay,
+    selectedDistrictId,
+    showDistrictLabels,
+    showAllLabels,
+    flowsGeoJson,
+    styleEpoch,
+    fitBothToDistricts,
+  ]);
 
   useEffect(() => {
     if (prevThemeRef.current === theme) return;
@@ -623,7 +674,7 @@ export function SplitMapView({
 
   useEffect(() => {
     for (const map of [leftMapRef.current, rightMapRef.current]) {
-      if (!map || !map.isStyleLoaded()) continue;
+      if (!map) continue;
       const flowSrc = map.getSource(FLOWS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
       flowSrc?.setData(flowsGeoJson);
       if (map.getLayer('commuter-flows-line')) {
@@ -634,34 +685,7 @@ export function SplitMapView({
         );
       }
     }
-  }, [flowsGeoJson, showCommuterFlows, mapsReady]);
-
-  useEffect(() => {
-    if (leftMapRef.current?.isStyleLoaded()) {
-      applyFeatureStatesAndMarkers(
-        leftMapRef.current,
-        leftMarkersRef.current,
-        output,
-        'reactive',
-        currentDay,
-        selectedDistrictId,
-        showDistrictLabels,
-        showAllLabels,
-      );
-    }
-    if (rightMapRef.current?.isStyleLoaded()) {
-      applyFeatureStatesAndMarkers(
-        rightMapRef.current,
-        rightMarkersRef.current,
-        output,
-        'sennagrid',
-        currentDay,
-        selectedDistrictId,
-        showDistrictLabels,
-        showAllLabels,
-      );
-    }
-  }, [output, currentDay, selectedDistrictId, showDistrictLabels, showAllLabels, mapsReady]);
+  }, [flowsGeoJson, showCommuterFlows, styleEpoch]);
 
   useEffect(() => {
     if (viewMode !== 'map') return;
@@ -859,10 +883,12 @@ export function SplitMapView({
         <div className="grid grid-cols-1 gap-5 min-[720px]:grid-cols-2">
           {/* LEFT: Without SennaGrid */}
           <div className={mobileMapStrategy === 'reactive' ? 'block' : 'hidden min-[720px]:block'}>
-            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
-              <span className="font-semibold text-[var(--sg-text-primary)]">Without SennaGrid</span>
-              <span className="font-mono font-medium tabular-nums text-[var(--sg-rose)]">
-                +{formatFixed(reactiveDayOverflow, 1)} overflow beds · {reactiveBreaches} breached
+            <div className="mb-2 flex items-baseline justify-between gap-2 text-[13px]">
+              <span className="shrink-0 font-semibold text-[var(--sg-text-primary)]">
+                Without SennaGrid
+              </span>
+              <span className="truncate font-mono font-medium tabular-nums text-[var(--sg-rose)]">
+                +{formatFixed(reactiveDayOverflow, 1)} overflow · {reactiveBreaches} breached
               </span>
             </div>
 
@@ -878,11 +904,12 @@ export function SplitMapView({
 
           {/* RIGHT: With SennaGrid */}
           <div className={mobileMapStrategy === 'sennagrid' ? 'block' : 'hidden min-[720px]:block'}>
-            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
-              <span className="font-semibold text-[var(--sg-teal)]">With SennaGrid</span>
-              <span className="font-mono font-medium tabular-nums text-[var(--sg-teal)]">
-                {formatFixed(sennagridDayOverflow, 1)} overflow beds · {sennagridBreaches} breached ·{' '}
-                {sennagridDispatched.length} active hubs
+            <div className="mb-2 flex items-baseline justify-between gap-2 text-[13px]">
+              <span className="shrink-0 font-semibold text-[var(--sg-teal)]">With SennaGrid</span>
+              <span className="truncate font-mono font-medium tabular-nums text-[var(--sg-teal)]">
+                {formatFixed(sennagridDayOverflow, 1)} overflow · {sennagridBreaches} breached ·{' '}
+                {sennagridDispatched.length}{' '}
+                {sennagridDispatched.length === 1 ? 'hub' : 'hubs'}
               </span>
             </div>
 

@@ -103,7 +103,7 @@ export function SwapTracePanel({ output }: SwapTracePanelProps) {
                       <th scope="col" className="px-3 py-2.5 text-right font-mono">
                         OVERFLOW SAVED
                       </th>
-                      <th scope="col" className="py-2.5 pl-3 text-right font-mono">
+                      <th scope="col" className="py-2.5 pl-3 pr-4 text-right font-mono">
                         COST DELTA
                       </th>
                     </tr>
@@ -141,7 +141,7 @@ export function SwapTracePanel({ output }: SwapTracePanelProps) {
                           {entry.overflowDelta.toFixed(3)} bed-d
                         </td>
                         <td
-                          className={`whitespace-nowrap py-3 pl-3 text-right font-mono tabular-nums ${
+                          className={`whitespace-nowrap py-3 pl-3 pr-4 text-right font-mono tabular-nums ${
                             entry.costDelta >= 0 ? 'text-[var(--sg-teal)]' : 'text-[var(--sg-amber)]'
                           }`}
                         >

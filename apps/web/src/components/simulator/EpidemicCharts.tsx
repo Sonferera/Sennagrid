@@ -212,7 +212,7 @@ export function EpidemicCharts({ output, theme, currentDay, onSelectDay }: Epide
               {chartTab === 'overflow' ? (
                 <AreaChart
                   data={dailySeries}
-                  margin={{ top: 6, right: 12, left: -10, bottom: 2 }}
+                  margin={{ top: 6, right: 12, left: 0, bottom: 2 }}
                   onClick={handleChartClick}
                 >
                   <CartesianGrid horizontal vertical={false} stroke={palette.grid} />
@@ -228,7 +228,14 @@ export function EpidemicCharts({ output, theme, currentDay, onSelectDay }: Epide
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: palette.tick, fontSize: 12 }}
-                    width={42}
+                    width={46}
+                    tickFormatter={(v: number) =>
+                      v >= 1000
+                        ? `${(v / 1000).toFixed(1)}k`
+                        : Number.isInteger(v)
+                          ? String(v)
+                          : v.toFixed(1)
+                    }
                   />
                   <Tooltip content={<CustomLineTooltip mode="overflow" />} />
                   <ReferenceLine x={currentDay} stroke={palette.ref} strokeDasharray="3 3" />

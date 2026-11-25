@@ -33,6 +33,9 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) dan wa
 - Restored pure TypeScript engine typechecking by removing the optimizer's dependency on the browser-only `performance` global.
 - Added a scoped timeout to the aggregate 12-scenario preset calibration test so its default Vitest run completes without changing global test timeouts.
 - Constrained Recharts containers in `EpidemicCharts.tsx` (`min-w-0`, `overflow-hidden`, `minWidth={0}`) so the trajectory SVG never bleeds into the adjacent `Strategy Fit` column on desktop reflow.
+- Sanitized non-finite `budgetRatio` inputs in `computeWeeklyQuota` and `optimizeResourceAllocation` (`packages/engine/src/optimizer.ts`) to prevent `NaN` weekly quotas under adversarial parameters.
+- Eliminated a MapLibre `isStyleLoaded()` synchronization race during rapid region/mode transitions and aborted-fetch false offline fallbacks during `Dark`/`Light` basemap switching in `SplitMapView.tsx`.
+- Added spatial centroid collision avoidance to `selectPriorityBadgeDistrictIds` (`apps/web/src/lib/viewModels.ts`), dynamic `Pass`/`Review`/`Fail` status labels in `HeaderBar.tsx`, singular/plural grammar (`1 ward` / `1 hub`), non-wrapping `KpiStrip` figures, compact `YAxis` overflow formatting (`>= 1000 -> k`) in `EpidemicCharts.tsx`, and right scrollbar clearance on `SwapTracePanel.tsx`.
 
 ### Removed
 - Removed unused pre-rename draft specification file (`gemini-code-1795430416191.md`) and its stale references.
