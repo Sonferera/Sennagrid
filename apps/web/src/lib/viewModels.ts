@@ -113,6 +113,22 @@ export interface CommuterCorridorArc {
   strength: number; // normalized 0..1
 }
 
+export interface DistrictSpreadCell {
+  districtId: string;
+  districtIndex: number;
+  hop: number;
+  targetStress: number;
+  treated: boolean;
+  breached: boolean;
+}
+
+export interface DistrictSpreadWavePlan {
+  cells: DistrictSpreadCell[];
+  epicenterId: string;
+  epicenterName: string;
+  maxHop: number;
+}
+
 export interface DailyChartPoint {
   day: number;
   week: number;
@@ -565,6 +581,108 @@ export function buildTopCommuterCorridors(
       strength: maxFlow > 0 ? pair.flow / maxFlow : 0.5,
     };
   });
+}
+
+/**
+ * Computes deterministic ring-by-ring spatial spread order directly from @sennagrid/engine
+ * daily infections, ICU stress, and gravity mobility weights W_ij.
+ * Used to drive smooth 60 FPS color transitions and one-shot epicenter-to-neighbor spread cascades.
+ */
+export function buildDistrictSpreadWavePlan(
+  output: OptimizationOutput,
+  strategy: 'reactive' | 'sennagrid',
+  rawDay: number,
+): DistrictSpreadWavePlan {
+  const { districts, params } = output;
+  const n = districts.length;
+  if (n === 0) {
+    return {
+      cells: [],
+      epicenterId: '',
+      epicenterName: '',
+      maxHop: 0,
+    };
+  }
+
+  const meta = getTimelineMeta(output, rawDay);
+  const rowBase = meta.day * n;
+  const strat = strategy === 'reactive' ? output.reactive : output.sennagrid;
+  const weekRow = strat.schedule[meta.weekIndex];
+
+  let sharedDayMaxActive = 0;
+  for (let i = 0; i < n; i++) {
+    const rAct = output.reactive.districtActive[rowBase + i] ?? 0;
+    const sAct = output.sennagrid.districtActive[rowBase + i] ?? 0;
+    if (rAct > sharedDayMaxActive) sharedDayMaxActive = rAct;
+    if (sAct > sharedDayMaxActive) sharedDayMaxActive = sAct;
+  }
+
+  // Anchor epicenter to the highest-pressure reactive source ward on this day so left & right
+  // panes cascade outward from the exact same spatial origin for fair visual comparison.
+  let epicenterIdx = 0;
+  let bestEpicenterScore = -1;
+  for (let i = 0; i < n; i++) {
+    const d = districts[i]!;
+    const rIcu = output.reactive.districtIcuDemand[rowBase + i] ?? 0;
+    const rStress = computeDistrictStress(rIcu, d.icuBeds);
+    const rAct = output.reactive.districtActive[rowBase + i] ?? 0;
+    const score = rStress * 2.2 + rAct / Math.max(sharedDayMaxActive, 1);
+    if (score > bestEpicenterScore) {
+      bestEpicenterScore = score;
+      epicenterIdx = i;
+    }
+  }
+
+  const epicenter = districts[epicenterIdx]!;
+  const [epLng, epLat] = epicenter.centroid;
+  const cosLat = Math.max(0.25, Math.cos((epLat * Math.PI) / 180));
+
+  const mobility = buildMobilityModel(districts, {
+    outflow: Math.max(0.05, params.mobilityOutflow),
+  });
+
+  const distances = districts.map((d, idx) => {
+    const dx = (d.centroid[0] - epLng) * cosLat;
+    const dy = d.centroid[1] - epLat;
+    const geoDist = Math.hypot(dx, dy);
+    const coupling = mobility.weights[epicenterIdx * n + idx] ?? 0;
+    const effectiveDist = idx === epicenterIdx ? 0 : geoDist * (1 - Math.min(0.22, coupling * 2.4));
+    return { idx, effectiveDist };
+  });
+
+  const maxEffDist = Math.max(...distances.map((d) => d.effectiveDist), 1e-6);
+  const ringBuckets = Math.min(5, Math.max(2, Math.round(Math.sqrt(n))));
+
+  let maxHop = 0;
+  const cells: DistrictSpreadCell[] = new Array(n);
+
+  for (let i = 0; i < n; i++) {
+    const d = districts[i]!;
+    const icuDemand = strat.districtIcuDemand[rowBase + i] ?? 0;
+    const targetStress = computeDistrictStress(icuDemand, d.icuBeds);
+    const treated = (weekRow?.[i] ?? 0) === 1;
+    const breached = targetStress >= 1.0;
+
+    const normDist = i === epicenterIdx ? 0 : distances[i]!.effectiveDist / maxEffDist;
+    const hop = i === epicenterIdx ? 0 : Math.max(1, Math.min(ringBuckets, Math.ceil(normDist * ringBuckets)));
+    if (hop > maxHop) maxHop = hop;
+
+    cells[i] = {
+      districtId: d.id,
+      districtIndex: i,
+      hop,
+      targetStress,
+      treated,
+      breached,
+    };
+  }
+
+  return {
+    cells,
+    epicenterId: epicenter.id,
+    epicenterName: epicenter.name,
+    maxHop,
+  };
 }
 
 export function buildDailyChartSeries(output: OptimizationOutput): DailyChartPoint[] {

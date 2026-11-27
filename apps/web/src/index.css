@@ -186,7 +186,7 @@ html[data-theme="light"] .maplibregl-canvas {
   filter: sepia(0.08) brightness(0.975) contrast(0.985);
 }
 
-/* Readable on-map priority ward badges */
+/* Readable on-map priority ward badges with smooth color & border transitions */
 .sg-ward-marker {
   display: inline-flex;
   align-items: center;
@@ -204,7 +204,7 @@ html[data-theme="light"] .maplibregl-canvas {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   cursor: pointer;
   user-select: none;
-  transition: transform 120ms ease, border-color 120ms ease;
+  transition: transform 160ms ease, background-color 240ms ease, border-color 240ms ease, color 240ms ease, box-shadow 200ms ease;
 }
 
 .sg-ward-marker:hover {

@@ -8,6 +8,7 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) dan wa
 ## [Unreleased]
 
 ### Added
+- Smooth 60 FPS spatial spread animations and fade-in/fade-out dispatch marker boxes on the Carto Dark Matter / Carto Positron dual maps (`SplitMapView.tsx`, `TimelinePlayer.tsx`, `viewModels.ts`, `index.css`): exponential 60 FPS ward color gliding during playback and day scrubbing, deterministic one-shot ring-by-ring epicenter spread cascades (`buildDistrictSpreadWavePlan`) with brief upward tier-crossing arrival highlights, smooth `treatedWeight` fade-in/fade-out (`tau = 250ms`) with subtle glow halos on rose/teal team outline boxes across weekly shifts, smooth `.sg-ward-marker` transitions, one-click `Replay D0` timeline control, and full `prefers-reduced-motion` static fallback with `0%` idle animation CPU when settled.
 - Laporan audit keamanan repository (`docs/security-audit/2026-11-27/`): cakupan 15 unit / 40 pemeriksaan source-only, hasil **0 confirmed finding** dan **0 lead needs-validation**, 3 lead ditolak independen, serta catatan hardening untuk CI dan build deployment.
 - Structured documentation governance system (`docs/README.md`, `docs/CHANGELOG.md`, `docs/HANDOFF.md`, `docs/SUBMISSION_CHECKLIST.md`, `docs/updates/TEMPLATE.md`).
 - Automated docs check script (`scripts/check-docs.mjs` via `npm run check:docs`), local Git pre-commit hook (`.githooks/pre-commit`), GitHub Actions CI (`.github/workflows/ci.yml`), PR template, `CONTRIBUTING.md`, `AGENTS.md`, `LICENSE` (MIT), and `.gitattributes`.
