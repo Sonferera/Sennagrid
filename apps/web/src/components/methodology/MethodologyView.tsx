@@ -136,9 +136,10 @@ export function MethodologyView({ output }: MethodologyViewProps) {
 
         <p className="mt-5 border-t border-[var(--sg-border-subtle)] pt-4 text-sm leading-relaxed text-[var(--sg-text-muted)]">
           <strong className="font-semibold text-[var(--sg-text-primary)]">Benchmark Scope:</strong>{' '}
-          Metro Tropica (18 districts) and Harbor Corridor (16 districts) are calibrated synthetic
-          urban topologies anchored to real coordinates for reproducible research and resource
-          allocation study, not clinical directives.
+          Metro Tropica (18), Harbor Corridor (16), Highland Ring (16), and Monsoon Delta (18) are
+          calibrated urban topologies anchored to land coordinates for reproducible research, while
+          Custom City Search projects a normalized 18-ward urban density grid using live Open-Meteo
+          weather, not clinical directives.
         </p>
       </section>
     </div>

@@ -6,6 +6,11 @@ import {
 } from '@sennagrid/engine';
 import { METRO_TROPICA_PRESET } from '../../data/regions';
 import { generateDispatchCsv, generateFullRunJson } from '../export';
+import {
+  buildOpenMeteoGeocodingUrl,
+  parseOpenMeteoGeocodingResponse,
+  searchCities,
+} from '../geocoding';
 import { clearWeatherCache, fetchRegionClimate, parseOpenMeteoResponse } from '../weather';
 
 describe('weather and export services', () => {
@@ -75,5 +80,58 @@ describe('weather and export services', () => {
     expect(parsed.dailyCurves.sennagridActive).toHaveLength(92);
     expect(parsed.impactSummary).toEqual(output.impactSummary);
     expect(parsed.impactRadar).toEqual(output.impactRadar);
+  });
+
+  it('parses and fetches Open-Meteo Geocoding results and custom coordinate weather safely', async () => {
+    const url = buildOpenMeteoGeocodingUrl(' Surabaya ', 4);
+    expect(url).toContain('https://geocoding-api.open-meteo.com/v1/search?');
+    expect(url).toContain('name=Surabaya');
+
+    const parsedCities = parseOpenMeteoGeocodingResponse({
+      results: [
+        {
+          id: 1625822,
+          name: 'Surabaya',
+          country: 'Indonesia',
+          admin1: 'East Java',
+          latitude: -7.2492,
+          longitude: 112.7508,
+          population: 2874699,
+        },
+        {
+          id: 999,
+          name: 'Invalid Lat',
+          latitude: 120,
+          longitude: 10,
+        },
+      ],
+    });
+    expect(parsedCities).toHaveLength(1);
+    expect(parsedCities[0]?.name).toBe('Surabaya');
+
+    let requestedWeatherUrl = '';
+    const customWeatherFetch: typeof fetch = async (input) => {
+      requestedWeatherUrl = String(input);
+      return new Response(
+        JSON.stringify({
+          daily: {
+            temperature_2m_mean: Array.from({ length: 21 }, () => 30.2),
+            precipitation_sum: Array.from({ length: 21 }, () => 9.5),
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    };
+
+    const customClimate = await fetchRegionClimate('custom_1625822', {
+      anchorLat: -7.2492,
+      anchorLng: 112.7508,
+      fetchImpl: customWeatherFetch,
+    });
+    expect(requestedWeatherUrl).toContain('latitude=-7.2492');
+    expect(requestedWeatherUrl).toContain('longitude=112.7508');
+    expect(customClimate.source).toBe('open_meteo');
+
+    await expect(searchCities('a')).resolves.toEqual([]);
   });
 });

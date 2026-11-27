@@ -7,7 +7,11 @@ import maplibregl, {
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getRegionPreset, type DistrictFeatureCollection } from '../../data/regions';
+import {
+  getRegionPreset,
+  type DistrictFeatureCollection,
+  type RegionPreset,
+} from '../../data/regions';
 import {
   buildTopCommuterCorridors,
   classifyStressBand,
@@ -104,6 +108,7 @@ interface MarkerHandle {
 
 interface SplitMapViewProps {
   output: OptimizationOutput;
+  customPreset?: RegionPreset | null;
   theme: ThemeMode;
   currentDay: number;
   selectedDistrictId: string | null;
@@ -361,6 +366,7 @@ function applyFeatureStatesAndMarkers(
 
 export function SplitMapView({
   output,
+  customPreset = null,
   theme,
   currentDay,
   selectedDistrictId,
@@ -412,7 +418,9 @@ export function SplitMapView({
   const [styleEpoch, setStyleEpoch] = useState(0);
   const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null);
 
-  const preset = getRegionPreset(output.params.regionId);
+  const preset = getRegionPreset(output.params.regionId, customPreset);
+  const latestPresetRef = useRef(preset);
+  latestPresetRef.current = preset;
   const meta = getTimelineMeta(output, currentDay);
   const flowsGeoJson = useMemo(
     () => buildFlowsFeatureCollection(output),
@@ -420,7 +428,7 @@ export function SplitMapView({
   );
 
   const fitBothToDistricts = useCallback(() => {
-    const activePreset = getRegionPreset(latestOutputRef.current.params.regionId);
+    const activePreset = latestPresetRef.current;
     const bounds = computeFeatureCollectionBounds(activePreset.featureCollection);
     isSyncingRef.current = true;
     leftMapRef.current?.fitBounds(bounds, { padding: 26, animate: false });
@@ -433,7 +441,7 @@ export function SplitMapView({
     const rightEl = rightContainerRef.current;
     if (!leftEl || !rightEl) return;
 
-    const initialPreset = getRegionPreset(latestOutputRef.current.params.regionId);
+    const initialPreset = latestPresetRef.current;
     const initialBounds = computeFeatureCollectionBounds(initialPreset.featureCollection);
     let disposed = false;
     let fallbackTriggered = false;
@@ -472,7 +480,7 @@ export function SplitMapView({
         clearTimeout(styleTimer);
         if (disposed) return;
         const curOut = latestOutputRef.current;
-        const curPreset = getRegionPreset(curOut.params.regionId);
+        const curPreset = latestPresetRef.current;
         const curFlows = buildFlowsFeatureCollection(curOut);
         lastRenderedRegionRef.current = curOut.params.regionId;
         attachDistrictLayers(
@@ -602,7 +610,7 @@ export function SplitMapView({
   }, []);
 
   useEffect(() => {
-    const activePreset = getRegionPreset(output.params.regionId);
+    const activePreset = latestPresetRef.current;
     const regionChanged = lastRenderedRegionRef.current !== output.params.regionId;
     const countMismatch =
       leftMarkersRef.current.length !== output.districts.length ||
@@ -787,6 +795,14 @@ export function SplitMapView({
           <h2 className="text-base font-semibold text-[var(--sg-text-primary)]">
             District ICU Load · Day {meta.day}
           </h2>
+          <span className="text-xs font-medium text-[var(--sg-text-muted)]">· {preset.name}</span>
+          {output.params.regionId.startsWith('custom_') && (
+            <span className="rounded border border-[var(--sg-border-control)] bg-[var(--sg-inset)] px-2 py-0.5 text-[11px] font-medium text-[var(--sg-text-secondary)]">
+              {output.climate.source === 'open_meteo'
+                ? 'Normalized grid + live weather'
+                : 'Normalized grid + seasonal weather'}
+            </span>
+          )}
           {offlineFallback && (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--sg-amber)]">
               <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />

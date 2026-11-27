@@ -52,12 +52,20 @@ describe('climate modulation engine', () => {
 
   it('provides deterministic fallback climatology and precomputed Float64Array multipliers', () => {
     const tropical = getFallbackClimateSeries('metro_tropica', -6.2088, 106.8456);
-    const coastal = getFallbackClimateSeries('harbor_corridor', 35.4437, 139.638);
+    const coastal = getFallbackClimateSeries('harbor_corridor', 35.495, 139.4);
+    const highland = getFallbackClimateSeries('highland_ring', -1.2921, 36.8219);
+    const monsoon = getFallbackClimateSeries('monsoon_delta', 13.806, 100.548);
+    const customTrop = getFallbackClimateSeries('custom_1625822', -7.25, 112.75);
+    const customTemp = getFallbackClimateSeries('custom_2643743', 51.51, -0.13);
 
     expect(tropical.source).toBe('fallback_climatology');
     expect(tropical.days).toHaveLength(92);
     expect(coastal.days).toHaveLength(92);
+    expect(highland.days).toHaveLength(92);
+    expect(monsoon.days).toHaveLength(92);
     expect(tropical.meanTemp14d).toBeGreaterThan(coastal.meanTemp14d);
+    expect(monsoon.meanTemp14d).toBeGreaterThan(highland.meanTemp14d);
+    expect(customTrop.meanTemp14d).toBeGreaterThan(customTemp.meanTemp14d);
 
     const { phiT, phiR } = precomputeClimateMultipliers(tropical);
     expect(phiT).toBeInstanceOf(Float64Array);

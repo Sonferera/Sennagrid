@@ -8,7 +8,7 @@ import {
   Search,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { getRegionPreset } from '../../data/regions';
+import { getRegionPreset, type RegionPreset } from '../../data/regions';
 import {
   computeDistrictStress,
   filterDispatchAssignments,
@@ -24,6 +24,7 @@ import {
 
 interface DispatchScheduleProps {
   output: OptimizationOutput;
+  customPreset?: RegionPreset | null;
   onInspectDistrictAtWeek: (districtId: string, week: number) => void;
 }
 
@@ -83,6 +84,7 @@ function getRationaleIndicator(rationale: RationaleTag): {
 
 export function DispatchSchedule({
   output,
+  customPreset = null,
   onInspectDistrictAtWeek,
 }: DispatchScheduleProps) {
   const [filters, setFilters] = useState<DispatchFilterState>(INITIAL_FILTERS);
@@ -93,7 +95,7 @@ export function DispatchSchedule({
     message: string;
   } | null>(null);
 
-  const preset = getRegionPreset(output.params.regionId);
+  const preset = getRegionPreset(output.params.regionId, customPreset);
   const totalWeeks = Math.max(1, output.sennagrid.schedule.length);
   const weekOptions = useMemo(
     () => Array.from({ length: totalWeeks }, (_, idx) => idx + 1),
@@ -254,7 +256,8 @@ export function DispatchSchedule({
       {/* Card 1: Calm Weekly Coverage Matrix */}
       <section
         aria-label="13-week spatial deployment matrix"
-        className="rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-5 sm:p-6 transition-colors"
+        data-tour="dispatch-matrix"
+        className="scroll-mt-20 rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-5 sm:p-6 transition-colors"
       >
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-base font-semibold text-[var(--sg-text-primary)]">

@@ -1,5 +1,11 @@
 export type DiseaseMode = 'vector_seir_sei' | 'direct_seir';
-export type RegionId = 'metro_tropica' | 'harbor_corridor';
+export type BuiltInRegionId =
+  | 'metro_tropica'
+  | 'harbor_corridor'
+  | 'highland_ring'
+  | 'monsoon_delta';
+export type CustomRegionId = `custom_${string}`;
+export type RegionId = BuiltInRegionId | CustomRegionId;
 export type ZoneType = 'core' | 'transit_hub' | 'residential' | 'peri_urban';
 
 export type RationaleTag =

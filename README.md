@@ -23,7 +23,7 @@ SennaGrid runs a deterministic 91-day (13-week) compartmental ODE simulation ins
 - **Gravity Mobility Network:** Row-normalized Haversine commuter matrix $W \in \mathbb{R}^{N \times N}$ with incoming commuter hub centrality scoring.
 - **Constrained Predictive Optimizer:** Combines receding-horizon multi-seed initialization with bounded multi-pass checkpointed coordinate descent (2-week sustained block swaps and 1-week swaps), ICU-overflow-first acceptance with objective-cost tie-breaking, a Hospital Safety Guardrail that never worsens ICU overflow above the reactive baseline, deterministic rationale tagging, an auditable swap trace, and engine-owned impact KPIs plus a five-axis radar.
 - **5 Deterministic Policy & Integrity Gates:** Automated run verification covering ODE mass conservation (`< 1e-9`), weekly budget compliance, objective dominance, ICU collapse mitigation, and early mobility hub coverage.
-- **Two Contiguous Urban Presets:** `Metro Tropica` (18 districts, tropical urban basin) and `Harbor Corridor` (16 districts, linear coastal corridor) with non-overlapping GeoJSON geometries.
+- **Four Calibrated Urban Presets + Global Custom City Search:** Switch across `Metro Tropica` (18 districts), `Harbor Corridor` (16 districts), `Highland Ring` (16 districts), and `Monsoon Delta` (18 districts), or search any city worldwide via free Open-Meteo Geocoding to simulate a normalized 18-ward benchmark grid with live local temperature and rainfall.
 - **Operational Exports:** Structured 13-week dispatch plans in RFC-4180 CSV and complete simulation runs in JSON.
 
 ---

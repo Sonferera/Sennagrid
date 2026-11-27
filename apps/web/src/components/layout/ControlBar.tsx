@@ -4,11 +4,12 @@ import {
   type DiseaseMode,
   type RegionId,
 } from '@sennagrid/engine';
-import { Check, Loader2, RotateCcw } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { Check, Loader2, MapPin, RotateCcw, Search } from 'lucide-react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { getRegionPreset, REGION_PRESET_LIST } from '../../data/regions';
 import { formatPopulationCompact } from '../../lib/viewModels';
+import { searchCities, type CitySearchResult } from '../../services/geocoding';
 import { useSimulationStore, type ClimateMode } from '../../store/useSimulationStore';
 
 const BUDGET_DEBOUNCE_MS = 180;
@@ -16,6 +17,7 @@ const BUDGET_DEBOUNCE_MS = 180;
 export function ControlBar() {
   const {
     params,
+    customPreset,
     climateMode,
     climate,
     liveClimateByRegion,
@@ -23,6 +25,7 @@ export function ControlBar() {
     output,
     isOptimizing,
     setRegion,
+    selectCustomCity,
     setDiseaseMode,
     setClimateMode,
     setBudgetRatio,
@@ -32,6 +35,7 @@ export function ControlBar() {
   } = useSimulationStore(
     useShallow((s) => ({
       params: s.params,
+      customPreset: s.customPreset,
       climateMode: s.climateMode,
       climate: s.climate,
       liveClimateByRegion: s.liveClimateByRegion,
@@ -39,6 +43,7 @@ export function ControlBar() {
       output: s.output,
       isOptimizing: s.isOptimizing,
       setRegion: s.setRegion,
+      selectCustomCity: s.selectCustomCity,
       setDiseaseMode: s.setDiseaseMode,
       setClimateMode: s.setClimateMode,
       setBudgetRatio: s.setBudgetRatio,
@@ -47,6 +52,12 @@ export function ControlBar() {
       runOptimization: s.runOptimization,
     })),
   );
+
+  const [cityQuery, setCityQuery] = useState('');
+  const [cityResults, setCityResults] = useState<CitySearchResult[]>([]);
+  const [citySearchPending, setCitySearchPending] = useState(false);
+  const [citySearchError, setCitySearchError] = useState<string | null>(null);
+  const [citySearchedOnce, setCitySearchedOnce] = useState(false);
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -76,7 +87,7 @@ export function ControlBar() {
     void runOptimization();
   };
 
-  const preset = getRegionPreset(params.regionId);
+  const preset = getRegionPreset(params.regionId, customPreset);
   const districtCount = preset.districts.length;
   const quotaK = computeWeeklyQuota(districtCount, params.budgetRatio);
   const budgetPct = Math.round(params.budgetRatio * 100);
@@ -121,22 +132,58 @@ export function ControlBar() {
     void setClimateMode(mode);
   };
 
+  const handleCitySearchSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const trimmed = cityQuery.trim();
+    if (trimmed.length < 2) {
+      setCitySearchError('Enter at least 2 characters to search.');
+      setCityResults([]);
+      setCitySearchedOnce(false);
+      return;
+    }
+
+    setCitySearchPending(true);
+    setCitySearchError(null);
+    try {
+      const results = await searchCities(trimmed, { count: 4 });
+      setCityResults(results);
+      setCitySearchedOnce(true);
+    } catch {
+      setCityResults([]);
+      setCitySearchedOnce(false);
+      setCitySearchError('Global city search unavailable offline. Select a calibrated preset above.');
+    } finally {
+      setCitySearchPending(false);
+    }
+  };
+
+  const handlePickCustomCity = (city: CitySearchResult) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    setCityResults([]);
+    setCitySearchedOnce(false);
+    setCitySearchError(null);
+    setCityQuery(city.name);
+    void selectCustomCity(city);
+  };
+
   return (
     <aside
       aria-label="Simulation controls"
-      data-tour="control-bar"
-      className="flex h-full w-full shrink-0 scroll-mt-20 flex-col justify-between gap-5 rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-5 transition-colors"
+      className="flex h-full w-full shrink-0 flex-col justify-between gap-5 rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-5 transition-colors"
     >
       <div className="space-y-5">
         {/* 1. City Scenario */}
-        <div>
+        <div data-tour="city-scenarios" className="scroll-mt-20 rounded-lg">
           <span className="mb-2 block text-[13px] font-medium text-[var(--sg-text-muted)]">
             City Scenario
           </span>
           <div
             role="radiogroup"
             aria-label="City scenario"
-            className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1"
+            className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-1"
           >
             {REGION_PRESET_LIST.map((item) => {
               const selected = item.id === params.regionId;
@@ -147,32 +194,149 @@ export function ControlBar() {
                   role="radio"
                   aria-checked={selected}
                   onClick={() => handleRegionChange(item.id)}
-                  className={`flex min-h-[48px] w-full items-start justify-between gap-2 rounded-lg border px-3.5 py-3 text-left transition-colors ${
+                  className={`flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors ${
                     selected
                       ? 'border-[var(--sg-teal)] bg-[var(--sg-teal-tint)]'
                       : 'border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] hover:border-[var(--sg-border-control)]'
                   }`}
                 >
-                  <div>
-                    <div className="text-[15px] font-semibold text-[var(--sg-text-primary)]">
+                  <div className="min-w-0">
+                    <div className="truncate text-[14px] font-semibold text-[var(--sg-text-primary)]">
                       {item.name}
                     </div>
-                    <div className="mt-0.5 text-[13px] text-[var(--sg-text-muted)]">
-                      {item.districts.length} districts · {formatPopulationCompact(item.districts)}
+                    <div className="truncate text-xs text-[var(--sg-text-muted)]">
+                      {item.districts.length} wards · {formatPopulationCompact(item.districts)} ·{' '}
+                      {item.defaultDiseaseMode === 'vector_seir_sei' ? 'Dengue' : 'Resp.'}
                     </div>
                   </div>
                   {selected && (
                     <Check
-                      className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sg-teal)]"
+                      className="h-4 w-4 shrink-0 text-[var(--sg-teal)]"
                       aria-hidden="true"
                     />
                   )}
                 </button>
               );
             })}
+
+            {customPreset && (
+              <button
+                type="button"
+                role="radio"
+                aria-checked={customPreset.id === params.regionId}
+                onClick={() => handleRegionChange(customPreset.id)}
+                className={`flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors ${
+                  customPreset.id === params.regionId
+                    ? 'border-[var(--sg-teal)] bg-[var(--sg-teal-tint)]'
+                    : 'border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] hover:border-[var(--sg-border-control)]'
+                }`}
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 text-[14px] font-semibold text-[var(--sg-text-primary)]">
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--sg-teal)]" aria-hidden="true" />
+                    <span className="truncate">{customPreset.name}</span>
+                  </div>
+                  <div className="truncate text-xs text-[var(--sg-text-muted)]">
+                    {customPreset.subtitle} · Custom
+                  </div>
+                </div>
+                {customPreset.id === params.regionId && (
+                  <Check
+                    className="h-4 w-4 shrink-0 text-[var(--sg-teal)]"
+                    aria-hidden="true"
+                  />
+                )}
+              </button>
+            )}
+          </div>
+
+          {/* Search Any Real City Worldwide */}
+          <div className="mt-3 rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-inset)]/55 p-2.5">
+            <label
+              htmlFor="sg-city-search"
+              className="mb-1.5 block text-xs font-medium text-[var(--sg-text-secondary)]"
+            >
+              Simulate Any City (Open-Meteo)
+            </label>
+            <form onSubmit={(e) => void handleCitySearchSubmit(e)} className="flex gap-1.5">
+              <div className="relative min-w-0 flex-1">
+                <Search
+                  className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--sg-text-muted)]"
+                  aria-hidden="true"
+                />
+                <input
+                  id="sg-city-search"
+                  type="search"
+                  value={cityQuery}
+                  onChange={(e) => setCityQuery(e.target.value)}
+                  placeholder="Surabaya, London, Nairobi..."
+                  className="min-h-[44px] w-full rounded-md border border-[var(--sg-border-control)] bg-[var(--sg-surface)] py-1 pl-8 pr-2 text-xs text-[var(--sg-text-primary)] placeholder:text-[var(--sg-text-muted)] lg:min-h-[34px]"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={citySearchPending}
+                aria-label="Search city coordinates"
+                className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-md border border-[var(--sg-border-control)] bg-[var(--sg-surface)] px-2.5 text-xs font-semibold text-[var(--sg-text-primary)] transition-colors hover:bg-[var(--sg-hover)] disabled:opacity-60 lg:min-h-[34px]"
+              >
+                {citySearchPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                ) : (
+                  'Find'
+                )}
+              </button>
+            </form>
+
+            {citySearchError && (
+              <p role="alert" className="mt-1.5 text-xs text-[var(--sg-amber)]">
+                {citySearchError}
+              </p>
+            )}
+
+            {!citySearchPending && !citySearchError && citySearchedOnce && cityResults.length === 0 && (
+              <p className="mt-1.5 text-xs text-[var(--sg-text-muted)]">
+                No matching cities found. Try another name.
+              </p>
+            )}
+
+            {cityResults.length > 0 && (
+              <ul
+                aria-label="Matching city results"
+                className="mt-2 divide-y divide-[var(--sg-border-row)] overflow-hidden rounded-md border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)]"
+              >
+                {cityResults.map((city) => (
+                  <li key={city.id}>
+                    <button
+                      type="button"
+                      onClick={() => handlePickCustomCity(city)}
+                      className="flex min-h-[44px] w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-[var(--sg-hover)] lg:min-h-[34px]"
+                    >
+                      <span className="min-w-0 truncate font-medium text-[var(--sg-text-primary)]">
+                        {city.name}
+                        <span className="font-normal text-[var(--sg-text-muted)]">
+                          {city.admin1 ? `, ${city.admin1}` : ''}, {city.country}
+                        </span>
+                      </span>
+                      <span className="shrink-0 font-mono text-[11px] tabular-nums text-[var(--sg-teal)]">
+                        {city.latitude.toFixed(1)}, {city.longitude.toFixed(1)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {params.regionId.startsWith('custom_') && (
+              <p className="mt-2 text-[11px] leading-snug text-[var(--sg-text-muted)]">
+                Custom city applies a normalized 18-ward urban density template with live Open-Meteo
+                weather.
+              </p>
+            )}
           </div>
         </div>
 
+        {/* 2–5. Disease Model, Budget Quota, Run CTA & Model Parameters */}
+        <div data-tour="model-controls" className="scroll-mt-20 space-y-5 rounded-lg">
         {/* 2. Disease Model */}
         <div>
           <span className="mb-2 block text-[13px] font-medium text-[var(--sg-text-muted)]">
@@ -411,6 +575,7 @@ export function ControlBar() {
             <RotateCcw className="h-3.5 w-3.5 text-[var(--sg-text-muted)]" aria-hidden="true" />
             <span>Reset Defaults</span>
           </button>
+        </div>
         </div>
       </div>
 

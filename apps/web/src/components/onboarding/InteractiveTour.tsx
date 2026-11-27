@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, BookOpen, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Sparkles, X } from 'lucide-react';
 import { useEffect } from 'react';
 import { LIVE_TOUR_STEPS } from './guideCatalog';
 
@@ -27,30 +27,35 @@ export function InteractiveTour({
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    const targetEl = document.querySelector<HTMLElement>(`[data-tour="${activeSpec.target}"]`);
-    if (!targetEl) return;
-
+    let highlightedEl: HTMLElement | null = null;
     const isHeaderTarget = activeSpec.target === 'header-bar';
     const highlightClasses = isHeaderTarget
       ? ['ring-2', 'ring-inset', 'ring-[var(--sg-teal-bright)]']
       : ['ring-2', 'ring-[var(--sg-teal-bright)]', 'ring-offset-2', 'ring-offset-[var(--sg-canvas)]'];
 
-    targetEl.classList.add(...highlightClasses);
+    const rafId = requestAnimationFrame(() => {
+      const targetEl = document.querySelector<HTMLElement>(`[data-tour="${activeSpec.target}"]`);
+      if (!targetEl) return;
 
-    if (isHeaderTarget) {
-      window.scrollTo({
-        top: 0,
-        behavior: prefersReducedMotion ? 'auto' : 'smooth',
-      });
-    } else {
-      targetEl.scrollIntoView({
-        behavior: prefersReducedMotion ? 'auto' : 'smooth',
-        block: 'nearest',
-      });
-    }
+      highlightedEl = targetEl;
+      targetEl.classList.add(...highlightClasses);
+
+      if (isHeaderTarget) {
+        window.scrollTo({
+          top: 0,
+          behavior: prefersReducedMotion ? 'auto' : 'smooth',
+        });
+      } else {
+        targetEl.scrollIntoView({
+          behavior: prefersReducedMotion ? 'auto' : 'smooth',
+          block: 'nearest',
+        });
+      }
+    });
 
     return () => {
-      targetEl.classList.remove(...highlightClasses);
+      cancelAnimationFrame(rafId);
+      highlightedEl?.classList.remove(...highlightClasses);
     };
   }, [isOpen, activeSpec.target]);
 
@@ -64,7 +69,7 @@ export function InteractiveTour({
       role="dialog"
       aria-modal="false"
       aria-label="SennaGrid Interactive Live Tour"
-      className="fixed bottom-4 left-4 right-4 z-50 flex max-h-[82vh] max-w-lg flex-col rounded-xl border border-[var(--sg-border-control)] bg-[var(--sg-surface)] p-5 shadow-2xl sm:left-auto sm:w-full"
+      className="fixed bottom-4 left-4 right-4 z-50 flex max-h-[84vh] max-w-xl flex-col rounded-xl border border-[var(--sg-border-control)] bg-[var(--sg-surface)] p-5 shadow-2xl sm:left-auto sm:w-full"
     >
       {/* Top Meta & Full Guide Switch */}
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -103,7 +108,7 @@ export function InteractiveTour({
       <div
         role="group"
         aria-label="Jump to tour step"
-        className="mt-3 grid grid-cols-8 gap-1"
+        className="mt-3 grid grid-cols-5 gap-1 sm:grid-cols-10"
       >
         {LIVE_TOUR_STEPS.map((spec, idx) => {
           const isCurrent = idx === safeStep;
@@ -146,12 +151,22 @@ export function InteractiveTour({
           <ul className="mt-2 space-y-2 text-[13px] leading-snug">
             {activeSpec.controls.map((control) => (
               <li key={control.label}>
-                <span className="font-semibold text-[var(--sg-text-primary)]">{control.label}:</span>{' '}
+                <span className="font-semibold text-[var(--sg-text-primary)]">
+                  {control.label}:
+                </span>{' '}
                 <span className="text-[var(--sg-text-muted)]">{control.detail}</span>
               </li>
             ))}
           </ul>
         </div>
+
+        <p className="flex items-start gap-2 rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-inset)]/45 px-3 py-2 text-xs leading-relaxed text-[var(--sg-text-secondary)]">
+          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--sg-teal)]" aria-hidden="true" />
+          <span>
+            <strong className="font-semibold text-[var(--sg-text-primary)]">Try it now:</strong>{' '}
+            {activeSpec.tryIt}
+          </span>
+        </p>
 
         <p className="rounded-lg border border-[var(--sg-teal-border)]/70 bg-[var(--sg-teal-tint)]/55 px-3 py-2 text-xs leading-relaxed text-[var(--sg-text-secondary)]">
           <strong className="font-semibold text-[var(--sg-teal-ink)]">Why it matters:</strong>{' '}

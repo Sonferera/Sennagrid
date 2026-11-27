@@ -1,13 +1,13 @@
 import { buildContiguousDistrictMesh, type RegionPreset } from './meshBuilder';
 
-const ANCHOR_LAT = 35.4437;
-const ANCHOR_LNG = 139.638;
+const ANCHOR_LAT = 35.495;
+const ANCHOR_LNG = 139.4;
 
 const mesh = buildContiguousDistrictMesh({
   rows: 2,
   cols: 8,
-  originLng: 139.42,
-  originLat: 35.38,
+  originLng: 139.18,
+  originLat: 35.43,
   cellWidthDeg: 0.055,
   cellHeightDeg: 0.068,
   jitterRatio: 0.14,
