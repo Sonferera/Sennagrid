@@ -1,11 +1,13 @@
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { ControlBar } from './components/layout/ControlBar';
 import { Footer } from './components/layout/Footer';
 import { HeaderBar } from './components/layout/HeaderBar';
 import { MethodologyView } from './components/methodology/MethodologyView';
+import { FeatureGuideModal } from './components/onboarding/FeatureGuideModal';
 import { InteractiveTour } from './components/onboarding/InteractiveTour';
+import type { GuideTab } from './components/onboarding/guideCatalog';
 import { DispatchSchedule } from './components/schedule/DispatchSchedule';
 import { SwapTracePanel } from './components/schedule/SwapTracePanel';
 import { EpidemicCharts } from './components/simulator/EpidemicCharts';
@@ -56,6 +58,7 @@ export default function App() {
     mobileMapStrategy,
     tourOpen,
     tourStep,
+    guideOpen,
     initialize,
     runOptimization,
     setActiveTab,
@@ -70,8 +73,11 @@ export default function App() {
     toggleCommuterFlows,
     toggleDistrictLabels,
     setMobileMapStrategy,
+    openTour,
     closeTour,
     setTourStep,
+    openGuide,
+    closeGuide,
   } = useSimulationStore(
     useShallow((s) => ({
       activeTab: s.activeTab,
@@ -89,6 +95,7 @@ export default function App() {
       mobileMapStrategy: s.mobileMapStrategy,
       tourOpen: s.tourOpen,
       tourStep: s.tourStep,
+      guideOpen: s.guideOpen,
       initialize: s.initialize,
       runOptimization: s.runOptimization,
       setActiveTab: s.setActiveTab,
@@ -103,10 +110,22 @@ export default function App() {
       toggleCommuterFlows: s.toggleCommuterFlows,
       toggleDistrictLabels: s.toggleDistrictLabels,
       setMobileMapStrategy: s.setMobileMapStrategy,
+      openTour: s.openTour,
       closeTour: s.closeTour,
       setTourStep: s.setTourStep,
+      openGuide: s.openGuide,
+      closeGuide: s.closeGuide,
     })),
   );
+
+  const flashCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      flashCleanupRef.current?.();
+      flashCleanupRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     void initialize();
@@ -119,6 +138,10 @@ export default function App() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (guideOpen) {
+          closeGuide();
+          return;
+        }
         if (tourOpen) {
           closeTour();
           return;
@@ -126,6 +149,10 @@ export default function App() {
         if (selectedDistrictId) {
           selectDistrict(null);
         }
+        return;
+      }
+
+      if (guideOpen) {
         return;
       }
 
@@ -159,17 +186,67 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [
+    guideOpen,
     tourOpen,
     tourStep,
     selectedDistrictId,
     output,
     activeTab,
+    closeGuide,
     closeTour,
     selectDistrict,
     setTourStep,
     togglePlaying,
     stepDay,
   ]);
+
+  const handleNavigateToFeature = (tab: GuideTab, tourTarget: string) => {
+    flashCleanupRef.current?.();
+    flashCleanupRef.current = null;
+    closeGuide();
+    setActiveTab(tab);
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let innerRaf = 0;
+    const outerRaf = requestAnimationFrame(() => {
+      innerRaf = requestAnimationFrame(() => {
+        const targetEl = document.querySelector<HTMLElement>(`[data-tour="${tourTarget}"]`);
+        if (!targetEl) return;
+
+        const isHeaderTarget = tourTarget === 'header-bar';
+        const classes = isHeaderTarget
+          ? ['ring-2', 'ring-inset', 'ring-[var(--sg-teal-bright)]']
+          : ['ring-2', 'ring-[var(--sg-teal-bright)]', 'ring-offset-2', 'ring-offset-[var(--sg-canvas)]'];
+
+        targetEl.classList.add(...classes);
+        if (isHeaderTarget) {
+          window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+        } else {
+          targetEl.scrollIntoView({
+            behavior: prefersReducedMotion ? 'auto' : 'smooth',
+            block: 'nearest',
+          });
+        }
+
+        const timer = window.setTimeout(() => {
+          targetEl.classList.remove(...classes);
+        }, 1800);
+
+        flashCleanupRef.current = () => {
+          window.clearTimeout(timer);
+          targetEl.classList.remove(...classes);
+        };
+      });
+    });
+
+    flashCleanupRef.current = () => {
+      cancelAnimationFrame(outerRaf);
+      cancelAnimationFrame(innerRaf);
+    };
+  };
 
   const handleInspectDistrictFromSchedule = (districtId: string, week: number) => {
     selectDistrict(districtId);
@@ -302,11 +379,19 @@ export default function App() {
 
       <Footer />
 
+      <FeatureGuideModal
+        isOpen={guideOpen}
+        onClose={closeGuide}
+        onStartLiveTour={(step) => openTour(step ?? 0)}
+        onNavigateToFeature={handleNavigateToFeature}
+      />
+
       <InteractiveTour
         isOpen={tourOpen}
         step={tourStep}
         onStepChange={setTourStep}
         onClose={closeTour}
+        onOpenGuide={openGuide}
       />
     </div>
   );

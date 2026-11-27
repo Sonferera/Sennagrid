@@ -28,7 +28,8 @@ export function KpiStrip({ output, isOptimizing, onInspectGates }: KpiStripProps
   return (
     <section
       aria-label="91-day outbreak impact summary"
-      className={`rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] transition-all ${
+      data-tour="kpi-strip"
+      className={`scroll-mt-20 rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] transition-all ${
         isOptimizing ? 'opacity-75' : 'opacity-100'
       }`}
     >

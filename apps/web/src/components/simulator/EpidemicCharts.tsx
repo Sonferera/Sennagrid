@@ -128,7 +128,8 @@ export function EpidemicCharts({ output, theme, currentDay, onSelectDay }: Epide
   return (
     <section
       aria-label="Epidemic overflow trajectory and strategy fit"
-      className="rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-5 sm:p-6 transition-colors"
+      data-tour="epidemic-charts"
+      className="scroll-mt-20 rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-5 transition-colors sm:p-6"
     >
       <div className="grid grid-cols-1 gap-8 min-[960px]:grid-cols-12 min-[960px]:items-start">
         {/* Left: Clean Trajectory Chart */}

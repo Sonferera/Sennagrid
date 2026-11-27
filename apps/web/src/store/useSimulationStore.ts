@@ -8,6 +8,10 @@ import {
   type SimulationParams,
 } from '@sennagrid/engine';
 import { create, type StoreApi, type UseBoundStore } from 'zustand';
+import {
+  getLiveTourStepCount,
+  getLiveTourTabForStep,
+} from '../components/onboarding/guideCatalog';
 import { getRegionPreset } from '../data/regions';
 import { findCrisisFocusDay, findReactivePeakIcuDay } from '../lib/viewModels';
 import { fetchRegionClimate } from '../services/weather';
@@ -76,6 +80,7 @@ export interface SimulationStoreState {
   error: string | null;
   tourOpen: boolean;
   tourStep: number;
+  guideOpen: boolean;
 
   initialize: () => Promise<void>;
   setRegion: (regionId: RegionId) => Promise<void>;
@@ -108,9 +113,11 @@ export interface SimulationStoreState {
   setMobileMapStrategy: (strategy: MobileMapStrategy) => void;
   toggleAdvancedOpen: () => void;
   setAdvancedOpen: (open: boolean) => void;
-  openTour: () => void;
+  openTour: (initialStep?: number) => void;
   closeTour: () => void;
   setTourStep: (step: number) => void;
+  openGuide: () => void;
+  closeGuide: () => void;
   dispose: () => void;
 }
 
@@ -216,6 +223,7 @@ export function createSimulationStore(
       error: null,
       tourOpen: false,
       tourStep: 0,
+      guideOpen: false,
 
       async initialize() {
         if (get().hasInitialized) {
@@ -481,8 +489,18 @@ export function createSimulationStore(
         set({ advancedOpen: open });
       },
 
-      openTour() {
-        set({ tourOpen: true, tourStep: 0, activeTab: 'simulator' });
+      openTour(initialStep) {
+        const maxStep = Math.max(0, getLiveTourStepCount() - 1);
+        const startStep =
+          typeof initialStep === 'number' && Number.isFinite(initialStep)
+            ? Math.max(0, Math.min(maxStep, Math.round(initialStep)))
+            : 0;
+        set({
+          guideOpen: false,
+          tourOpen: true,
+          tourStep: startStep,
+          activeTab: getLiveTourTabForStep(startStep),
+        });
       },
 
       closeTour() {
@@ -490,11 +508,20 @@ export function createSimulationStore(
       },
 
       setTourStep(step) {
-        const clamped = Math.max(0, Math.min(3, step));
+        const maxStep = Math.max(0, getLiveTourStepCount() - 1);
+        const clamped = Math.max(0, Math.min(maxStep, Math.round(step)));
         set({
           tourStep: clamped,
-          activeTab: clamped === 3 ? 'schedule' : 'simulator',
+          activeTab: getLiveTourTabForStep(clamped),
         });
+      },
+
+      openGuide() {
+        set({ guideOpen: true, tourOpen: false });
+      },
+
+      closeGuide() {
+        set({ guideOpen: false });
       },
 
       dispose() {

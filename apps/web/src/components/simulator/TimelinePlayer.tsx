@@ -66,7 +66,7 @@ export function TimelinePlayer({
     <div
       aria-label="Simulation timeline playback"
       data-tour="timeline-player"
-      className="flex flex-wrap items-center gap-3.5 border-t border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] px-5 py-3.5 min-[720px]:flex-nowrap"
+      className="flex scroll-mt-20 flex-wrap items-center gap-3.5 rounded-b-xl border-t border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] px-5 py-3.5 min-[720px]:flex-nowrap"
     >
       {/* Play / Pause Circular Button */}
       <button

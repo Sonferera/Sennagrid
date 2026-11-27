@@ -33,7 +33,7 @@ export function TabNav() {
               aria-selected={isActive}
               aria-controls={`panel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
-              className={`relative inline-flex min-h-[44px] items-center px-1 text-[15px] transition-colors sm:min-h-[56px] ${
+              className={`relative inline-flex min-h-[44px] items-center px-1 text-[15px] transition-colors min-[880px]:min-h-[56px] ${
                 isActive
                   ? 'font-semibold text-[var(--sg-text-primary)]'
                   : 'font-medium text-[var(--sg-text-muted)] hover:text-[var(--sg-text-primary)]'
