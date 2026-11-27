@@ -171,6 +171,11 @@ describe('useSimulationStore lifecycle and orchestration', () => {
 
     store.getState().setBudgetRatio(0.35);
     expect(store.getState().params.budgetRatio).toBe(0.35);
+    store.getState().setBudgetRatio(Number.NaN);
+    expect(store.getState().params.budgetRatio).toBe(0.2);
+    store.getState().setBudgetRatio(Number.POSITIVE_INFINITY);
+    expect(store.getState().params.budgetRatio).toBe(0.2);
+    store.getState().setBudgetRatio(0.35);
     await store.getState().resetDefaults();
     expect(store.getState().params.budgetRatio).toBe(0.2);
     expect(store.getState().params.diseaseMode).toBe('direct_seir');

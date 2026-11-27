@@ -24,11 +24,13 @@ interface OpenMeteoGeocodingPayload {
 }
 
 const GEOCODING_TIMEOUT_MS = 3000;
+export const MAX_CITY_QUERY_LENGTH = 100;
 
 export function buildOpenMeteoGeocodingUrl(query: string, count = 6): string {
   const safeCount = Math.max(1, Math.min(10, Math.round(count)));
+  const safeQuery = query.trim().slice(0, MAX_CITY_QUERY_LENGTH);
   const params = new URLSearchParams({
-    name: query.trim(),
+    name: safeQuery,
     count: String(safeCount),
     language: 'en',
     format: 'json',
@@ -112,7 +114,7 @@ export async function searchCities(
     count?: number;
   } = {},
 ): Promise<CitySearchResult[]> {
-  const trimmed = query.trim();
+  const trimmed = query.trim().slice(0, MAX_CITY_QUERY_LENGTH);
   if (trimmed.length < 2) {
     return [];
   }

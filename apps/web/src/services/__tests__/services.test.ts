@@ -8,6 +8,7 @@ import { METRO_TROPICA_PRESET } from '../../data/regions';
 import { generateDispatchCsv, generateFullRunJson } from '../export';
 import {
   buildOpenMeteoGeocodingUrl,
+  MAX_CITY_QUERY_LENGTH,
   parseOpenMeteoGeocodingResponse,
   searchCities,
 } from '../geocoding';
@@ -86,6 +87,10 @@ describe('weather and export services', () => {
     const url = buildOpenMeteoGeocodingUrl(' Surabaya ', 4);
     expect(url).toContain('https://geocoding-api.open-meteo.com/v1/search?');
     expect(url).toContain('name=Surabaya');
+
+    const longUrl = buildOpenMeteoGeocodingUrl('x'.repeat(MAX_CITY_QUERY_LENGTH + 45), 4);
+    const parsedLongUrl = new URL(longUrl);
+    expect(parsedLongUrl.searchParams.get('name')).toHaveLength(MAX_CITY_QUERY_LENGTH);
 
     const parsedCities = parseOpenMeteoGeocodingResponse({
       results: [
