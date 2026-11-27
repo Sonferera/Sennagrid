@@ -1,5 +1,6 @@
 import { BookOpen, Compass, Moon, Sun } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
+import { getLiveTourStepCount } from '../onboarding/guideCatalog';
 import { useSimulationStore } from '../../store/useSimulationStore';
 import { TabNav } from './TabNav';
 
@@ -101,7 +102,7 @@ export function HeaderBar() {
             type="button"
             onClick={() => openTour(0)}
             aria-label="Start interactive live tour"
-            title="8-Step Live Spotlight Tour"
+            title={`${getLiveTourStepCount()}-Step Live Spotlight Tour`}
             className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-md px-2 text-sm font-medium text-[var(--sg-text-muted)] transition-colors hover:bg-[var(--sg-inset)] hover:text-[var(--sg-text-primary)] sm:min-h-[36px] sm:min-w-0"
           >
             <Compass className="h-4 w-4 text-[var(--sg-teal)]" aria-hidden="true" />

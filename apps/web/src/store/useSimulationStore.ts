@@ -12,8 +12,13 @@ import {
   getLiveTourStepCount,
   getLiveTourTabForStep,
 } from '../components/onboarding/guideCatalog';
-import { getRegionPreset } from '../data/regions';
+import {
+  buildCustomCityPreset,
+  getRegionPreset,
+  type RegionPreset,
+} from '../data/regions';
 import { findCrisisFocusDay, findReactivePeakIcuDay } from '../lib/viewModels';
+import type { CitySearchResult } from '../services/geocoding';
 import { fetchRegionClimate } from '../services/weather';
 import {
   createOptimizerWorkerClient,
@@ -51,13 +56,18 @@ function persistAndApplyTheme(theme: ThemeMode): void {
 }
 
 export interface SimulationStoreDependencies {
-  fetchClimate?: (regionId: RegionId) => Promise<ClimateSeries>;
+  fetchClimate?: (
+    regionId: RegionId,
+    anchor?: { anchorLat: number; anchorLng: number },
+  ) => Promise<ClimateSeries>;
   getFallbackClimate?: (regionId: RegionId, anchorLat: number, anchorLng: number) => ClimateSeries;
   createWorkerClient?: () => OptimizerWorkerClient;
 }
 
 export interface SimulationStoreState {
   params: SimulationParams;
+  customPreset: RegionPreset | null;
+  customPresetsById: Partial<Record<RegionId, RegionPreset>>;
   climateMode: ClimateMode;
   theme: ThemeMode;
   advancedOpen: boolean;
@@ -84,6 +94,7 @@ export interface SimulationStoreState {
 
   initialize: () => Promise<void>;
   setRegion: (regionId: RegionId) => Promise<void>;
+  selectCustomCity: (city: CitySearchResult) => Promise<void>;
   setDiseaseMode: (diseaseMode: DiseaseMode) => Promise<void>;
   setClimateMode: (mode: ClimateMode) => Promise<void>;
   setBudgetRatio: (budgetRatio: number) => void;
@@ -95,6 +106,7 @@ export interface SimulationStoreState {
     overrideParams?: SimulationParams,
     overrideClimate?: ClimateSeries,
     focusPeakOnSettle?: boolean,
+    overridePreset?: RegionPreset,
   ) => Promise<void>;
   setActiveTab: (tab: ActiveTab) => void;
   setTheme: (theme: ThemeMode) => void;
@@ -136,7 +148,10 @@ function getMaxDay(output: OptimizationOutput | null, params: SimulationParams):
 export function createSimulationStore(
   deps: SimulationStoreDependencies = {},
 ): UseBoundStore<StoreApi<SimulationStoreState>> {
-  const fetchClimateFn = deps.fetchClimate ?? ((regionId: RegionId) => fetchRegionClimate(regionId));
+  const fetchClimateFn =
+    deps.fetchClimate ??
+    ((regionId: RegionId, anchor?: { anchorLat: number; anchorLng: number }) =>
+      fetchRegionClimate(regionId, anchor));
   const fallbackClimateFn = deps.getFallbackClimate ?? getFallbackClimateSeries;
   const createClientFn = deps.createWorkerClient ?? createOptimizerWorkerClient;
 
@@ -152,8 +167,15 @@ export function createSimulationStore(
   }
 
   return create<SimulationStoreState>((set, get) => {
-    const resolveActiveClimate = (regionId: RegionId, mode: ClimateMode): ClimateSeries => {
-      const preset = getRegionPreset(regionId);
+    const resolveActiveClimate = (
+      regionId: RegionId,
+      mode: ClimateMode,
+      customPresetOverride?: RegionPreset | null,
+    ): ClimateSeries => {
+      const preset = getRegionPreset(
+        regionId,
+        customPresetOverride ?? get().customPresetsById[regionId] ?? get().customPreset,
+      );
       if (mode === 'live_weather') {
         const cachedLive = get().liveClimateByRegion[regionId];
         if (cachedLive) {
@@ -163,15 +185,25 @@ export function createSimulationStore(
       return fallbackClimateFn(regionId, preset.anchorLat, preset.anchorLng);
     };
 
-    const prefetchLiveClimateInBackground = (regionId: RegionId) => {
+    const prefetchLiveClimateInBackground = (
+      regionId: RegionId,
+      customPresetOverride?: RegionPreset | null,
+    ) => {
       if (get().liveClimateByRegion[regionId]) {
         return;
       }
 
+      const preset = getRegionPreset(
+        regionId,
+        customPresetOverride ?? get().customPresetsById[regionId] ?? get().customPreset,
+      );
       const weatherToken = ++activeWeatherToken;
       set({ weatherRefreshPending: true });
 
-      void fetchClimateFn(regionId)
+      void fetchClimateFn(regionId, {
+        anchorLat: preset.anchorLat,
+        anchorLng: preset.anchorLng,
+      })
         .then((resolvedClimate) => {
           const stillSameToken = weatherToken === activeWeatherToken;
           set((state) => ({
@@ -201,6 +233,8 @@ export function createSimulationStore(
 
     return {
       params: { ...DEFAULT_SIMULATION_PARAMS },
+      customPreset: null,
+      customPresetsById: {},
       climateMode: 'seasonal_benchmark',
       theme: readInitialTheme(),
       advancedOpen: false,
@@ -239,17 +273,26 @@ export function createSimulationStore(
       },
 
       async setRegion(regionId) {
-        const preset = getRegionPreset(regionId);
+        const prevRegionId = get().params.regionId;
+        const preset = getRegionPreset(
+          regionId,
+          get().customPresetsById[regionId] ?? get().customPreset,
+        );
+        const nextClimateMode: ClimateMode =
+          prevRegionId.startsWith('custom_') && !regionId.startsWith('custom_')
+            ? 'seasonal_benchmark'
+            : get().climateMode;
         const nextParams: SimulationParams = {
           ...get().params,
           regionId,
           diseaseMode: preset.defaultDiseaseMode,
           interventionEfficacy: undefined,
         };
-        const immediateClimate = resolveActiveClimate(regionId, get().climateMode);
+        const immediateClimate = resolveActiveClimate(regionId, nextClimateMode, preset);
 
         set({
           params: nextParams,
+          climateMode: nextClimateMode,
           selectedDistrictId: null,
           isPlaying: false,
           hasUserScrubbedDay: false,
@@ -257,8 +300,41 @@ export function createSimulationStore(
           error: null,
         });
 
-        prefetchLiveClimateInBackground(regionId);
-        await get().runOptimization(nextParams, immediateClimate, true);
+        prefetchLiveClimateInBackground(regionId, preset);
+        await get().runOptimization(nextParams, immediateClimate, true, preset);
+      },
+
+      async selectCustomCity(city) {
+        const customPreset = buildCustomCityPreset(city);
+        const nextParams: SimulationParams = {
+          ...get().params,
+          regionId: customPreset.id,
+          diseaseMode: customPreset.defaultDiseaseMode,
+          interventionEfficacy: undefined,
+        };
+        const immediateClimate = resolveActiveClimate(
+          customPreset.id,
+          'live_weather',
+          customPreset,
+        );
+
+        set((state) => ({
+          customPreset,
+          customPresetsById: {
+            ...state.customPresetsById,
+            [customPreset.id]: customPreset,
+          },
+          params: nextParams,
+          climateMode: 'live_weather',
+          selectedDistrictId: null,
+          isPlaying: false,
+          hasUserScrubbedDay: false,
+          climate: immediateClimate,
+          error: null,
+        }));
+
+        prefetchLiveClimateInBackground(customPreset.id, customPreset);
+        await get().runOptimization(nextParams, immediateClimate, true, customPreset);
       },
 
       async setDiseaseMode(diseaseMode) {
@@ -276,17 +352,38 @@ export function createSimulationStore(
         set({ climateMode: mode, isPlaying: false, error: null });
 
         if (mode === 'live_weather' && !liveClimateByRegion[params.regionId]) {
+          const preset = getRegionPreset(
+            params.regionId,
+            get().customPresetsById[params.regionId] ?? get().customPreset,
+          );
+          const weatherToken = ++activeWeatherToken;
           set({ weatherRefreshPending: true });
-          const fetched = await fetchClimateFn(params.regionId);
-          set((state) => ({
-            liveClimateByRegion: {
-              ...state.liveClimateByRegion,
-              [params.regionId]: fetched,
-            },
-            weatherRefreshPending: false,
-            climate: fetched,
-          }));
-          await get().runOptimization(params, fetched, true);
+          try {
+            const fetched = await fetchClimateFn(params.regionId, {
+              anchorLat: preset.anchorLat,
+              anchorLng: preset.anchorLng,
+            });
+            const stillCurrent =
+              weatherToken === activeWeatherToken &&
+              get().params.regionId === params.regionId &&
+              get().climateMode === 'live_weather';
+            set((state) => ({
+              liveClimateByRegion: {
+                ...state.liveClimateByRegion,
+                [params.regionId]: fetched,
+              },
+              weatherRefreshPending:
+                weatherToken === activeWeatherToken ? false : state.weatherRefreshPending,
+              ...(stillCurrent ? { climate: fetched } : {}),
+            }));
+            if (stillCurrent) {
+              await get().runOptimization(get().params, fetched, true, preset);
+            }
+          } catch {
+            if (weatherToken === activeWeatherToken) {
+              set({ weatherRefreshPending: false });
+            }
+          }
           return;
         }
 
@@ -316,13 +413,16 @@ export function createSimulationStore(
 
       async resetDefaults() {
         const regionId = get().params.regionId;
-        const preset = getRegionPreset(regionId);
+        const preset = getRegionPreset(
+          regionId,
+          get().customPresetsById[regionId] ?? get().customPreset,
+        );
         const nextParams: SimulationParams = {
           ...DEFAULT_SIMULATION_PARAMS,
           regionId,
           diseaseMode: preset.defaultDiseaseMode,
         };
-        const seasonalClimate = resolveActiveClimate(regionId, 'seasonal_benchmark');
+        const seasonalClimate = resolveActiveClimate(regionId, 'seasonal_benchmark', preset);
         set({
           params: nextParams,
           climateMode: 'seasonal_benchmark',
@@ -331,16 +431,18 @@ export function createSimulationStore(
           hasUserScrubbedDay: false,
           error: null,
         });
-        await get().runOptimization(nextParams, seasonalClimate, true);
+        await get().runOptimization(nextParams, seasonalClimate, true, preset);
       },
 
-      async runOptimization(overrideParams, overrideClimate, focusPeakOnSettle = false) {
+      async runOptimization(overrideParams, overrideClimate, focusPeakOnSettle = false, overridePreset) {
         const params = overrideParams ?? get().params;
+        const activeCustomPreset =
+          overridePreset ?? get().customPresetsById[params.regionId] ?? get().customPreset;
         const climate =
           overrideClimate ??
           get().climate ??
-          resolveActiveClimate(params.regionId, get().climateMode);
-        const preset = getRegionPreset(params.regionId);
+          resolveActiveClimate(params.regionId, get().climateMode, activeCustomPreset);
+        const preset = getRegionPreset(params.regionId, activeCustomPreset);
 
         const runToken = ++activeRunToken;
         set({

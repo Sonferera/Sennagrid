@@ -6,7 +6,14 @@ import {
   type DiseaseMode,
   type SimulationParams,
 } from '@sennagrid/engine';
-import { HARBOR_CORRIDOR_PRESET, METRO_TROPICA_PRESET, REGION_PRESET_LIST } from '../index';
+import {
+  buildCustomCityPreset,
+  HARBOR_CORRIDOR_PRESET,
+  HIGHLAND_RING_PRESET,
+  METRO_TROPICA_PRESET,
+  MONSOON_DELTA_PRESET,
+  REGION_PRESET_LIST,
+} from '../index';
 
 function polygonSignedArea(ring: readonly [number, number][]): number {
   let area = 0;
@@ -24,6 +31,10 @@ describe('city region GeoJSON presets and calibration', () => {
     expect(METRO_TROPICA_PRESET.featureCollection.features).toHaveLength(18);
     expect(HARBOR_CORRIDOR_PRESET.districts).toHaveLength(16);
     expect(HARBOR_CORRIDOR_PRESET.featureCollection.features).toHaveLength(16);
+    expect(HIGHLAND_RING_PRESET.districts).toHaveLength(16);
+    expect(HIGHLAND_RING_PRESET.featureCollection.features).toHaveLength(16);
+    expect(MONSOON_DELTA_PRESET.districts).toHaveLength(18);
+    expect(MONSOON_DELTA_PRESET.featureCollection.features).toHaveLength(18);
 
     for (const preset of REGION_PRESET_LIST) {
       const seenIds = new Set<string>();
@@ -257,5 +268,95 @@ describe('city region GeoJSON presets and calibration', () => {
     expect(output.gates.overallStatus).toBe('PASS');
     expect(output.gates.passedCount).toBe(5);
     expect(output.gates.readinessScore).toBe(100);
+  });
+
+  it('Highland Ring (Direct SEIR) and Monsoon Delta (Vector SEIR-SEI) show clear reactive breaches and PASS gates at 20%', () => {
+    const highlandClimate = getFallbackClimateSeries(
+      HIGHLAND_RING_PRESET.id,
+      HIGHLAND_RING_PRESET.anchorLat,
+      HIGHLAND_RING_PRESET.anchorLng,
+    );
+    const highlandOut = optimizeResourceAllocation(
+      HIGHLAND_RING_PRESET.districts,
+      {
+        ...DEFAULT_SIMULATION_PARAMS,
+        regionId: 'highland_ring',
+        diseaseMode: 'direct_seir',
+        budgetRatio: 0.2,
+      },
+      highlandClimate,
+    );
+    expect(highlandOut.reactive.icuCollapseDays).toBeGreaterThan(0);
+    expect(highlandOut.sennagrid.icuCollapseDays).toBeLessThan(highlandOut.reactive.icuCollapseDays);
+    expect(highlandOut.sennagrid.totalIcuOverflowCost).toBeLessThan(
+      highlandOut.reactive.totalIcuOverflowCost,
+    );
+    expect(highlandOut.gates.overallStatus).toBe('PASS');
+
+    const deltaClimate = getFallbackClimateSeries(
+      MONSOON_DELTA_PRESET.id,
+      MONSOON_DELTA_PRESET.anchorLat,
+      MONSOON_DELTA_PRESET.anchorLng,
+    );
+    const deltaOut = optimizeResourceAllocation(
+      MONSOON_DELTA_PRESET.districts,
+      {
+        ...DEFAULT_SIMULATION_PARAMS,
+        regionId: 'monsoon_delta',
+        diseaseMode: 'vector_seir_sei',
+        budgetRatio: 0.2,
+      },
+      deltaClimate,
+    );
+    expect(deltaOut.reactive.icuCollapseDays).toBeGreaterThan(0);
+    expect(deltaOut.sennagrid.totalIcuOverflowCost).toBeLessThan(
+      deltaOut.reactive.totalIcuOverflowCost,
+    );
+    expect(deltaOut.gates.overallStatus).toBe('PASS');
+  });
+
+  it('keeps Harbor Corridor west of Tokyo Bay open water and runs valid custom cities across latitudes', () => {
+    for (const feature of HARBOR_CORRIDOR_PRESET.featureCollection.features) {
+      for (const [lng, lat] of feature.geometry.coordinates[0]!) {
+        expect(lng).toBeLessThanOrEqual(139.66);
+        expect(lat).toBeGreaterThanOrEqual(35.39);
+      }
+    }
+
+    const customLondon = buildCustomCityPreset({
+      id: 2643743,
+      name: 'London',
+      country: 'United Kingdom',
+      admin1: 'England',
+      latitude: 51.5085,
+      longitude: -0.1257,
+      population: 8961989,
+    });
+    expect(customLondon.id).toBe('custom_2643743');
+    expect(customLondon.defaultDiseaseMode).toBe('direct_seir');
+    expect(customLondon.districts).toHaveLength(18);
+    expect(customLondon.districts.reduce((acc, d) => acc + d.icuBeds, 0)).toBeGreaterThan(1000);
+
+    const customClimate = getFallbackClimateSeries(
+      customLondon.id,
+      customLondon.anchorLat,
+      customLondon.anchorLng,
+    );
+    const out = optimizeResourceAllocation(
+      customLondon.districts,
+      {
+        ...DEFAULT_SIMULATION_PARAMS,
+        regionId: customLondon.id,
+        diseaseMode: customLondon.defaultDiseaseMode,
+        budgetRatio: 0.2,
+      },
+      customClimate,
+    );
+    expect(out.solveTimeMs).toBeLessThan(1500);
+    expect(out.sennagrid.hasNaN).toBe(false);
+    expect(out.sennagrid.totalCostJ).toBeLessThan(out.reactive.totalCostJ);
+    expect(out.sennagrid.totalIcuOverflowCost).toBeLessThan(out.reactive.totalIcuOverflowCost * 0.7);
+    expect(out.sennagrid.icuCollapseDays).toBeLessThan(out.reactive.icuCollapseDays);
+    expect(out.gates.overallStatus).toBe('PASS');
   });
 });

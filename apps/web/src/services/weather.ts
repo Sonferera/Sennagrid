@@ -15,7 +15,7 @@ interface OpenMeteoDailyPayload {
   };
 }
 
-const sessionCache = new Map<RegionId, ClimateSeries>();
+const sessionCache = new Map<string, ClimateSeries>();
 
 export function buildOpenMeteoUrl(lat: number, lng: number): string {
   const params = new URLSearchParams({
@@ -74,6 +74,8 @@ export function clearWeatherCache(): void {
 export async function fetchRegionClimate(
   regionId: RegionId,
   options: {
+    anchorLat?: number;
+    anchorLng?: number;
     fetchImpl?: typeof fetch;
     timeoutMs?: number;
     bypassCache?: boolean;
@@ -87,11 +89,20 @@ export async function fetchRegionClimate(
   }
 
   const preset = getRegionPreset(regionId);
+  const anchorLat =
+    typeof options.anchorLat === 'number' && Number.isFinite(options.anchorLat)
+      ? options.anchorLat
+      : preset.anchorLat;
+  const anchorLng =
+    typeof options.anchorLng === 'number' && Number.isFinite(options.anchorLng)
+      ? options.anchorLng
+      : preset.anchorLng;
+
   const fetchFn = options.fetchImpl ?? globalThis.fetch;
   const timeoutMs = options.timeoutMs ?? OPEN_METEO_TIMEOUT_MS;
 
   if (typeof fetchFn !== 'function') {
-    const fallback = getFallbackClimateSeries(regionId, preset.anchorLat, preset.anchorLng);
+    const fallback = getFallbackClimateSeries(regionId, anchorLat, anchorLng);
     sessionCache.set(regionId, fallback);
     return fallback;
   }
@@ -100,7 +111,7 @@ export async function fetchRegionClimate(
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const url = buildOpenMeteoUrl(preset.anchorLat, preset.anchorLng);
+    const url = buildOpenMeteoUrl(anchorLat, anchorLng);
     const res = await fetchFn(url, {
       method: 'GET',
       signal: controller.signal,
@@ -112,7 +123,7 @@ export async function fetchRegionClimate(
     }
 
     const json = (await res.json()) as OpenMeteoDailyPayload;
-    const parsed = parseOpenMeteoResponse(json, preset.anchorLat, preset.anchorLng);
+    const parsed = parseOpenMeteoResponse(json, anchorLat, anchorLng);
     if (!parsed) {
       throw new Error('Malformed Open-Meteo daily arrays');
     }
@@ -120,7 +131,7 @@ export async function fetchRegionClimate(
     sessionCache.set(regionId, parsed);
     return parsed;
   } catch {
-    const fallback = getFallbackClimateSeries(regionId, preset.anchorLat, preset.anchorLng);
+    const fallback = getFallbackClimateSeries(regionId, anchorLat, anchorLng);
     sessionCache.set(regionId, fallback);
     return fallback;
   } finally {

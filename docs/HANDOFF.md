@@ -7,7 +7,7 @@ Dokumen ini merangkum seluruh API yang sudah siap pakai dari **Owner A** (`packa
 ## 1. Public Exports from `@sennagrid/engine`
 
 Import langsung dari `'@sennagrid/engine'`:
-- **Types & Constants:** `DEFAULT_SIMULATION_PARAMS`, `EPIDEMIC_CONSTANTS`, `SimulationParams`, `DiseaseMode`, `RegionId`, `DistrictProperties`, `ClimateSeries`, `OptimizationOutput`, `StrategySimulationResult`, `DispatchAssignment`, `SwapTraceEntry`, `PolicyGateSummary`, `RationaleTag`, `DistrictImpactSummary`, `ImpactSummary`, `ImpactRadar`.
+- **Types & Constants:** `DEFAULT_SIMULATION_PARAMS`, `EPIDEMIC_CONSTANTS`, `SimulationParams`, `DiseaseMode`, `BuiltInRegionId`, `CustomRegionId`, `RegionId`, `DistrictProperties`, `ClimateSeries`, `OptimizationOutput`, `StrategySimulationResult`, `DispatchAssignment`, `SwapTraceEntry`, `PolicyGateSummary`, `RationaleTag`, `DistrictImpactSummary`, `ImpactSummary`, `ImpactRadar`.
 - **Functions (biasanya dipanggil dari worker, tersedia juga untuk unit test/UI helpers):** `computeWeeklyQuota`, `computeThermalMultiplier`, `computeRainfallMultiplier`, `getFallbackClimateSeries`, `optimizeResourceAllocation`, `evaluatePolicyGates`, `computeHubCoverage`.
 
 ### 1.1 Simulation Parameter Contract
@@ -30,10 +30,11 @@ const params: SimulationParams = {
 ## 2. Region Presets (`apps/web/src/data/regions`)
 
 ```ts
-import { getRegionPreset, REGION_PRESET_LIST } from '../data/regions';
+import { buildCustomCityPreset, getRegionPreset, REGION_PRESET_LIST } from '../data/regions';
 
 const preset = getRegionPreset('metro_tropica');
-// preset.districts -> DistrictProperties[] (18 for Metro Tropica, 16 for Harbor Corridor)
+// REGION_PRESET_LIST -> 4 calibrated presets: metro_tropica (18), harbor_corridor (16), highland_ring (16), monsoon_delta (18)
+// buildCustomCityPreset(city) -> dynamic custom_${id} 18-district normalized urban grid centered at geocoded coordinates
 // preset.featureCollection -> valid GeoJSON FeatureCollection (promoteId: 'id')
 // preset.mapCenter -> [lng, lat], preset.mapZoom -> number
 // preset.defaultDiseaseMode -> 'vector_seir_sei' | 'direct_seir'
@@ -41,14 +42,19 @@ const preset = getRegionPreset('metro_tropica');
 
 ---
 
-## 3. Live Weather Service (`apps/web/src/services/weather.ts`)
+## 3. Live Weather & Geocoding Services (`apps/web/src/services/{weather.ts,geocoding.ts}`)
 
 ```ts
 import { fetchRegionClimate } from '../services/weather';
+import { searchCities } from '../services/geocoding';
 
 const climate = await fetchRegionClimate('metro_tropica');
+// Supports optional { anchorLat, anchorLng } for custom geocoded cities (`custom_*`)
 // climate.source === 'open_meteo' | 'fallback_climatology'
 // climate.meanTemp14d, climate.meanPrecip14d, climate.days (length 92)
+
+const cities = await searchCities('Surabaya');
+// Calls free Open-Meteo Geocoding API (`geocoding-api.open-meteo.com`) with 3000ms timeout
 ```
 - Tidak pernah melempar error ke UI; jika Open-Meteo timeout (> 3000 ms) atau offline, otomatis mengembalikan klimatologi musiman deterministik dan di-cache per `regionId`.
 

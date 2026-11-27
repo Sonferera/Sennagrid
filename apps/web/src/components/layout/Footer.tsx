@@ -60,7 +60,10 @@ export function Footer() {
                 RK4 Solver (dt = {params.dt}d · {params.horizonDays}-Day Horizon)
               </li>
               <li>Haversine Gravity Kernel &amp; Climate Forcing</li>
-              <li>Benchmarks: Metro Tropica (18) &amp; Harbor Corridor (16)</li>
+              <li>
+                Benchmarks: Metro Tropica, Harbor Corridor, Highland Ring, Monsoon Delta + Global
+                City Search
+              </li>
             </ul>
           </div>
 

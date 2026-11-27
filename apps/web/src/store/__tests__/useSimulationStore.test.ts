@@ -225,7 +225,7 @@ describe('useSimulationStore lifecycle and orchestration', () => {
     store.getState().dispose();
   });
 
-  it('orchestrates feature guide modal and 8-step live tour tab switching mutually exclusively', () => {
+  it('orchestrates feature guide modal and 10-step live tour tab switching mutually exclusively', () => {
     const store = createSimulationStore({
       createWorkerClient: createSyncMockWorkerClient,
     });
@@ -237,16 +237,16 @@ describe('useSimulationStore lifecycle and orchestration', () => {
     expect(store.getState().guideOpen).toBe(true);
     expect(store.getState().tourOpen).toBe(false);
 
-    // Launching tour at step 6 closes guide and switches to Weekly Plan tab.
-    store.getState().openTour(6);
+    // Launching tour at step 7 closes guide and switches to Weekly Plan tab.
+    store.getState().openTour(7);
     expect(store.getState().guideOpen).toBe(false);
     expect(store.getState().tourOpen).toBe(true);
-    expect(store.getState().tourStep).toBe(6);
+    expect(store.getState().tourStep).toBe(7);
     expect(store.getState().activeTab).toBe('schedule');
 
-    // Advancing to step 7 switches to Methodology; out-of-range steps clamp cleanly.
+    // Advancing to step 9 switches to Methodology; out-of-range steps clamp cleanly.
     store.getState().setTourStep(99);
-    expect(store.getState().tourStep).toBe(7);
+    expect(store.getState().tourStep).toBe(9);
     expect(store.getState().activeTab).toBe('methodology');
 
     store.getState().openGuide();
@@ -255,6 +255,54 @@ describe('useSimulationStore lifecycle and orchestration', () => {
 
     store.getState().closeGuide();
     expect(store.getState().guideOpen).toBe(false);
+
+    store.getState().dispose();
+  });
+
+  it('loads a custom geocoded city with live weather anchor and preserves built-in preset switching', async () => {
+    const requestedAnchors: Array<{ regionId: RegionId; lat?: number; lng?: number }> = [];
+    const store = createSimulationStore({
+      fetchClimate: async (regionId, anchor) => {
+        requestedAnchors.push({ regionId, lat: anchor?.anchorLat, lng: anchor?.anchorLng });
+        return {
+          ...getFallbackClimateSeries(regionId, anchor?.anchorLat ?? 0, anchor?.anchorLng ?? 0),
+          source: 'open_meteo',
+          meanTemp14d: 26.5,
+        };
+      },
+      createWorkerClient: createSyncMockWorkerClient,
+    });
+
+    await store.getState().initialize();
+    await store.getState().selectCustomCity({
+      id: 1625822,
+      name: 'Surabaya',
+      country: 'Indonesia',
+      admin1: 'East Java',
+      latitude: -7.2492,
+      longitude: 112.7508,
+      population: 2_874_699,
+    });
+
+    await new Promise((r) => setTimeout(r, 20));
+    const customState = store.getState();
+    expect(customState.params.regionId).toBe('custom_1625822');
+    expect(customState.customPreset?.name).toBe('Surabaya');
+    expect(customState.output?.districts).toHaveLength(18);
+    expect(customState.climate?.source).toBe('open_meteo');
+    expect(
+      requestedAnchors.some(
+        (a) =>
+          a.regionId === 'custom_1625822' &&
+          Math.abs((a.lat ?? 0) - -7.2492) < 1e-3 &&
+          Math.abs((a.lng ?? 0) - 112.7508) < 1e-3,
+      ),
+    ).toBe(true);
+
+    await store.getState().setRegion('highland_ring');
+    expect(store.getState().params.regionId).toBe('highland_ring');
+    expect(store.getState().climateMode).toBe('seasonal_benchmark');
+    expect(store.getState().output?.districts).toHaveLength(16);
 
     store.getState().dispose();
   });

@@ -45,6 +45,8 @@ export default function App() {
   const {
     activeTab,
     theme,
+    customPreset,
+    customPresetsById,
     output,
     isOptimizing,
     error,
@@ -82,6 +84,8 @@ export default function App() {
     useShallow((s) => ({
       activeTab: s.activeTab,
       theme: s.theme,
+      customPreset: s.customPreset,
+      customPresetsById: s.customPresetsById,
       output: s.output,
       isOptimizing: s.isOptimizing,
       error: s.error,
@@ -254,6 +258,10 @@ export default function App() {
     setActiveTab('simulator');
   };
 
+  const activeOutputCustomPreset = output
+    ? (customPresetsById[output.params.regionId] ?? customPreset)
+    : customPreset;
+
   return (
     <div className="flex min-h-screen flex-col bg-[var(--sg-canvas)] text-[var(--sg-text-primary)] transition-colors">
       <HeaderBar />
@@ -311,6 +319,7 @@ export default function App() {
 
                   <SplitMapView
                     output={output}
+                    customPreset={activeOutputCustomPreset}
                     theme={theme}
                     currentDay={currentDay}
                     selectedDistrictId={selectedDistrictId}
@@ -357,6 +366,7 @@ export default function App() {
               >
                 <DispatchSchedule
                   output={output}
+                  customPreset={activeOutputCustomPreset}
                   onInspectDistrictAtWeek={handleInspectDistrictFromSchedule}
                 />
                 <SwapTracePanel output={output} />

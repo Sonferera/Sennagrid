@@ -1,9 +1,11 @@
-import { ArrowRight, BookOpen, Compass, RotateCcw, Search, X } from 'lucide-react';
+import { ArrowRight, BookOpen, Compass, RotateCcw, Search, Sparkles, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  CITY_BENCHMARK_REFERENCE,
   FEATURE_GUIDE_ITEMS,
   GUIDE_CATEGORIES,
   KEYBOARD_SHORTCUTS,
+  LIVE_TOUR_STEPS,
   filterFeatureGuideItems,
   type GuideCategoryId,
   type GuideTab,
@@ -38,6 +40,14 @@ export function FeatureGuideModal({
     () => filterFeatureGuideItems(selectedCategory, searchQuery),
     [selectedCategory, searchQuery],
   );
+
+  const categoryCounts = useMemo(() => {
+    const counts: Partial<Record<GuideCategoryId, number>> = {};
+    for (const item of FEATURE_GUIDE_ITEMS) {
+      counts[item.category] = (counts[item.category] ?? 0) + 1;
+    }
+    return counts;
+  }, []);
 
   if (!isOpen) return null;
 
@@ -75,8 +85,8 @@ export function FeatureGuideModal({
                 SennaGrid Feature &amp; Function Guide
               </h2>
               <p className="mt-0.5 text-[13px] text-[var(--sg-text-muted)]">
-                Complete reference of every workspace control, map layer, trajectory metric, export,
-                and integrity gate.
+                Complete reference of every city benchmark, custom city search tool, map layer,
+                parameter slider, schedule export, and integrity gate.
               </p>
             </div>
           </div>
@@ -88,7 +98,7 @@ export function FeatureGuideModal({
               className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-[var(--sg-teal-fill)] px-3.5 py-1.5 text-[13px] font-semibold text-[var(--sg-teal-fill-ink)] transition-colors hover:bg-[var(--sg-teal-fill-hover)] min-[720px]:min-h-[36px]"
             >
               <Compass className="h-4 w-4" aria-hidden="true" />
-              <span>Start Live Tour (8 Steps)</span>
+              <span>Start Live Tour ({LIVE_TOUR_STEPS.length} Steps)</span>
             </button>
 
             <button
@@ -118,7 +128,7 @@ export function FeatureGuideModal({
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search features (e.g. Swap Trace, Open-Meteo, Watchlist, H/S/I, CSV)..."
+                placeholder="Search features (e.g. London, Open-Meteo, Swap Trace, Watchlist, H/S/I, CSV)..."
                 className="min-h-[44px] w-full rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-surface)] py-1.5 pl-9 pr-3 text-[13px] text-[var(--sg-text-primary)] placeholder:text-[var(--sg-text-muted)] min-[720px]:min-h-[36px]"
               />
             </div>
@@ -158,6 +168,7 @@ export function FeatureGuideModal({
 
             {GUIDE_CATEGORIES.map((category) => {
               const active = selectedCategory === category.id;
+              const count = categoryCounts[category.id] ?? 0;
               return (
                 <button
                   key={category.id}
@@ -170,7 +181,7 @@ export function FeatureGuideModal({
                       : 'border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] text-[var(--sg-text-muted)] hover:border-[var(--sg-border-control)] hover:text-[var(--sg-text-primary)]'
                   }`}
                 >
-                  {category.label}
+                  {category.label} ({count})
                 </button>
               );
             })}
@@ -180,36 +191,99 @@ export function FeatureGuideModal({
         {/* Scrollable Content Body */}
         <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
           {!hasFilters && (
-            <div className="rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-inset)] p-4">
-              <h3 className="text-xs font-semibold tracking-wider text-[var(--sg-teal)] uppercase">
-                How SennaGrid Evaluates Decisions
-              </h3>
-              <div className="mt-2.5 grid grid-cols-1 gap-3 text-[13px] leading-relaxed text-[var(--sg-text-secondary)] min-[720px]:grid-cols-3">
-                <div className="rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-3">
-                  <div className="font-semibold text-[var(--sg-rose)]">1. Without SennaGrid</div>
-                  <p className="mt-1 text-[var(--sg-text-muted)]">
-                    Allocates weekly teams solely to wards reporting the highest active infections
-                    right now, lagging behind commuter hub spillover.
-                  </p>
-                </div>
-                <div className="rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-3">
-                  <div className="font-semibold text-[var(--sg-teal)]">2. With SennaGrid</div>
-                  <p className="mt-1 text-[var(--sg-text-muted)]">
-                    Couples Haversine mobility, climate forcing, and local ICU limits in a 2-stage
-                    WK1-13 optimizer using the exact same team quota.
-                  </p>
-                </div>
-                <div className="rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-3">
-                  <div className="font-semibold text-[var(--sg-text-primary)]">
-                    3. Guardrails &amp; Zero Server
+            <>
+              <div className="rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-inset)] p-4">
+                <h3 className="text-xs font-semibold tracking-wider text-[var(--sg-teal)] uppercase">
+                  How SennaGrid Evaluates Decisions
+                </h3>
+                <div className="mt-2.5 grid grid-cols-1 gap-3 text-[13px] leading-relaxed text-[var(--sg-text-secondary)] min-[720px]:grid-cols-3">
+                  <div className="rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-3">
+                    <div className="font-semibold text-[var(--sg-rose)]">1. Without SennaGrid</div>
+                    <p className="mt-1 text-[var(--sg-text-muted)]">
+                      Allocates weekly teams solely to wards reporting the highest active infections
+                      right now, lagging behind commuter hub spillover.
+                    </p>
                   </div>
-                  <p className="mt-1 text-[var(--sg-text-muted)]">
-                    Runs deterministically in a browser Web Worker (<code className="font-mono text-xs text-[var(--sg-teal)]">Float64Array</code> RK4) and verifies 5
-                    numerical gates plus Hospital Safety Guardrail.
-                  </p>
+                  <div className="rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-3">
+                    <div className="font-semibold text-[var(--sg-teal)]">2. With SennaGrid</div>
+                    <p className="mt-1 text-[var(--sg-text-muted)]">
+                      Couples Haversine mobility, climate forcing, and local ICU limits in a 2-stage
+                      Weeks 1-13 optimizer using the exact same team quota.
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-3">
+                    <div className="font-semibold text-[var(--sg-text-primary)]">
+                      3. Guardrails &amp; Zero Server
+                    </div>
+                    <p className="mt-1 text-[var(--sg-text-muted)]">
+                      Runs deterministically in a browser Web Worker (
+                      <code className="font-mono text-xs text-[var(--sg-teal)]">Float64Array</code>{' '}
+                      RK4) and verifies 5 numerical gates plus Hospital Safety Guardrail.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+
+              {/* Compact City Scenarios & Global Search Reference */}
+              <section
+                aria-label="City scenarios and global search reference"
+                className="rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-inset)] p-4"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className="text-xs font-semibold tracking-wider text-[var(--sg-text-secondary)] uppercase">
+                    City Benchmarks &amp; Global City Search
+                  </h3>
+                  <span className="text-xs text-[var(--sg-text-muted)]">
+                    4 calibrated land presets + Open-Meteo custom city grid
+                  </span>
+                </div>
+
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full min-w-[580px] border-collapse text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-[var(--sg-border-subtle)] text-[11px] font-semibold text-[var(--sg-text-muted)] uppercase">
+                        <th scope="col" className="py-2 pr-3">
+                          Scenario
+                        </th>
+                        <th scope="col" className="px-2.5 py-2">
+                          Scale
+                        </th>
+                        <th scope="col" className="px-2.5 py-2">
+                          Default Model
+                        </th>
+                        <th scope="col" className="px-2.5 py-2">
+                          Anchor &amp; Climate
+                        </th>
+                        <th scope="col" className="py-2 pl-2.5">
+                          What It Tests
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--sg-border-row)] text-[12px]">
+                      {CITY_BENCHMARK_REFERENCE.map((city) => (
+                        <tr key={city.name}>
+                          <td className="whitespace-nowrap py-2 pr-3 font-semibold text-[var(--sg-text-primary)]">
+                            {city.name}
+                          </td>
+                          <td className="whitespace-nowrap px-2.5 py-2 font-mono text-[11px] text-[var(--sg-text-secondary)]">
+                            {city.wards}
+                          </td>
+                          <td className="whitespace-nowrap px-2.5 py-2 font-medium text-[var(--sg-teal)]">
+                            {city.defaultModel}
+                          </td>
+                          <td className="whitespace-nowrap px-2.5 py-2 text-[var(--sg-text-muted)]">
+                            {city.climateAnchor}
+                          </td>
+                          <td className="py-2 pl-2.5 text-[var(--sg-text-secondary)]">
+                            {city.focus}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </>
           )}
 
           {filteredItems.length === 0 ? (
@@ -218,8 +292,8 @@ export function FeatureGuideModal({
                 No features match &ldquo;{searchQuery.trim()}&rdquo;.
               </p>
               <p className="mt-1 text-sm text-[var(--sg-text-muted)]">
-                Try searching for &ldquo;budget&rdquo;, &ldquo;watchlist&rdquo;, &ldquo;swap&rdquo;,
-                &ldquo;Open-Meteo&rdquo;, or &ldquo;RK4&rdquo;.
+                Try searching for &ldquo;custom&rdquo;, &ldquo;London&rdquo;, &ldquo;budget&rdquo;,
+                &ldquo;watchlist&rdquo;, &ldquo;swap&rdquo;, or &ldquo;RK4&rdquo;.
               </p>
               <button
                 type="button"
@@ -245,7 +319,7 @@ export function FeatureGuideModal({
                         {item.tabLabel}
                       </span>
                       <span className="font-mono text-xs text-[var(--sg-text-muted)]">
-                        Tour Step {item.tourStepIndex + 1}
+                        Tour Step {item.tourStepIndex + 1} / {LIVE_TOUR_STEPS.length}
                       </span>
                     </div>
 
@@ -267,6 +341,19 @@ export function FeatureGuideModal({
                         </li>
                       ))}
                     </ul>
+
+                    <p className="mt-3 flex items-start gap-2 rounded-lg border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] px-2.5 py-2 text-xs leading-snug text-[var(--sg-text-secondary)]">
+                      <Sparkles
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--sg-teal)]"
+                        aria-hidden="true"
+                      />
+                      <span>
+                        <strong className="font-semibold text-[var(--sg-text-primary)]">
+                          Try it:
+                        </strong>{' '}
+                        {item.tryAction}
+                      </span>
+                    </p>
                   </div>
 
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--sg-border-row)] pt-3">

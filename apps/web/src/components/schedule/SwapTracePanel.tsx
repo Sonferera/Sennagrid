@@ -15,7 +15,8 @@ export function SwapTracePanel({ output }: SwapTracePanelProps) {
   return (
     <section
       aria-label="Stage 2 optimization swap trace"
-      className="rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] transition-colors"
+      data-tour="swap-trace"
+      className="scroll-mt-20 rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] transition-colors"
     >
       <button
         type="button"

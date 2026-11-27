@@ -1,4 +1,4 @@
-import type { ClimateSeries, DailyClimatePoint, RegionId } from './types';
+import type { BuiltInRegionId, ClimateSeries, DailyClimatePoint, RegionId } from './types';
 
 const OPTIMAL_VECTOR_TEMP_C = 29.0;
 const THERMAL_SIGMA_C = 6.5;
@@ -116,15 +116,14 @@ export function buildClimateSeriesFromSamples(input: ClimateBuildInput): Climate
   };
 }
 
-const FALLBACK_CLIMATOLOGY: Record<
-  RegionId,
-  {
-    pastPrecip7dMm: number[];
-    forecastTempsC: number[];
-    forecastPrecipMm: number[];
-    tempAmplitudeC: number;
-  }
-> = {
+interface ClimatologyProfile {
+  pastPrecip7dMm: number[];
+  forecastTempsC: number[];
+  forecastPrecipMm: number[];
+  tempAmplitudeC: number;
+}
+
+const FALLBACK_CLIMATOLOGY: Record<BuiltInRegionId, ClimatologyProfile> = {
   metro_tropica: {
     pastPrecip7dMm: [8.4, 12.1, 4.5, 16.2, 9.8, 6.4, 11.0],
     forecastTempsC: [
@@ -141,7 +140,44 @@ const FALLBACK_CLIMATOLOGY: Record<
     forecastPrecipMm: [1.8, 0.0, 5.2, 2.4, 0.0, 0.6, 4.1, 3.5, 0.0, 1.2, 2.8, 6.0, 1.9, 0.4],
     tempAmplitudeC: 2.2,
   },
+  highland_ring: {
+    pastPrecip7dMm: [4.2, 7.1, 2.0, 5.5, 6.8, 1.4, 3.9],
+    forecastTempsC: [
+      22.6, 22.1, 23.0, 23.4, 22.8, 21.9, 22.3, 22.9, 23.2, 22.5, 22.0, 22.4, 23.1, 22.6,
+    ],
+    forecastPrecipMm: [5.1, 8.3, 2.4, 4.0, 9.2, 1.8, 3.1, 6.4, 7.0, 2.2, 1.5, 5.8, 4.4, 3.0],
+    tempAmplitudeC: 1.8,
+  },
+  monsoon_delta: {
+    pastPrecip7dMm: [11.2, 15.4, 8.1, 19.6, 13.5, 7.2, 14.8],
+    forecastTempsC: [
+      30.4, 30.8, 29.9, 31.1, 30.6, 29.7, 30.1, 30.5, 31.0, 30.3, 29.8, 30.2, 30.7, 30.4,
+    ],
+    forecastPrecipMm: [12.8, 18.2, 9.4, 21.0, 14.6, 6.8, 11.2, 16.4, 15.0, 8.9, 7.1, 17.5, 19.2, 10.6],
+    tempAmplitudeC: 1.3,
+  },
 };
+
+function selectFallbackProfile(regionId: RegionId, anchorLat: number): ClimatologyProfile {
+  if (regionId in FALLBACK_CLIMATOLOGY) {
+    return FALLBACK_CLIMATOLOGY[regionId as BuiltInRegionId];
+  }
+  const absLat = Math.abs(anchorLat);
+  if (absLat < 23.5) {
+    return FALLBACK_CLIMATOLOGY.metro_tropica;
+  }
+  if (absLat < 34) {
+    return {
+      pastPrecip7dMm: [3.2, 5.4, 1.1, 4.2, 2.0, 0.5, 3.8],
+      forecastTempsC: [
+        23.4, 23.8, 22.9, 24.1, 24.5, 23.7, 23.1, 23.5, 24.0, 24.2, 23.6, 23.0, 23.3, 23.8,
+      ],
+      forecastPrecipMm: [3.0, 6.2, 1.4, 4.8, 2.2, 0.0, 3.6, 4.5, 2.1, 0.8, 3.4, 5.0, 1.9, 2.7],
+      tempAmplitudeC: 2.0,
+    };
+  }
+  return FALLBACK_CLIMATOLOGY.harbor_corridor;
+}
 
 export function getFallbackClimateSeries(
   regionId: RegionId,
@@ -149,7 +185,7 @@ export function getFallbackClimateSeries(
   anchorLng: number,
   horizonDays = 91,
 ): ClimateSeries {
-  const preset = FALLBACK_CLIMATOLOGY[regionId];
+  const preset = selectFallbackProfile(regionId, anchorLat);
   return buildClimateSeriesFromSamples({
     source: 'fallback_climatology',
     anchorLat,
