@@ -224,4 +224,38 @@ describe('useSimulationStore lifecycle and orchestration', () => {
 
     store.getState().dispose();
   });
+
+  it('orchestrates feature guide modal and 8-step live tour tab switching mutually exclusively', () => {
+    const store = createSimulationStore({
+      createWorkerClient: createSyncMockWorkerClient,
+    });
+
+    expect(store.getState().guideOpen).toBe(false);
+    expect(store.getState().tourOpen).toBe(false);
+
+    store.getState().openGuide();
+    expect(store.getState().guideOpen).toBe(true);
+    expect(store.getState().tourOpen).toBe(false);
+
+    // Launching tour at step 6 closes guide and switches to Weekly Plan tab.
+    store.getState().openTour(6);
+    expect(store.getState().guideOpen).toBe(false);
+    expect(store.getState().tourOpen).toBe(true);
+    expect(store.getState().tourStep).toBe(6);
+    expect(store.getState().activeTab).toBe('schedule');
+
+    // Advancing to step 7 switches to Methodology; out-of-range steps clamp cleanly.
+    store.getState().setTourStep(99);
+    expect(store.getState().tourStep).toBe(7);
+    expect(store.getState().activeTab).toBe('methodology');
+
+    store.getState().openGuide();
+    expect(store.getState().guideOpen).toBe(true);
+    expect(store.getState().tourOpen).toBe(false);
+
+    store.getState().closeGuide();
+    expect(store.getState().guideOpen).toBe(false);
+
+    store.getState().dispose();
+  });
 });

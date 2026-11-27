@@ -197,7 +197,7 @@ export function DispatchSchedule({
       {/* Page Title & Export Bar */}
       <div
         data-tour="dispatch-export"
-        className="flex flex-wrap items-end justify-between gap-4"
+        className="flex scroll-mt-20 flex-wrap items-end justify-between gap-4 rounded-xl"
       >
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-[var(--sg-text-primary)] sm:text-[26px]">

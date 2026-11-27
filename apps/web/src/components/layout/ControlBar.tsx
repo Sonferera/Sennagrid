@@ -125,7 +125,7 @@ export function ControlBar() {
     <aside
       aria-label="Simulation controls"
       data-tour="control-bar"
-      className="flex h-full w-full shrink-0 flex-col justify-between gap-5 rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-5 transition-colors"
+      className="flex h-full w-full shrink-0 scroll-mt-20 flex-col justify-between gap-5 rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-5 transition-colors"
     >
       <div className="space-y-5">
         {/* 1. City Scenario */}

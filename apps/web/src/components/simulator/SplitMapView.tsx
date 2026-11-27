@@ -779,7 +779,7 @@ export function SplitMapView({
     <section
       aria-label="Spatial district ICU comparison"
       data-tour="split-map"
-      className="overflow-hidden rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] transition-colors"
+      className="scroll-mt-20 overflow-hidden rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] transition-colors"
     >
       {/* Header: Title + 3-Dot Legend + Map / Watchlist Switch */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--sg-border-subtle)] px-5 py-4">

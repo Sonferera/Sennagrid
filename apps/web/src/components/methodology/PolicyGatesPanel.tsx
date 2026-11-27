@@ -15,7 +15,8 @@ export function PolicyGatesPanel({ gates }: PolicyGatesPanelProps) {
   return (
     <section
       aria-label="Deterministic Policy Gates verification"
-      className="rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-6 transition-colors"
+      data-tour="methodology-gates"
+      className="scroll-mt-20 rounded-xl border border-[var(--sg-border-subtle)] bg-[var(--sg-surface)] p-6 transition-colors"
     >
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--sg-border-subtle)] pb-5">
         <div>

@@ -6,11 +6,12 @@ import { useSimulationStore, type ActiveTab } from '../../store/useSimulationSto
  * and honest research benchmark attribution.
  */
 export function Footer() {
-  const { params, setActiveTab, openTour } = useSimulationStore(
+  const { params, setActiveTab, openTour, openGuide } = useSimulationStore(
     useShallow((s) => ({
       params: s.params,
       setActiveTab: s.setActiveTab,
       openTour: s.openTour,
+      openGuide: s.openGuide,
     })),
   );
 
@@ -99,10 +100,19 @@ export function Footer() {
               <li>
                 <button
                   type="button"
-                  onClick={openTour}
+                  onClick={openGuide}
                   className="inline-flex min-h-[44px] items-center text-[var(--sg-text-secondary)] transition-colors hover:text-[var(--sg-teal)] md:min-h-[28px]"
                 >
-                  Interactive Guided Tour
+                  Feature &amp; Function Guide
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => openTour(0)}
+                  className="inline-flex min-h-[44px] items-center text-[var(--sg-text-secondary)] transition-colors hover:text-[var(--sg-teal)] md:min-h-[28px]"
+                >
+                  Interactive Live Tour
                 </button>
               </li>
             </ul>
