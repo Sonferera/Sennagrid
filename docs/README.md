@@ -14,6 +14,7 @@ Direktori `docs/` adalah sumber kebenaran tunggal untuk spesifikasi produk, arsi
 | [CHANGELOG.md](./CHANGELOG.md) | Log kronologis seluruh perubahan proyek (*Keep a Changelog*) | **Wajib** di setiap update kode (`packages/` atau `apps/`) |
 | [HANDOFF.md](./HANDOFF.md) | Panduan integrasi API antar-workspace (Owner A -> Owner B) | Saat API publik `@sennagrid/engine` atau service/worker berubah |
 | [SUBMISSION_CHECKLIST.md](./SUBMISSION_CHECKLIST.md) | Aturan kompetisi *Code for Change (Global)* & checklist submit Devpost | Menjelang milestone demo, deploy, dan submission |
+| `docs/security-audit/YYYY-MM-DD/` | Laporan audit keamanan repository (scope, coverage, temuan, catatan hardening, artefak terstruktur) | Setelah setiap audit keamanan source-only selesai |
 | `docs/updates/YYYY-MM-DD-<slug>.md` | Catatan rinci per milestone atau fitur baru (mengikuti [TEMPLATE.md](./updates/TEMPLATE.md)) | **Wajib** untuk setiap fitur baru, refactor arsitektur, atau perubahan algoritma |
 
 ---

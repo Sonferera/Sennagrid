@@ -1,0 +1,9 @@
+{
+  "critic_id": "critic_final",
+  "wave": 2,
+  "missing_units": [],
+  "reassign_ids": [],
+  "resolved_prior_leads": [],
+  "stop": true,
+  "notes": "Final-clean critic accepted all 15 settled units as covered with source-backed evidence and reported no missing units, no reassignments, and stop: true. It noted that typecheck/test/build were not executed because target-controlled execution is prohibited in this run."
+}

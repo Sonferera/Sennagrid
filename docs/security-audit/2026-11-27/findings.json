@@ -1,0 +1,112 @@
+[
+  {
+    "verdict": "rejected",
+    "fingerprint": "clampbudget_nan_invariant",
+    "title": "clampBudget NaN vulnerability breaks budgetRatio invariant",
+    "description": "The clampBudget function does not handle non-numeric input, but the claimed invariant break is refuted by source-visible preventing layers.",
+    "claimed_root_cause": "The clampBudget function at line 117 of useSimulationStore.ts performs Math.max(0.1, Math.min(0.4, ratio)) followed by Number(clamped.toFixed(2)). When ratio is non-numeric, Math.min(0.4, ratio) produces NaN, Math.max(0.1, NaN) produces NaN, and Number(NaN.toFixed(2)) produces NaN.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "apps/web/src/store/useSimulationStore.ts",
+        "line": 290,
+        "scope": "setBudgetRatio function",
+        "description": "setBudgetRatio calls clampBudget and assigns result to params.budgetRatio"
+      },
+      {
+        "kind": "propagation",
+        "file": "apps/web/src/store/useSimulationStore.ts",
+        "line": 117,
+        "scope": "clampBudget function",
+        "description": "clampBudget function definition at line 117: const clamped = Math.max(0.1, Math.min(0.4, ratio)); return Number(clamped.toFixed(2));"
+      },
+      {
+        "kind": "sink",
+        "file": "packages/engine/src/optimizer.ts",
+        "line": 392,
+        "scope": "safeBudgetRatio assignment",
+        "description": "params.budgetRatio propagates to optimizer createSolverContext where Number.isFinite check defaults to 0.2"
+      }
+    ],
+    "evidence": [
+      {
+        "file": "apps/web/src/store/useSimulationStore.ts",
+        "line": 117,
+        "description": "clampBudget function: const clamped = Math.max(0.1, Math.min(0.4, ratio)); return Number(clamped.toFixed(2));"
+      },
+      {
+        "file": "apps/web/src/store/useSimulationStore.ts",
+        "line": 290,
+        "description": "setBudgetRatio: const nextRatio = clampBudget(budgetRatio);"
+      }
+    ],
+    "reason": "The optimizer's Number.isFinite(params.budgetRatio) guard at packages/engine/src/optimizer.ts:392 neutralizes NaN by falling back to DEFAULT_SIMULATION_PARAMS.budgetRatio (0.2), and the only caller of setBudgetRatio is ControlBar.tsx which uses a range input with min=10, max=40, step=5 ensuring only valid numeric values (0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4) are ever passed."
+  },
+  {
+    "verdict": "rejected",
+    "fingerprint": "engine-dep-workspace-eval",
+    "title": "@sennagrid/engine workspace dependency resolution evaluation needed",
+    "description": "Claim that @sennagrid/engine declared as * in apps/web/package.json overrides lockfile pin refuted by source evidence",
+    "claimed_root_cause": "@sennagrid/engine dependency declared as * in apps/web/package.json overrides the lockfile pin; actual resolution path between npm install and npm ci not determined for this monorepo workspace configuration.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "apps/web/package.json",
+        "line": 15,
+        "scope": "dependencies.@sennagrid/engine",
+        "description": "@sennagrid/engine declared as * (latest version) in package.json"
+      }
+    ],
+    "evidence": [
+      {
+        "file": "package-lock.json",
+        "line": 1368,
+        "description": "@sennagrid/engine resolved to packages/engine with link: true, confirming workspace resolution"
+      }
+    ],
+    "reason": "package-lock.json records @sennagrid/engine resolved to packages/engine with link: true, confirming npm workspace resolution uses local link rather than registry; * declaration does not override lockfile pin"
+  },
+  {
+    "verdict": "rejected",
+    "fingerprint": "policygate_overallstatus_invariant",
+    "title": "evaluatePolicyGates overallStatus can give REVIEW when 4 of 5 policy gates pass",
+    "description": "The evaluatePolicyGates function in gates.ts determines overall status as PASS only if passedCount >= 4 AND dominancePassed is true. If 4 out of 5 individual policy gates pass but COST_DOMINANCE fails, the overall status is REVIEW, which may mislead stakeholders about the optimization quality.",
+    "claimed_root_cause": "The overallStatus logic in evaluatePolicyGates (gates.ts line 128) uses: if (!massPassed || !budgetPassed || passedCount <= 2) { FAIL } else if (passedCount >= 4 && dominancePassed) { PASS } else { REVIEW }. When exactly 4 gates pass and dominancePassed is the 5th that fails, status is REVIEW despite near-complete gate compliance.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "packages/engine/src/gates.ts",
+        "line": 45,
+        "scope": "evaluatePolicyGates function",
+        "description": "evaluatePolicyGates function starts at line 45"
+      },
+      {
+        "kind": "propagation",
+        "file": "packages/engine/src/optimizer.ts",
+        "line": 639,
+        "scope": "evaluatePolicyGates call",
+        "description": "evaluatePolicyGates called with {reactive, sennagrid, hubCentrality, weeklyQuotaK} at end of optimizeResourceAllocation"
+      },
+      {
+        "kind": "sink",
+        "file": "packages/engine/src/gates.ts",
+        "line": 128,
+        "scope": "overallStatus determination",
+        "description": "overallStatus is set based on massPassed, budgetPassed, passedCount, and dominancePassed at lines 128-132"
+      }
+    ],
+    "evidence": [
+      {
+        "file": "packages/engine/src/gates.ts",
+        "line": 45,
+        "description": "evaluatePolicyGates function: const overallStatus = REVIEW; if (!massPassed || !budgetPassed || passedCount <= 2) { overallStatus = FAIL; } else if (passedCount >= 4 && dominancePassed) { overallStatus = PASS; } else { overallStatus = REVIEW; }"
+      },
+      {
+        "file": "packages/engine/src/optimizer.ts",
+        "line": 639,
+        "description": "evaluatePolicyGates called at line 639 with results from full optimization run"
+      }
+    ],
+    "reason": "Source-grounded: the evaluatePolicyGates function in packages/engine/src/gates.ts lines 127-132 explicitly implements the tri-status classification (FAIL/REVIEW/PASS) as documented intent. When passedCount >= 4 and dominancePassed is false (with massPassed and budgetPassed true), REVIEW is the correct output per the if/else-if chain. This is intentional design, not a bug or invariant failure."
+  }
+]

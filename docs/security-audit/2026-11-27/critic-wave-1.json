@@ -1,0 +1,27 @@
+{
+  "critic_id": "critic_wave_1",
+  "wave": 1,
+  "missing_units": [],
+  "reassign_ids": [
+    "apps%2Fweb%2Fsrc%2Fstore%2FuseSimulationStore.ts%23advanced%20simulation%20parameters::packages%2Fengine%2Fsrc%2Fsolver.ts%23parameter%20normalization::packages%2Fengine::ATTACK-CLASSES.md%23Business%20logic",
+    "package-lock.json%23npm%20dependency%20resolution::package.json%23workspace%20dependency%20declarations::dependency-resolution::ATTACK-CLASSES.md%23Obvious%20things",
+    "packages%2Fengine%2Fsrc%2Foptimizer.ts%23optimization%20result::packages%2Fengine%2Fsrc%2Fgates.ts%23evaluatePolicyGates::packages%2Fengine::ATTACK-CLASSES.md%23Business%20logic"
+  ],
+  "reassignment_reasons": [
+    {
+      "coverage_id": "apps%2Fweb%2Fsrc%2Fstore%2FuseSimulationStore.ts%23advanced%20simulation%20parameters::packages%2Fengine%2Fsrc%2Fsolver.ts%23parameter%20normalization::packages%2Fengine::ATTACK-CLASSES.md%23Business%20logic",
+      "reason": "clampBudget does not handle non-numeric input; when ratio is undefined/null/non-numeric it returns NaN, so the first-wave closure did not establish the real entry interface or the downstream effect."
+    },
+    {
+      "coverage_id": "package-lock.json%23npm%20dependency%20resolution::package.json%23workspace%20dependency%20declarations::dependency-resolution::ATTACK-CLASSES.md%23Obvious%20things",
+      "reason": "@sennagrid/engine is declared with the wildcard range in apps/web/package.json while the lockfile records a local workspace link, so the first-wave closure did not resolve which artifact each install path selects."
+    },
+    {
+      "coverage_id": "packages%2Fengine%2Fsrc%2Foptimizer.ts%23optimization%20result::packages%2Fengine%2Fsrc%2Fgates.ts%23evaluatePolicyGates::packages%2Fengine::ATTACK-CLASSES.md%23Business%20logic",
+      "reason": "evaluatePolicyGates returns REVIEW when exactly four of five gates pass and cost dominance fails, and the first-wave closure did not establish the documented intended status or any affected principal."
+    }
+  ],
+  "resolved_prior_leads": [],
+  "stop": false,
+  "notes": "The critic's first response used truncated %3/%3A separators in two reassign IDs; the parent mapped them to the canonical ledger IDs and requested the byte-exact identifiers and reasons in a follow-up turn of the same critic session."
+}

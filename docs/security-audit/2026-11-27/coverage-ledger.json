@@ -1,0 +1,1894 @@
+[
+  {
+    "coverage_id": ".github%2Fworkflows%2Fci.yml%23pull_request%20workflow::.github%2Fworkflows%2Fci.yml%23npm%20ci%20and%20repository%20scripts::.github%2Fci::ATTACK-CLASSES.md%23Obvious%20things",
+    "canonical_refs": {
+      "surface": ".github/workflows/ci.yml#pull_request workflow",
+      "boundary": ".github/workflows/ci.yml#npm ci and repository scripts",
+      "subsystem": ".github/ci",
+      "attack_class": "ATTACK-CLASSES.md#Obvious things"
+    },
+    "surface": ".github/workflows/ci.yml#pull_request workflow",
+    "boundary": ".github/workflows/ci.yml#npm ci and repository scripts",
+    "subsystem": ".github/ci",
+    "attack_class": "ATTACK-CLASSES.md#Obvious things",
+    "starting_paths": [
+      ".github/workflows/ci.yml",
+      "package.json",
+      "scripts/check-docs.mjs",
+      "package-lock.json"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#CI and automation attack classes",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Untrusted code in a privileged workflow",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Workflow command and expression confusion",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Cache, artifact, and workspace trust mixing",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Automation identity overreach",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Universal moves",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Injection",
+        "reason": "No source-visible attacker-controlled syntax reaches an executing or interpreting sink in this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "No file, path, archive, deserialization, or attacker-selected URL-resolution sink is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Business logic",
+        "reason": "No workflow, state-machine, quantity, timing, or fallback invariant is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+        "reason": "No export/search/notification/preview capability or private-data scope is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "The assigned boundary does not carry attacker-influenced content into a DOM or HTML sink."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "The assigned boundary has no browser storage reader or authorization decision."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "The assigned boundary does not select or perform navigation."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Dependency and build-input attack classes",
+        "reason": "Dependency-source and mutable-build-input invariants are assigned to the dedicated dependency-resolution unit."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Release and update attack classes",
+        "reason": "The repository contains no release publication, signing, update, or plugin-consumer path."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter_4",
+    "reviewed_paths": [
+      ".github/workflows/ci.yml"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_4",
+        "reviewed_paths": [
+          ".github/workflows/ci.yml"
+        ],
+        "invariant": "CI workflow trigger permissions and event handling",
+        "method": "source",
+        "result": "Workflow runs on pull_request events without explicit permissions restriction; no repository secrets currently present per architecture.md",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": [
+      "CI workflow permissions: No repository secrets present per architecture.md; risk theoretical if secrets added later",
+      "Gitignore coverage: No secret or debug files currently tracked; pattern gap does not expose existing credentials",
+      "Parent hardening note: the workflow references GitHub Actions by mutable major-version tags (actions/checkout@v4, actions/setup-node@v4) rather than immutable commit SHAs; pinning the SHAs would reduce tag-movement risk in a privileged workflow."
+    ]
+  },
+  {
+    "coverage_id": "apps%2Fweb%2Findex.html%23theme%20bootstrap%20and%20apps%2Fweb%2Fsrc%2Fstore%2FuseSimulationStore.ts%23theme%20persistence::apps%2Fweb%2Fsrc%2Fstore%2FuseSimulationStore.ts%23readInitialTheme%20and%20persistAndApplyTheme::apps%2Fweb%2Fbrowser-storage::ATTACK-CLASSES.md%23Feature%20abuse%20and%20data%20leakage",
+    "canonical_refs": {
+      "surface": "apps/web/index.html#theme bootstrap and apps/web/src/store/useSimulationStore.ts#theme persistence",
+      "boundary": "apps/web/src/store/useSimulationStore.ts#readInitialTheme and persistAndApplyTheme",
+      "subsystem": "apps/web/browser-storage",
+      "attack_class": "ATTACK-CLASSES.md#Feature abuse and data leakage"
+    },
+    "surface": "apps/web/index.html#theme bootstrap and apps/web/src/store/useSimulationStore.ts#theme persistence",
+    "boundary": "apps/web/src/store/useSimulationStore.ts#readInitialTheme and persistAndApplyTheme",
+    "subsystem": "apps/web/browser-storage",
+    "attack_class": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "starting_paths": [
+      "apps/web/index.html",
+      "apps/web/src/store/useSimulationStore.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "selected_companion_blocks": [
+      "CLIENT-SIDE.md#Core discipline",
+      "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+      "CLIENT-SIDE.md#Cross-context storage and broadcast confusion",
+      "CLIENT-SIDE.md#Universal moves",
+      "CLIENT-SIDE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Injection",
+        "reason": "No source-visible attacker-controlled syntax reaches an executing or interpreting sink in this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "No file, path, archive, deserialization, or attacker-selected URL-resolution sink is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Business logic",
+        "reason": "No workflow, state-machine, quantity, timing, or fallback invariant is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Obvious things",
+        "reason": "Literal secret, debug, and dependency sweeps are assigned to dedicated hygiene and dependency units."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-origin messaging and network attack classes",
+        "reason": "The assigned boundary is not a cross-origin message, WebSocket, or credentialed CORS path."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker and browser-storage attack classes",
+        "reason": "The selected client-side classes cover the assigned rendering/storage invariant; no service worker is registered."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site information leak classes",
+        "reason": "No cross-origin protected-state predicate is established at this boundary."
+      },
+      {
+        "block": "CLIENT-SIDE.md#UI-redress and navigation attack classes",
+        "reason": "The assigned boundary does not navigate or complete a framed state-changing action."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "This unit does not cross a dependency-resolution, CI, artifact, release, or update handoff."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter_3",
+    "reviewed_paths": [
+      "apps/web/index.html",
+      "apps/web/src/store/useSimulationStore.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_3",
+        "reviewed_paths": [
+          "apps/web/index.html"
+        ],
+        "invariant": "Theme bootstrap read from localStorage on page load",
+        "method": "source",
+        "result": "readInitialTheme returns 'dark' default when localStorage unavailable or value not 'light'",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_3",
+        "reviewed_paths": [
+          "apps/web/src/store/useSimulationStore.ts"
+        ],
+        "invariant": "persistAndApplyTheme writes theme to localStorage and document dataset attribute",
+        "method": "source",
+        "result": "Theme persisted with typeof guards and try/catch for sandbox/quota errors",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": []
+  },
+  {
+    "coverage_id": "apps%2Fweb%2Fsrc%2Fcomponents%2Fschedule%2FDispatchSchedule.tsx%23export%20actions::apps%2Fweb%2Fsrc%2Fservices%2Fexport.ts%23downloadTextFile::apps%2Fweb%2Fexport::ATTACK-CLASSES.md%23Feature%20abuse%20and%20data%20leakage",
+    "canonical_refs": {
+      "surface": "apps/web/src/components/schedule/DispatchSchedule.tsx#export actions",
+      "boundary": "apps/web/src/services/export.ts#downloadTextFile",
+      "subsystem": "apps/web/export",
+      "attack_class": "ATTACK-CLASSES.md#Feature abuse and data leakage"
+    },
+    "surface": "apps/web/src/components/schedule/DispatchSchedule.tsx#export actions",
+    "boundary": "apps/web/src/services/export.ts#downloadTextFile",
+    "subsystem": "apps/web/export",
+    "attack_class": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "starting_paths": [
+      "apps/web/src/components/schedule/DispatchSchedule.tsx",
+      "apps/web/src/services/export.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Injection",
+        "reason": "No source-visible attacker-controlled syntax reaches an executing or interpreting sink in this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "No file, path, archive, deserialization, or attacker-selected URL-resolution sink is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Business logic",
+        "reason": "No workflow, state-machine, quantity, timing, or fallback invariant is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Obvious things",
+        "reason": "Literal secret, debug, and dependency sweeps are assigned to dedicated hygiene and dependency units."
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "The assigned boundary does not carry attacker-influenced content into a DOM or HTML sink."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "The assigned boundary has no browser storage reader or authorization decision."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "The assigned boundary does not select or perform navigation."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "This unit does not cross a dependency-resolution, CI, artifact, release, or update handoff."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter_3",
+    "reviewed_paths": [
+      "apps/web/src/components/schedule/DispatchSchedule.tsx",
+      "apps/web/src/services/export.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_3",
+        "reviewed_paths": [
+          "apps/web/src/components/schedule/DispatchSchedule.tsx"
+        ],
+        "invariant": "Export actions UI buttons trigger CSV/JSON download",
+        "method": "source",
+        "result": "handleExportCsv and handleExportJson call generateDispatchCsv/generateFullRunJson then downloadTextFile",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_3",
+        "reviewed_paths": [
+          "apps/web/src/services/export.ts"
+        ],
+        "invariant": "CSV cell escaping and JSON serialization for export",
+        "method": "source",
+        "result": "escapeCsvCell escapes \", \\r, \\n with quote doubling; generateDispatchCsv and generateFullRunJson use proper serialization",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": []
+  },
+  {
+    "coverage_id": "apps%2Fweb%2Fsrc%2Fcomponents%2Fsimulator%2FSplitMapView.tsx%23Carto%20basemap%20style%20request::apps%2Fweb%2Fsrc%2Fcomponents%2Fsimulator%2FSplitMapView.tsx%23initMap%20style%20loader::apps%2Fweb%2Fmap-ui::ATTACK-CLASSES.md%23Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "apps/web/src/components/simulator/SplitMapView.tsx#Carto basemap style request",
+      "boundary": "apps/web/src/components/simulator/SplitMapView.tsx#initMap style loader",
+      "subsystem": "apps/web/map-ui",
+      "attack_class": "ATTACK-CLASSES.md#Resource and file handling"
+    },
+    "surface": "apps/web/src/components/simulator/SplitMapView.tsx#Carto basemap style request",
+    "boundary": "apps/web/src/components/simulator/SplitMapView.tsx#initMap style loader",
+    "subsystem": "apps/web/map-ui",
+    "attack_class": "ATTACK-CLASSES.md#Resource and file handling",
+    "starting_paths": [
+      "apps/web/src/components/simulator/SplitMapView.tsx",
+      "apps/web/index.html"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Injection",
+        "reason": "No source-visible attacker-controlled syntax reaches an executing or interpreting sink in this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Business logic",
+        "reason": "No workflow, state-machine, quantity, timing, or fallback invariant is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+        "reason": "No export/search/notification/preview capability or private-data scope is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Obvious things",
+        "reason": "Literal secret, debug, and dependency sweeps are assigned to dedicated hygiene and dependency units."
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "The assigned boundary does not carry attacker-influenced content into a DOM or HTML sink."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "The assigned boundary has no browser storage reader or authorization decision."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "The assigned boundary does not select or perform navigation."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "This unit does not cross a dependency-resolution, CI, artifact, release, or update handoff."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter_1",
+    "reviewed_paths": [
+      "apps/web/index.html",
+      "apps/web/src/components/simulator/SplitMapView.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/components/simulator/SplitMapView.tsx"
+        ],
+        "invariant": "CARTO_POSITRON_STYLE_URL and CARTO_DARK_STYLE_URL are hardcoded constants pointing to trusted cartocdn.com origins; no user input influences their values.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/components/simulator/SplitMapView.tsx"
+        ],
+        "invariant": "getBasemapStyleUrl(theme) selects between two pre-approved URLs based solely on theme ('dark'/'light'), which is allowlisted and has no security implications for URL integrity.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/index.html"
+        ],
+        "invariant": "apps/web/index.html is a static HTML page that loads MapLibre GL CSS/JS and Google Fonts via trusted CDNs; no attacker-controlled content or URL manipulation affects the SplitMapView.tsx basemap style URL selection, which uses only hardcoded cartocdn.com constants.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": []
+  },
+  {
+    "coverage_id": "apps%2Fweb%2Fsrc%2Fcomponents%2Fsimulator%2FSplitMapView.tsx%23district%20markers%20and%20map%20data::apps%2Fweb%2Fsrc%2Fcomponents%2Fsimulator%2FSplitMapView.tsx%23DOM%20and%20feature-state%20rendering::apps%2Fweb%2Fmap-ui::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "apps/web/src/components/simulator/SplitMapView.tsx#district markers and map data",
+      "boundary": "apps/web/src/components/simulator/SplitMapView.tsx#DOM and feature-state rendering",
+      "subsystem": "apps/web/map-ui",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "apps/web/src/components/simulator/SplitMapView.tsx#district markers and map data",
+    "boundary": "apps/web/src/components/simulator/SplitMapView.tsx#DOM and feature-state rendering",
+    "subsystem": "apps/web/map-ui",
+    "attack_class": "ATTACK-CLASSES.md#Injection",
+    "starting_paths": [
+      "apps/web/src/components/simulator/SplitMapView.tsx",
+      "apps/web/src/data/regions/meshBuilder.ts",
+      "apps/web/src/lib/viewModels.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [
+      "CLIENT-SIDE.md#Core discipline",
+      "CLIENT-SIDE.md#DOM-based XSS",
+      "CLIENT-SIDE.md#DOM clobbering",
+      "CLIENT-SIDE.md#Universal moves",
+      "CLIENT-SIDE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "No file, path, archive, deserialization, or attacker-selected URL-resolution sink is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Business logic",
+        "reason": "No workflow, state-machine, quantity, timing, or fallback invariant is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+        "reason": "No export/search/notification/preview capability or private-data scope is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Obvious things",
+        "reason": "Literal secret, debug, and dependency sweeps are assigned to dedicated hygiene and dependency units."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-origin messaging and network attack classes",
+        "reason": "The assigned boundary is not a cross-origin message, WebSocket, or credentialed CORS path."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker and browser-storage attack classes",
+        "reason": "The selected client-side classes cover the assigned rendering/storage invariant; no service worker is registered."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site information leak classes",
+        "reason": "No cross-origin protected-state predicate is established at this boundary."
+      },
+      {
+        "block": "CLIENT-SIDE.md#UI-redress and navigation attack classes",
+        "reason": "The assigned boundary does not navigate or complete a framed state-changing action."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "This unit does not cross a dependency-resolution, CI, artifact, release, or update handoff."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter_1",
+    "reviewed_paths": [
+      "apps/web/src/components/simulator/SplitMapView.tsx",
+      "apps/web/src/data/regions/meshBuilder.ts",
+      "apps/web/src/lib/viewModels.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/components/simulator/SplitMapView.tsx"
+        ],
+        "invariant": "btn.title = `${district.name} (${district.icuBeds} ICU beds)` sets the title property directly; not innerHTML, so no XSS risk from tooltip text.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/components/simulator/SplitMapView.tsx"
+        ],
+        "invariant": "labelSpan.textContent = compactDistrictLabel(district.name) uses textContent, which sanitizes HTML and prevents DOM-based XSS.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/components/simulator/SplitMapView.tsx"
+        ],
+        "invariant": "React JSX escaping automatically handles {district.name} in span elements, preventing any XSS even if district.name contained HTML characters.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/components/simulator/SplitMapView.tsx"
+        ],
+        "invariant": "handle.el.dataset.band/treated/selected = ... assigns dataset properties directly; HTML5 data attributes are not executed as code and do not cause XSS.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/data/regions/meshBuilder.ts"
+        ],
+        "invariant": "meshBuilder.ts generates DistrictFeatureCollection from engine mesh specs via deterministic TypeScript hash-based polygon generation; all district properties (id, name, icuBeds, centroid) derive from engine computational outputs with no attacker-controlled input or dangerous sinks.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/lib/viewModels.ts"
+        ],
+        "invariant": "viewModels.ts contains pure formatter/calculator functions (formatInt, formatFixed, formatZoneLabel, computeDistrictStress, classifyStressBand, etc.); all inputs are typed OptimizationOutput from engine, no attacker-controlled data reaches any sink, and all outputs are safely rendered or passed to React components.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": []
+  },
+  {
+    "coverage_id": "apps%2Fweb%2Fsrc%2Fdata%2Fregions%2FmeshBuilder.ts%23generated%20GeoJSON::packages%2Fengine%2Fsrc%2Foptimizer.ts%23district%20input%20consumption::apps%2Fweb%2Fregion-data::ATTACK-CLASSES.md%23Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "apps/web/src/data/regions/meshBuilder.ts#generated GeoJSON",
+      "boundary": "packages/engine/src/optimizer.ts#district input consumption",
+      "subsystem": "apps/web/region-data",
+      "attack_class": "ATTACK-CLASSES.md#Resource and file handling"
+    },
+    "surface": "apps/web/src/data/regions/meshBuilder.ts#generated GeoJSON",
+    "boundary": "packages/engine/src/optimizer.ts#district input consumption",
+    "subsystem": "apps/web/region-data",
+    "attack_class": "ATTACK-CLASSES.md#Resource and file handling",
+    "starting_paths": [
+      "apps/web/src/data/regions/meshBuilder.ts",
+      "apps/web/src/data/regions/index.ts",
+      "apps/web/src/data/regions/metroTropica.ts",
+      "apps/web/src/data/regions/harborCorridor.ts",
+      "packages/engine/src/optimizer.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Injection",
+        "reason": "No source-visible attacker-controlled syntax reaches an executing or interpreting sink in this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Business logic",
+        "reason": "No workflow, state-machine, quantity, timing, or fallback invariant is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+        "reason": "No export/search/notification/preview capability or private-data scope is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Obvious things",
+        "reason": "Literal secret, debug, and dependency sweeps are assigned to dedicated hygiene and dependency units."
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "The assigned boundary does not carry attacker-influenced content into a DOM or HTML sink."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "The assigned boundary has no browser storage reader or authorization decision."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "The assigned boundary does not select or perform navigation."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "This unit does not cross a dependency-resolution, CI, artifact, release, or update handoff."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter_2",
+    "reviewed_paths": [
+      "apps/web/src/data/regions/meshBuilder.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_2",
+        "reviewed_paths": [
+          "apps/web/src/data/regions/meshBuilder.ts"
+        ],
+        "invariant": "deterministic GeoJSON generation from pure numerical parameters with no attacker-controlled syntax reaching executing or interpreting sink",
+        "method": "source",
+        "result": "No source-visible attacker-controlled syntax reaches an executing or interpreting sink in this unit. All input parameters (rows, cols, origin, cell sizes, seed, jitter) are pure numbers under host control, and the output is a deterministic FeatureCollection with no file I/O, no deserialization, and no URL resolution.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": []
+  },
+  {
+    "coverage_id": "apps%2Fweb%2Fsrc%2Fservices%2Fexport.ts%23dispatch%20assignment%20export::apps%2Fweb%2Fsrc%2Fservices%2Fexport.ts%23escapeCsvCell::apps%2Fweb%2Fexport::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "apps/web/src/services/export.ts#dispatch assignment export",
+      "boundary": "apps/web/src/services/export.ts#escapeCsvCell",
+      "subsystem": "apps/web/export",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "apps/web/src/services/export.ts#dispatch assignment export",
+    "boundary": "apps/web/src/services/export.ts#escapeCsvCell",
+    "subsystem": "apps/web/export",
+    "attack_class": "ATTACK-CLASSES.md#Injection",
+    "starting_paths": [
+      "apps/web/src/services/export.ts",
+      "apps/web/src/components/schedule/DispatchSchedule.tsx",
+      "packages/engine/src/optimizer.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "No file, path, archive, deserialization, or attacker-selected URL-resolution sink is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Business logic",
+        "reason": "No workflow, state-machine, quantity, timing, or fallback invariant is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+        "reason": "No export/search/notification/preview capability or private-data scope is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Obvious things",
+        "reason": "Literal secret, debug, and dependency sweeps are assigned to dedicated hygiene and dependency units."
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "The assigned boundary does not carry attacker-influenced content into a DOM or HTML sink."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "The assigned boundary has no browser storage reader or authorization decision."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "The assigned boundary does not select or perform navigation."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "This unit does not cross a dependency-resolution, CI, artifact, release, or update handoff."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter_3",
+    "reviewed_paths": [
+      "apps/web/src/components/schedule/DispatchSchedule.tsx",
+      "apps/web/src/services/export.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_3",
+        "reviewed_paths": [
+          "apps/web/src/services/export.ts"
+        ],
+        "invariant": "escapeCsvCell properly escapes CSV metacharacters",
+        "method": "source",
+        "result": "Regex /[\\\",\\r\\n]/ test; quote doubling for internal quotes; wrapping in quotes when metacharacters present",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_3",
+        "reviewed_paths": [
+          "apps/web/src/components/schedule/DispatchSchedule.tsx"
+        ],
+        "invariant": "Export handlers use escapeCsvCell and downloadTextFile for CSV generation",
+        "method": "source",
+        "result": "handleExportCsv maps assignments through escapeCsvCell then joins with commas and \\r\\n",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": []
+  },
+  {
+    "coverage_id": "apps%2Fweb%2Fsrc%2Fservices%2Fweather.ts%23Open-Meteo%20GET::apps%2Fweb%2Fsrc%2Fservices%2Fweather.ts%23buildOpenMeteoUrl::apps%2Fweb%2Fservices::ATTACK-CLASSES.md%23Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "apps/web/src/services/weather.ts#Open-Meteo GET",
+      "boundary": "apps/web/src/services/weather.ts#buildOpenMeteoUrl",
+      "subsystem": "apps/web/services",
+      "attack_class": "ATTACK-CLASSES.md#Resource and file handling"
+    },
+    "surface": "apps/web/src/services/weather.ts#Open-Meteo GET",
+    "boundary": "apps/web/src/services/weather.ts#buildOpenMeteoUrl",
+    "subsystem": "apps/web/services",
+    "attack_class": "ATTACK-CLASSES.md#Resource and file handling",
+    "starting_paths": [
+      "apps/web/src/services/weather.ts",
+      "apps/web/src/data/regions/index.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Injection",
+        "reason": "No source-visible attacker-controlled syntax reaches an executing or interpreting sink in this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Business logic",
+        "reason": "No workflow, state-machine, quantity, timing, or fallback invariant is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+        "reason": "No export/search/notification/preview capability or private-data scope is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Obvious things",
+        "reason": "Literal secret, debug, and dependency sweeps are assigned to dedicated hygiene and dependency units."
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "The assigned boundary does not carry attacker-influenced content into a DOM or HTML sink."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "The assigned boundary has no browser storage reader or authorization decision."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "The assigned boundary does not select or perform navigation."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "This unit does not cross a dependency-resolution, CI, artifact, release, or update handoff."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter_1",
+    "reviewed_paths": [
+      "apps/web/src/data/regions/index.ts",
+      "apps/web/src/services/weather.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/services/weather.ts"
+        ],
+        "invariant": "buildOpenMeteoUrl constructs a URL with fixed host api.open-meteo.com; lat/lng are formatted with .toFixed(4) and encoded via URLSearchParams, preventing URL manipulation or SSRF.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/services/weather.ts"
+        ],
+        "invariant": "The URL always uses the hardcoded host api.open-meteo.com; even with extreme lat/lng values, the host cannot be altered, blocking SSRF.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/data/regions/index.ts"
+        ],
+        "invariant": "apps/web/src/data/regions/index.ts exports region preset lookups and utility functions; all functions take RegionId and return typed data (anchorLat/anchorLng/featureCollection) with no attacker-controlled input, no dangerous sinks, and no influence on Open-Meteo URL construction or response parsing.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": []
+  },
+  {
+    "coverage_id": "apps%2Fweb%2Fsrc%2Fservices%2Fweather.ts%23Open-Meteo%20JSON%20response::apps%2Fweb%2Fsrc%2Fservices%2Fweather.ts%23parseOpenMeteoResponse::apps%2Fweb%2Fservices::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "apps/web/src/services/weather.ts#Open-Meteo JSON response",
+      "boundary": "apps/web/src/services/weather.ts#parseOpenMeteoResponse",
+      "subsystem": "apps/web/services",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "apps/web/src/services/weather.ts#Open-Meteo JSON response",
+    "boundary": "apps/web/src/services/weather.ts#parseOpenMeteoResponse",
+    "subsystem": "apps/web/services",
+    "attack_class": "ATTACK-CLASSES.md#Injection",
+    "starting_paths": [
+      "apps/web/src/services/weather.ts",
+      "packages/engine/src/climate.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "No file, path, archive, deserialization, or attacker-selected URL-resolution sink is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Business logic",
+        "reason": "No workflow, state-machine, quantity, timing, or fallback invariant is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+        "reason": "No export/search/notification/preview capability or private-data scope is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Obvious things",
+        "reason": "Literal secret, debug, and dependency sweeps are assigned to dedicated hygiene and dependency units."
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "The assigned boundary does not carry attacker-influenced content into a DOM or HTML sink."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "The assigned boundary has no browser storage reader or authorization decision."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "The assigned boundary does not select or perform navigation."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "This unit does not cross a dependency-resolution, CI, artifact, release, or update handoff."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter_1",
+    "reviewed_paths": [
+      "apps/web/src/services/weather.ts",
+      "packages/engine/src/climate.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/services/weather.ts"
+        ],
+        "invariant": "parseOpenMeteoResponse first checks Array.isArray(temps) && Array.isArray(precips) && temps.length >= 14 && precips.length >= 14, rejecting malformed payloads before any data processing.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/services/weather.ts"
+        ],
+        "invariant": "sanitizedTemps maps each value: only typeof v === 'number' && Number.isFinite(v) ? v : Number.NaN, rejecting non-numeric and infinite values.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "apps/web/src/services/weather.ts"
+        ],
+        "invariant": "sanitizedPrecips maps each value: only non-negative finite numbers are kept; negative and non-finite values are clamped to 0, blocking injection of negative precipitation.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_1",
+        "reviewed_paths": [
+          "packages/engine/src/climate.ts"
+        ],
+        "invariant": "Engine's meanOf() only sums Number.isFinite values, ignoring NaN; forecast temps/precip with NaN fall back to safe defaults; synthetic data generation uses bounded sine wave math with tempAmplitudeC defaulting to 1.4.",
+        "method": "source",
+        "result": "covered",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": []
+  },
+  {
+    "coverage_id": "apps%2Fweb%2Fsrc%2Fstore%2FuseSimulationStore.ts%23advanced%20simulation%20parameters::packages%2Fengine%2Fsrc%2Fsolver.ts%23parameter%20normalization::packages%2Fengine::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "apps/web/src/store/useSimulationStore.ts#advanced simulation parameters",
+      "boundary": "packages/engine/src/solver.ts#parameter normalization",
+      "subsystem": "packages/engine",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "apps/web/src/store/useSimulationStore.ts#advanced simulation parameters",
+    "boundary": "packages/engine/src/solver.ts#parameter normalization",
+    "subsystem": "packages/engine",
+    "attack_class": "ATTACK-CLASSES.md#Business logic",
+    "starting_paths": [
+      "apps/web/src/store/useSimulationStore.ts",
+      "apps/web/src/components/layout/ControlBar.tsx",
+      "packages/engine/src/solver.ts",
+      "packages/engine/src/mobility.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Injection",
+        "reason": "No source-visible attacker-controlled syntax reaches an executing or interpreting sink in this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "No file, path, archive, deserialization, or attacker-selected URL-resolution sink is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+        "reason": "No export/search/notification/preview capability or private-data scope is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Obvious things",
+        "reason": "Literal secret, debug, and dependency sweeps are assigned to dedicated hygiene and dependency units."
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "The assigned boundary does not carry attacker-influenced content into a DOM or HTML sink."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "The assigned boundary has no browser storage reader or authorization decision."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "The assigned boundary does not select or perform navigation."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "This unit does not cross a dependency-resolution, CI, artifact, release, or update handoff."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "candidate",
+        "agent_id": "hunter_2",
+        "reviewed_paths": [
+          "apps/web/src/store/useSimulationStore.ts",
+          "packages/engine/src/optimizer.ts"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunter_2",
+            "reviewed_paths": [
+              "apps/web/src/store/useSimulationStore.ts",
+              "packages/engine/src/optimizer.ts"
+            ],
+            "invariant": "budgetRatio invariant: clampBudget must always return a finite number in [0.1, 0.4] with 2 decimal places",
+            "method": "source",
+            "result": "clampBudget function does not handle non-numeric input, potentially returning NaN when setBudgetRatio receives undefined, null, or a non-numeric string input. This breaks the invariant that budgetRatio is always a valid number in [0.1, 0.4] with 2 decimal places.",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [
+          "clampbudget_nan_invariant"
+        ],
+        "unresolved": [],
+        "reassignment_reason": "Post-wave critic reassigned the unit after the first-wave owner closed it as a candidate: clampBudget in apps/web/src/store/useSimulationStore.ts applies Math.min/Math.max without a finite-number guard, so a non-numeric input yields NaN and the first-wave evidence did not establish the real entry interface or the downstream effect."
+      }
+    ],
+    "wave": 2,
+    "status": "covered",
+    "agent_id": "hunter_5",
+    "reviewed_paths": [
+      "apps/web/src/store/useSimulationStore.ts",
+      "packages/engine/src/optimizer.ts",
+      "packages/engine/src/solver.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_5",
+        "reviewed_paths": [
+          "apps/web/src/store/useSimulationStore.ts",
+          "packages/engine/src/solver.ts"
+        ],
+        "invariant": "setAdvancedParam patches flow through solver's createSolverContext normalization",
+        "method": "source",
+        "result": "passed",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_5",
+        "reviewed_paths": [
+          "apps/web/src/store/useSimulationStore.ts"
+        ],
+        "invariant": "clampBudget forces budgetRatio into [0.1, 0.4] with Math.max/min and toFixed(2)",
+        "method": "source",
+        "result": "passed",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_5",
+        "reviewed_paths": [
+          "packages/engine/src/solver.ts"
+        ],
+        "invariant": "createSolverContext normalizes icuRate >= 0, interventionEfficacy to [0,1] or modeDefault, substepsPerDay >= 1",
+        "method": "source",
+        "result": "passed",
+        "artifact": null
+      },
+      {
+        "agent_id": "verifier_4",
+        "reviewed_paths": [
+          "apps/web/src/store/useSimulationStore.ts",
+          "packages/engine/src/optimizer.ts"
+        ],
+        "invariant": "Independent validation of candidate clampbudget_nan_invariant",
+        "method": "source",
+        "result": "rejected: The clampBudget function does not handle non-numeric input, but the claimed invariant break is refuted by source-visible preventing layers.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": [
+      "Parameter normalization verified: icuRate clamped >= 0, interventionEfficacy clamped [0,1], budgetRatio clamped [0.1, 0.4]",
+      "Dependency resolution confirmed: workspace links, no unbounded references, no dev-mode endpoints in source",
+      "Policy gate schema validated: 5 gates with explicit thresholds, weighted readinessScore computed per BLUEPRINT.md discipline"
+    ],
+    "validation_decisions": [
+      {
+        "fingerprint": "clampbudget_nan_invariant",
+        "verdict": "rejected",
+        "verifier_id": "verifier_4",
+        "discarded_opinion": {
+          "verifier_id": "verifier_1",
+          "decision": "confirmed",
+          "reason": "payload malformed against the confirmed schema branch (severity shape) and its entrypoint reachability was not established"
+        }
+      }
+    ],
+    "rejected_fingerprints": [
+      "clampbudget_nan_invariant"
+    ]
+  },
+  {
+    "coverage_id": "apps%2Fweb%2Fsrc%2Fworkers%2FoptimizerClient.ts%23WorkerRunRequest::apps%2Fweb%2Fsrc%2Fworkers%2Foptimizer.worker.ts%23onmessage::apps%2Fweb%2Fworkers::ATTACK-CLASSES.md%23Chained%20vulnerabilities%20and%20trust%20boundaries",
+    "canonical_refs": {
+      "surface": "apps/web/src/workers/optimizerClient.ts#WorkerRunRequest",
+      "boundary": "apps/web/src/workers/optimizer.worker.ts#onmessage",
+      "subsystem": "apps/web/workers",
+      "attack_class": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries"
+    },
+    "surface": "apps/web/src/workers/optimizerClient.ts#WorkerRunRequest",
+    "boundary": "apps/web/src/workers/optimizer.worker.ts#onmessage",
+    "subsystem": "apps/web/workers",
+    "attack_class": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+    "starting_paths": [
+      "apps/web/src/workers/optimizerClient.ts",
+      "apps/web/src/workers/optimizer.worker.ts",
+      "packages/engine/src/types.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Injection",
+        "reason": "No source-visible attacker-controlled syntax reaches an executing or interpreting sink in this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "No file, path, archive, deserialization, or attacker-selected URL-resolution sink is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Business logic",
+        "reason": "No workflow, state-machine, quantity, timing, or fallback invariant is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+        "reason": "No export/search/notification/preview capability or private-data scope is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Obvious things",
+        "reason": "Literal secret, debug, and dependency sweeps are assigned to dedicated hygiene and dependency units."
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "The assigned boundary does not carry attacker-influenced content into a DOM or HTML sink."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "The assigned boundary has no browser storage reader or authorization decision."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "The assigned boundary does not select or perform navigation."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "This unit does not cross a dependency-resolution, CI, artifact, release, or update handoff."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter_2",
+    "reviewed_paths": [
+      "apps/web/src/workers/optimizer.worker.ts",
+      "apps/web/src/workers/optimizerClient.ts",
+      "packages/engine/src/types.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_2",
+        "reviewed_paths": [
+          "apps/web/src/workers/optimizer.worker.ts",
+          "apps/web/src/workers/optimizerClient.ts",
+          "packages/engine/src/types.ts"
+        ],
+        "invariant": "optimizer worker is data-only compute boundary with requestId staleness protection; no chained vulnerabilities or trust boundary escalation",
+        "method": "source",
+        "result": "Optimizer worker receives WorkerRunRequest from client via postMessage; the worker uses no network, DOM, storage, filesystem, or dynamic evaluation; requestId staleness protection in optimizerClient prevents stale result injection; the worker is a data-only compute boundary with no trust boundary escalation paths.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": []
+  },
+  {
+    "coverage_id": "package-lock.json%23npm%20dependency%20resolution::package.json%23workspace%20dependency%20declarations::dependency-resolution::ATTACK-CLASSES.md%23Obvious%20things",
+    "canonical_refs": {
+      "surface": "package-lock.json#npm dependency resolution",
+      "boundary": "package.json#workspace dependency declarations",
+      "subsystem": "dependency-resolution",
+      "attack_class": "ATTACK-CLASSES.md#Obvious things"
+    },
+    "surface": "package-lock.json#npm dependency resolution",
+    "boundary": "package.json#workspace dependency declarations",
+    "subsystem": "dependency-resolution",
+    "attack_class": "ATTACK-CLASSES.md#Obvious things",
+    "starting_paths": [
+      "package.json",
+      "packages/engine/package.json",
+      "apps/web/package.json",
+      "package-lock.json",
+      ".npmrc"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Dependency and build-input attack classes",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Dependency source and namespace confusion",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Mutable and unbound build inputs",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Build-context inclusion",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Universal moves",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Injection",
+        "reason": "No source-visible attacker-controlled syntax reaches an executing or interpreting sink in this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "No file, path, archive, deserialization, or attacker-selected URL-resolution sink is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Business logic",
+        "reason": "No workflow, state-machine, quantity, timing, or fallback invariant is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+        "reason": "No export/search/notification/preview capability or private-data scope is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "The assigned boundary does not carry attacker-influenced content into a DOM or HTML sink."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "The assigned boundary has no browser storage reader or authorization decision."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "The assigned boundary does not select or perform navigation."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#CI and automation attack classes",
+        "reason": "CI workflow authority is assigned to the dedicated CI unit."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Release and update attack classes",
+        "reason": "The repository contains no release publication, signing, update, or plugin-consumer path."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "candidate",
+        "agent_id": "hunter_4",
+        "reviewed_paths": [
+          "apps/web/package.json",
+          "package-lock.json",
+          "package.json"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunter_4",
+            "reviewed_paths": [
+              "package.json",
+              "apps/web/package.json",
+              "package-lock.json"
+            ],
+            "invariant": "Engine dependency declaration and lockfile consistency in npm workspace",
+            "method": "source",
+            "result": "@sennagrid/engine declared as * in apps/web/package.json; lockfile pins packages/engine via workspace link; actual resolution path between npm install and npm ci not yet determined",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [
+          "engine-dep-workspace-eval"
+        ],
+        "unresolved": [],
+        "reassignment_reason": "Post-wave critic reassigned the unit after the first-wave owner closed it as a candidate: apps/web/package.json declares @sennagrid/engine as the wildcard range while package-lock.json records a local workspace link, and the first-wave evidence did not resolve which artifact each install path selects."
+      }
+    ],
+    "wave": 2,
+    "status": "covered",
+    "agent_id": "hunter_5",
+    "reviewed_paths": [
+      "apps/web/package.json",
+      "package-lock.json",
+      "package.json"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_5",
+        "reviewed_paths": [
+          "package.json",
+          "package-lock.json"
+        ],
+        "invariant": "workspace deps @sennagrid/engine and @sennagrid/web resolve in-lock to packages/engine and apps/workspace respectively",
+        "method": "source",
+        "result": "passed",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_5",
+        "reviewed_paths": [
+          "package-lock.json"
+        ],
+        "invariant": "No .env, .env.local, credentials.json, *.pem, *.key files present in lockfile; all resolved URLs are npm registries",
+        "method": "source",
+        "result": "passed",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_5",
+        "reviewed_paths": [
+          "package.json"
+        ],
+        "invariant": "No eval, child_process, vm.runInContext, Function() with dynamic input in package declarations; no API keys or tokens declared",
+        "method": "source",
+        "result": "passed",
+        "artifact": null
+      },
+      {
+        "agent_id": "verifier_7",
+        "reviewed_paths": [
+          "apps/web/package.json",
+          "package-lock.json"
+        ],
+        "invariant": "Independent validation of candidate engine-dep-workspace-eval",
+        "method": "source",
+        "result": "rejected: Claim that @sennagrid/engine declared as * in apps/web/package.json overrides lockfile pin refuted by source evidence",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": [
+      "CI workflow permissions: No repository secrets present per architecture.md; risk theoretical if secrets added later",
+      "Gitignore coverage: No secret or debug files currently tracked; pattern gap does not expose existing credentials",
+      "Parent hardening note: vercel.json:3 sets installCommand to \"npm install\" instead of \"npm ci\", so a deployment build may update the lockfile instead of installing exactly the audited resolution; using \"npm ci\" would make the deployed build match the reviewed lockfile.",
+      "Parameter normalization verified: icuRate clamped >= 0, interventionEfficacy clamped [0,1], budgetRatio clamped [0.1, 0.4]",
+      "Dependency resolution confirmed: workspace links, no unbounded references, no dev-mode endpoints in source",
+      "Policy gate schema validated: 5 gates with explicit thresholds, weighted readinessScore computed per BLUEPRINT.md discipline"
+    ],
+    "validation_decisions": [
+      {
+        "fingerprint": "engine-dep-workspace-eval",
+        "verdict": "rejected",
+        "verifier_id": "verifier_7",
+        "discarded_opinion": {
+          "verifier_id": "verifier_2",
+          "decision": "rejected",
+          "reason": "payload malformed against the rejected schema branch (missing verdict and reason, retained forbidden fields)"
+        },
+        "discarded_retry": {
+          "verifier_id": "verifier_5",
+          "decision": "rejected",
+          "reason": "payload malformed against the rejected schema branch (multi-step trace ended with propagation instead of sink)"
+        }
+      }
+    ],
+    "rejected_fingerprints": [
+      "engine-dep-workspace-eval"
+    ]
+  },
+  {
+    "coverage_id": "packages%2Fengine%2Fsrc%2Foptimizer.ts%23optimization%20result::packages%2Fengine%2Fsrc%2Fgates.ts%23evaluatePolicyGates::packages%2Fengine::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "packages/engine/src/optimizer.ts#optimization result",
+      "boundary": "packages/engine/src/gates.ts#evaluatePolicyGates",
+      "subsystem": "packages/engine",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "packages/engine/src/optimizer.ts#optimization result",
+    "boundary": "packages/engine/src/gates.ts#evaluatePolicyGates",
+    "subsystem": "packages/engine",
+    "attack_class": "ATTACK-CLASSES.md#Business logic",
+    "starting_paths": [
+      "packages/engine/src/optimizer.ts",
+      "packages/engine/src/gates.ts",
+      "packages/engine/src/types.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Injection",
+        "reason": "No source-visible attacker-controlled syntax reaches an executing or interpreting sink in this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "No file, path, archive, deserialization, or attacker-selected URL-resolution sink is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+        "reason": "No export/search/notification/preview capability or private-data scope is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Obvious things",
+        "reason": "Literal secret, debug, and dependency sweeps are assigned to dedicated hygiene and dependency units."
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "The assigned boundary does not carry attacker-influenced content into a DOM or HTML sink."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "The assigned boundary has no browser storage reader or authorization decision."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "The assigned boundary does not select or perform navigation."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "This unit does not cross a dependency-resolution, CI, artifact, release, or update handoff."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "candidate",
+        "agent_id": "hunter_2",
+        "reviewed_paths": [
+          "packages/engine/src/gates.ts",
+          "packages/engine/src/optimizer.ts"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunter_2",
+            "reviewed_paths": [
+              "packages/engine/src/gates.ts",
+              "packages/engine/src/optimizer.ts"
+            ],
+            "invariant": "evaluatePolicyGates overallStatus determination should not give REVIEW when 4 of 5 policy gates pass without dominancePassed being the sole failing gate",
+            "method": "source",
+            "result": "The evaluatePolicyGates function in gates.ts determines overall status as PASS only if passedCount >= 4 AND dominancePassed is true. If 4 out of 5 individual policy gates pass but COST_DOMINANCE fails, the overall status is REVIEW, which may mislead stakeholders about the optimization quality. This creates a disconnect where an optimization meeting all other criteria (mass conservation, budget compliance, ICU collapse mitigation, hub coverage) but barely failing cost dominance receives a REVIEW rating instead of PASS.",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [
+          "policygate_overallstatus_invariant"
+        ],
+        "unresolved": [],
+        "reassignment_reason": "Post-wave critic reassigned the unit after the first-wave owner closed it as a candidate: evaluatePolicyGates in packages/engine/src/gates.ts assigns REVIEW when exactly four of five gates pass and cost dominance fails, and the first-wave evidence did not establish the documented intended status or any affected principal."
+      }
+    ],
+    "wave": 2,
+    "status": "covered",
+    "agent_id": "hunter_5",
+    "reviewed_paths": [
+      "packages/engine/src/gates.ts",
+      "packages/engine/src/optimizer.ts",
+      "packages/engine/src/types.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_5",
+        "reviewed_paths": [
+          "packages/engine/src/gates.ts",
+          "packages/engine/src/optimizer.ts"
+        ],
+        "invariant": "evaluatePolicyGates enforces 5 gates: MASS_CONSERVATION (<1e-9 & zero NaN), BUDGET_COMPLIANCE (maxWeeklyAssigned <= weeklyQuotaK), COST_DOMINANCE (J(SennaGrid) < J(Reactive)), ICU_COLLAPSE_MITIGATION (>=40% reduction or 0 days), HUB_COVERAGE (>=50% in Weeks 1-4)",
+        "method": "source",
+        "result": "passed",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_5",
+        "reviewed_paths": [
+          "packages/engine/src/gates.ts"
+        ],
+        "invariant": "computeHubCoverage ranks hubCentrality, takes top quartile, checks early-week (w<4) schedule treatment, returns hubCoverageRatio >= 0.5 for pass",
+        "method": "source",
+        "result": "passed",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_5",
+        "reviewed_paths": [
+          "packages/engine/src/optimizer.ts"
+        ],
+        "invariant": "optimizeResourceAllocation flows: buildMobilityModel -> createSolverContext -> createInitialState -> buildReactiveSchedule/simulateFullSchedule -> swap-based Stage 2 improvement with ICU-first and cost-dominance guardrails",
+        "method": "source",
+        "result": "passed",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter_5",
+        "reviewed_paths": [
+          "packages/engine/src/types.ts"
+        ],
+        "invariant": "PolicyGateSummary overallStatus is 'PASS' | 'REVIEW' | 'FAIL' with readinessScore 0..100; gates each have id/label/passed/observed/threshold; all fields source-verified in gates.ts evaluatePolicyGates",
+        "method": "source",
+        "result": "passed",
+        "artifact": null
+      },
+      {
+        "agent_id": "verifier_6",
+        "reviewed_paths": [
+          "packages/engine/src/gates.ts",
+          "packages/engine/src/optimizer.ts"
+        ],
+        "invariant": "Independent validation of candidate policygate_overallstatus_invariant",
+        "method": "source",
+        "result": "rejected: The evaluatePolicyGates function in gates.ts determines overall status as PASS only if passedCount >= 4 AND dominancePassed is true. If 4 out of 5 individual policy gates pass but COST_DOMINANCE fails, the overall status is REVIEW, which may mislead stakeholders about the optimization quality.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": [
+      "Parameter normalization verified: icuRate clamped >= 0, interventionEfficacy clamped [0,1], budgetRatio clamped [0.1, 0.4]",
+      "Dependency resolution confirmed: workspace links, no unbounded references, no dev-mode endpoints in source",
+      "Policy gate schema validated: 5 gates with explicit thresholds, weighted readinessScore computed per BLUEPRINT.md discipline"
+    ],
+    "validation_decisions": [
+      {
+        "fingerprint": "policygate_overallstatus_invariant",
+        "verdict": "rejected",
+        "verifier_id": "verifier_6",
+        "discarded_opinion": {
+          "verifier_id": "verifier_3",
+          "decision": "confirmed",
+          "reason": "schema-valid but its own record called the behavior intentional and proposed a behavior-preserving fix; re-verified independently"
+        }
+      }
+    ],
+    "rejected_fingerprints": [
+      "policygate_overallstatus_invariant"
+    ]
+  },
+  {
+    "coverage_id": "repository%20source%23unexpected%20and%20fallback%20paths::repository%20source%23security%20invariants::whole-codebase::ATTACK-CLASSES.md%23Wildcard",
+    "canonical_refs": {
+      "surface": "repository source#unexpected and fallback paths",
+      "boundary": "repository source#security invariants",
+      "subsystem": "whole-codebase",
+      "attack_class": "ATTACK-CLASSES.md#Wildcard"
+    },
+    "surface": "repository source#unexpected and fallback paths",
+    "boundary": "repository source#security invariants",
+    "subsystem": "whole-codebase",
+    "attack_class": "ATTACK-CLASSES.md#Wildcard",
+    "starting_paths": [
+      "apps/web/src",
+      "packages/engine/src",
+      "scripts",
+      "apps/web/index.html",
+      "vercel.json"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Wildcard",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Injection",
+        "reason": "No source-visible attacker-controlled syntax reaches an executing or interpreting sink in this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "No file, path, archive, deserialization, or attacker-selected URL-resolution sink is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Business logic",
+        "reason": "No workflow, state-machine, quantity, timing, or fallback invariant is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+        "reason": "No export/search/notification/preview capability or private-data scope is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Obvious things",
+        "reason": "Literal secret, debug, and dependency sweeps are assigned to dedicated hygiene and dependency units."
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "The assigned boundary does not carry attacker-influenced content into a DOM or HTML sink."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "The assigned boundary has no browser storage reader or authorization decision."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "The assigned boundary does not select or perform navigation."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "This unit does not cross a dependency-resolution, CI, artifact, release, or update handoff."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter_4",
+    "reviewed_paths": [
+      "apps/web/index.html",
+      "apps/web/src/components/simulator/SplitMapView.tsx",
+      "apps/web/src/services/weather.ts",
+      "packages/engine/src/index.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_4",
+        "reviewed_paths": [
+          "apps/web/index.html",
+          "apps/web/src/services/weather.ts",
+          "apps/web/src/components/simulator/SplitMapView.tsx",
+          "packages/engine/src/index.ts"
+        ],
+        "invariant": "No unexpected or fallback code paths in assigned scope",
+        "method": "source",
+        "result": "All external resource loading is intentional and documented with fallbacks; no hidden endpoints or unconsumed features discovered",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": [
+      "CI workflow permissions: No repository secrets present per architecture.md; risk theoretical if secrets added later",
+      "Gitignore coverage: No secret or debug files currently tracked; pattern gap does not expose existing credentials"
+    ]
+  },
+  {
+    "coverage_id": "repository%20tracked%20files%23secret%20and%20debug%20configuration::.gitignore%23ignored%20local%20and%20secret%20files::repository-hygiene::ATTACK-CLASSES.md%23Obvious%20things",
+    "canonical_refs": {
+      "surface": "repository tracked files#secret and debug configuration",
+      "boundary": ".gitignore#ignored local and secret files",
+      "subsystem": "repository-hygiene",
+      "attack_class": "ATTACK-CLASSES.md#Obvious things"
+    },
+    "surface": "repository tracked files#secret and debug configuration",
+    "boundary": ".gitignore#ignored local and secret files",
+    "subsystem": "repository-hygiene",
+    "attack_class": "ATTACK-CLASSES.md#Obvious things",
+    "starting_paths": [
+      ".gitignore",
+      "README.md",
+      "apps/web/src",
+      "packages/engine/src",
+      "scripts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Injection",
+        "reason": "No source-visible attacker-controlled syntax reaches an executing or interpreting sink in this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Access control",
+        "reason": "This is an anonymous single-principal client path with no user, tenant, role, or resource-owner decision."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "No file, path, archive, deserialization, or attacker-selected URL-resolution sink is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Cryptography and secrets",
+        "reason": "No secret, key, nonce, authentication comparison, or cryptographic operation is present."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Business logic",
+        "reason": "No workflow, state-machine, quantity, timing, or fallback invariant is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+        "reason": "No export/search/notification/preview capability or private-data scope is the assigned boundary."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+        "reason": "No multi-step handoff, second-order use, or capability-growth path crosses this unit."
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Wildcard",
+        "reason": "Unexpected and fallback paths are assigned to the dedicated whole-codebase wildcard unit."
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "The assigned boundary does not carry attacker-influenced content into a DOM or HTML sink."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "The assigned boundary has no browser storage reader or authorization decision."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "The assigned boundary does not select or perform navigation."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "This unit does not cross a dependency-resolution, CI, artifact, release, or update handoff."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter_4",
+    "reviewed_paths": [
+      ".gitignore",
+      "apps/web/src",
+      "packages/engine/src",
+      "scripts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter_4",
+        "reviewed_paths": [
+          ".gitignore",
+          "apps/web/src",
+          "packages/engine/src",
+          "scripts"
+        ],
+        "invariant": ".gitignore pattern coverage for secret and debug files",
+        "method": "source",
+        "result": ".gitignore covers standard patterns; no secret or debug files currently tracked, created, or committed to repository",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening_notes": [
+      "CI workflow permissions: No repository secrets present per architecture.md; risk theoretical if secrets added later",
+      "Gitignore coverage: No secret or debug files currently tracked; pattern gap does not expose existing credentials"
+    ]
+  }
+]

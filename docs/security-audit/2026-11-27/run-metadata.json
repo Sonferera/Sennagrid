@@ -1,0 +1,125 @@
+{
+  "run_id": "sennagrid-security-audit-2026-11-27-run-1",
+  "repo": "Sonferera/Sennagrid",
+  "target": "C:\\Users\\User\\Downloads\\Workspace\\Sennagrid",
+  "source_ref": {
+    "commit": "5b66aeacfe0af1c3febee938330f2365bdc7ea04",
+    "branch": "main",
+    "dirty": false
+  },
+  "profile": "standard",
+  "scope_paths": [
+    "packages/engine/src",
+    "apps/web/src",
+    "packages/engine/package.json",
+    "apps/web/package.json",
+    "package.json",
+    "package-lock.json",
+    "scripts",
+    "README.md",
+    "docs/BLUEPRINT.md",
+    "docs/HANDOFF.md"
+  ],
+  "budget": null,
+  "execution_policy": "sandboxed-source-and-local-only",
+  "selected_companion_files": [
+    "CLIENT-SIDE.md",
+    "SUPPLY-CHAIN-AND-RELEASE.md"
+  ],
+  "prior_run_paths": [],
+  "shared_file_owners": {
+    "run-metadata.json": "parent",
+    "architecture.md": "parent",
+    "coverage-ledger.json": "parent",
+    "findings.json": "parent",
+    "REPORT.md": "parent",
+    "FINDINGS-DETAIL.md": "parent",
+    "NEEDS-VALIDATION.md": "parent"
+  },
+  "agent_roots": {
+    "recon_product": "agents/recon_product",
+    "recon_authority": "agents/recon_authority",
+    "recon_surfaces": "agents/recon_surfaces",
+    "recon_execution": "agents/recon_execution",
+    "hunter_1": "agents/hunter_1",
+    "hunter_2": "agents/hunter_2",
+    "hunter_3": "agents/hunter_3",
+    "hunter_4": "agents/hunter_4",
+    "hunter_5": "agents/hunter_5",
+    "critic_wave_1": "agents/critic_wave_1",
+    "critic_wave_2": "agents/critic_wave_2",
+    "critic_final": "agents/critic_final",
+    "verifier_1": "agents/verifier_1",
+    "verifier_2": "agents/verifier_2",
+    "verifier_3": "agents/verifier_3",
+    "verifier_4": "agents/verifier_4",
+    "verifier_5": "agents/verifier_5",
+    "verifier_6": "agents/verifier_6",
+    "verifier_7": "agents/verifier_7",
+    "final_verifier_1": "agents/final_verifier_1",
+    "final_verifier_2": "agents/final_verifier_2",
+    "final_verifier_3": "agents/final_verifier_3"
+  },
+  "artifact_policy": {
+    "allowlisted_scratch_files": [],
+    "per_file_byte_limit": 0,
+    "cumulative_byte_limit": 0,
+    "promotion_available": false,
+    "promotion_blocker": "No OS-enforced sandbox and race-safe descriptor-based promotion controls are exposed in this session; source-only checks are used unless the parent establishes equivalent controls."
+  },
+  "validation_platform_adaptation": {
+    "reason": "The skill validators refuse Windows because fs.constants.O_NOFOLLOW and O_NONBLOCK are unavailable, and no WSL or Docker runtime is installed.",
+    "method": "validate-windows.cjs opens parent-owned regular files, rejects symlinks, verifies path containment and stable identity, then invokes the validators' exported validateDocument/preflightJsonText functions without modifying the skill files."
+  },
+  "agent_usage": {
+    "budget": null,
+    "sessions_spent": 19,
+    "reconnaissance": ["recon_product", "recon_authority", "recon_surfaces", "recon_execution"],
+    "hunters": ["hunter_1", "hunter_2", "hunter_3", "hunter_4", "hunter_5"],
+    "coverage_critics": ["critic_wave_1", "critic_wave_2", "critic_final"],
+    "candidate_verifiers": ["verifier_1", "verifier_2", "verifier_3", "verifier_4", "verifier_5", "verifier_6", "verifier_7"],
+    "accepted_verifications": ["verifier_4", "verifier_6", "verifier_7"],
+    "discarded_verifier_payloads": ["verifier_1", "verifier_2", "verifier_3", "verifier_5"],
+    "phase_5_record_verifiers": [],
+    "reserved_but_unused_agent_roots": ["final_verifier_1", "final_verifier_2", "final_verifier_3"]
+  },
+  "completion": {
+    "confirmed": 0,
+    "needs_validation": 0,
+    "rejected": 3,
+    "coverage_units": 15,
+    "covered": 15,
+    "candidate": 0,
+    "blocked": 0,
+    "deferred": 0,
+    "source_checks": 40,
+    "distinct_paths_reviewed": 25,
+    "phase_5_required": false,
+    "phase_5_reason": "No record was retained as confirmed or needs_validation, so the final-record verification pass had no record to review.",
+    "target_repository_modified": false,
+    "target_controlled_execution_performed": false
+  },
+  "final_artifacts": [
+    "run-metadata.json",
+    "architecture.md",
+    "coverage-ledger.json",
+    "findings.json",
+    "verified-records.json",
+    "validation-queue.json",
+    "candidates.json",
+    "hardening.json",
+    "critic-wave-1.json",
+    "critic-wave-2.json",
+    "critic-final.json",
+    "REPORT.md",
+    "FINDINGS-DETAIL.md",
+    "NEEDS-VALIDATION.md"
+  ],
+  "post_run_publication": {
+    "date": "2026-11-27",
+    "requested_by": "repository owner",
+    "destination": "docs/security-audit/2026-11-27/",
+    "note": "Artifacts were copied into the repository after the run completed. The audit phase itself modified no file under packages/ or apps/; this publication step only adds documentation under docs/."
+  },
+  "run_status": "complete"
+}

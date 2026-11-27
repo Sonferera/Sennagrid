@@ -8,6 +8,7 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) dan wa
 ## [Unreleased]
 
 ### Added
+- Laporan audit keamanan repository (`docs/security-audit/2026-11-27/`): cakupan 15 unit / 40 pemeriksaan source-only, hasil **0 confirmed finding** dan **0 lead needs-validation**, 3 lead ditolak independen, serta catatan hardening untuk CI dan build deployment.
 - Structured documentation governance system (`docs/README.md`, `docs/CHANGELOG.md`, `docs/HANDOFF.md`, `docs/SUBMISSION_CHECKLIST.md`, `docs/updates/TEMPLATE.md`).
 - Automated docs check script (`scripts/check-docs.mjs` via `npm run check:docs`), local Git pre-commit hook (`.githooks/pre-commit`), GitHub Actions CI (`.github/workflows/ci.yml`), PR template, `CONTRIBUTING.md`, `AGENTS.md`, `LICENSE` (MIT), and `.gitattributes`.
 - Dated milestone update notes in `docs/updates/`.
