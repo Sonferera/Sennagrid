@@ -22,6 +22,7 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) dan wa
 - Implemented the approved Stitch v5 **Obsidian Dark** default theme (`#121110` canvas, `#1a1917` surfaces, `#f3efe6` primary ink, `#2dd4bf` Seafoam Teal, `#fb7185` Rose, `#fbbf24` Amber) alongside an instant persisted Warm Paper Light toggle (`theme` / `toggleTheme` in `useSimulationStore.ts` + pre-paint `index.html` script), dynamic Carto Dark Matter / Carto Positron basemap switching in `SplitMapView.tsx`, a `sticky top-0 z-40` `HeaderBar`, and a grounded 3-column `Footer.tsx` (`Engine & Scope`, interactive `Workspace` shortcuts, and MIT License research baseline bar).
 
 ### Changed
+- Hardened the delivery path after the 2026-11-27 security audit: explicit `permissions: contents: read` and SHA-pinned GitHub Actions in `.github/workflows/ci.yml`, plus `npm ci` as the Vercel `installCommand` so deployment builds use exactly the audited lockfile resolution.
 - Rewrote root `README.md` into the public SennaGrid project overview with verified benchmarks, quick start, and architecture documentation.
 - Synchronized `docs/BLUEPRINT.md` with the implemented multi-seed Stage 1, ICU-overflow-first hybrid block-swap/1-swap Stage 2 optimizer, objective-cost tie-break, cost-dominance fallback, and Hospital Safety Guardrail.
 - Stage 2 now uses bounded multi-pass local search that retains accepted checkpoints and shares the existing evaluation and time budgets across passes.
