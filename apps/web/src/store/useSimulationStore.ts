@@ -134,6 +134,9 @@ export interface SimulationStoreState {
 }
 
 function clampBudget(ratio: number): number {
+  if (!Number.isFinite(ratio)) {
+    return DEFAULT_SIMULATION_PARAMS.budgetRatio;
+  }
   const clamped = Math.max(0.1, Math.min(0.4, ratio));
   return Number(clamped.toFixed(2));
 }

@@ -9,7 +9,11 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { getRegionPreset, REGION_PRESET_LIST } from '../../data/regions';
 import { formatPopulationCompact } from '../../lib/viewModels';
-import { searchCities, type CitySearchResult } from '../../services/geocoding';
+import {
+  MAX_CITY_QUERY_LENGTH,
+  searchCities,
+  type CitySearchResult,
+} from '../../services/geocoding';
 import { useSimulationStore, type ClimateMode } from '../../store/useSimulationStore';
 
 const BUDGET_DEBOUNCE_MS = 180;
@@ -267,6 +271,7 @@ export function ControlBar() {
                 <input
                   id="sg-city-search"
                   type="search"
+                  maxLength={MAX_CITY_QUERY_LENGTH}
                   value={cityQuery}
                   onChange={(e) => setCityQuery(e.target.value)}
                   placeholder="Surabaya, London, Nairobi..."
