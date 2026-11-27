@@ -258,9 +258,14 @@ export const LIVE_TOUR_STEPS: readonly LiveTourStepSpec[] = [
       'Compare ward-level ICU stress side by side on 60 FPS GPU-styled MapLibre GL JS v5 maps, switch to a ranked Watchlist table, or click any district for a head-to-head ward breakdown.',
     controls: [
       {
-        label: 'Stress Ramp & Active Team Outlines',
+        label: 'Smooth Stress Ramp & Fade-In/Fade-Out Team Outlines',
         detail:
-          'Polygons encode <60% Safe, 60-99% Strained, and >=100% Overflow. Rose outlines (left) and teal outlines (right) mark wards with active field teams in the current week.',
+          'District fills glide smoothly across <60% Safe, 60-99% Strained, and >=100% Overflow over crisp Carto Dark Matter / Positron maps. Active rose (left) and teal (right) team outline boxes smoothly fade in and fade out as weekly dispatches shift.',
+      },
+      {
+        label: 'Spread-Only Ring Cascade & Arrival Highlights',
+        detail:
+          'When replaying the timeline, switching cities, or jumping to Peak, ward colors cascade ring-by-ring from the epicenter outward with brief arrival highlights, then settle completely still.',
       },
       {
         label: 'Dynamic City & Weather Header Badge',
@@ -268,14 +273,9 @@ export const LIVE_TOUR_STEPS: readonly LiveTourStepSpec[] = [
           'Displays the active city name plus an explicit "Normalized grid + live weather" or "Normalized grid + seasonal weather" badge for searched cities.',
       },
       {
-        label: 'Toolbar: Labels, Flows, Sync Pan & Reset',
+        label: 'Toolbar: Labels, Commuter Flows, Sync Pan & Reset',
         detail:
-          'Cycle Labels (Key Wards / All Wards / Off), toggle gravity Commuter Flows (W_ij), lock dual-map Sync Pan, or click Reset Framing to refit all districts.',
-      },
-      {
-        label: 'Map | Watchlist & Inspect Ward',
-        detail:
-          'Switch to Watchlist for a ranked ICU utilization table, hover any ward for a live tooltip, or click a polygon / Inspect Ward dropdown to open District Inspector.',
+          'Cycle Labels (Key Wards / All Wards / Off), toggle dashed Commuter Flows, lock Sync Pan, switch to Watchlist, or click Reset Framing.',
       },
     ],
     tryIt:
@@ -298,9 +298,9 @@ export const LIVE_TOUR_STEPS: readonly LiveTourStepSpec[] = [
           'Drives real-time MapLibre feature-state updates, ward tooltips, District Inspector figures, and chart day markers simultaneously.',
       },
       {
-        label: 'Jump: Peak (DX)',
+        label: 'Replay D0 & Jump: Peak (DX)',
         detail:
-          'Locks immediately onto the worst reactive ICU stress day so hospital capacity contrasts stand out clearly.',
+          'Click Replay D0 to watch the full Day 0 to Day 91 color-morphing and box-by-box outbreak spread from the start, or Jump: Peak (DX) to snap straight to the worst reactive ICU crisis day.',
       },
       {
         label: '1x / 2x / 4x Speed Selector',
@@ -627,10 +627,10 @@ export const FEATURE_GUIDE_ITEMS: readonly FeatureGuideItem[] = [
     summary:
       'Side-by-side MapLibre GL JS v5 choropleths updating district stress colors at 60 FPS via feature-state without rebuilding GeoJSON polygons.',
     capabilities: [
-      'Left pane (Without SennaGrid) shows reactive case-chasing with rose active team outlines; Right pane (With SennaGrid) shows predictive dispatch with teal outlines.',
-      'Uniform 3-tier severity scale: <60% Safe, 60-99% Strained, and >=100% Overflow with live daily overflow and breached-ward counters above each map.',
-      'Dynamic Custom City header badge truthfully displays "Normalized grid + live weather" (Open-Meteo) or "Normalized grid + seasonal weather" (Peak Season / offline).',
-      'Automatic offline vector background fallback if tiles fail, plus a dedicated Without / With SennaGrid toggle on screens under 720px.',
+      'Left pane (Without SennaGrid) shows reactive case-chasing with rose team outlines; Right pane (With SennaGrid) shows proactive hub preemption with teal outlines over crisp Carto Dark Matter / Positron basemaps.',
+      'Uniform 3-tier severity scale (<60% Safe, 60-99% Strained, >=100% Overflow) glides smoothly at 60 FPS with one-shot epicenter-to-neighbor spread cascades when switching cities or replaying outbreaks.',
+      'Active rose and teal team marker boxes smoothly fade in and fade out with soft glow halos as weekly dispatches shift (respecting prefers-reduced-motion).',
+      'Dynamic Custom City header badge truthfully displays live vs seasonal weather, with automatic offline vector fallback and <720px mobile pane switching.',
     ],
     tryAction: 'Hover over any district polygon on either map to inspect live active cases, ICU load %, and team standby/active status.',
     keywords: ['map', 'split screen', 'maplibre', 'stress', 'safe', 'strained', 'overflow', 'heatmap', 'badge', 'offline'],
@@ -647,7 +647,7 @@ export const FEATURE_GUIDE_ITEMS: readonly FeatureGuideItem[] = [
       'Control map overlays, switch to a sortable tabular ICU watchlist, or open a head-to-head diagnostic strip for any individual ward.',
     capabilities: [
       'Labels button cycles 3 modes: Key Wards (top non-overlapping stressed badges), All Wards, or Off.',
-      'Commuter Flows button toggles dashed gravity transit corridors (top 16 strongest W_ij connections) across both maps.',
+      'Commuter Flows button toggles dashed mobility coupling links (W_ij) between high-traffic district pairs across both maps.',
       'Sync Pan locks pan, zoom, and bearing between left and right maps; Reset Framing restores full-city bounds immediately.',
       'Map | Watchlist switch opens a ranked ward ICU utilization table; clicking any polygon, watchlist row, or Inspect Ward selector opens District Inspector.',
     ],

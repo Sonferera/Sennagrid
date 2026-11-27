@@ -13,6 +13,7 @@ import {
   type RegionPreset,
 } from '../../data/regions';
 import {
+  buildDistrictSpreadWavePlan,
   buildTopCommuterCorridors,
   classifyStressBand,
   computeDistrictStress,
@@ -22,6 +23,7 @@ import {
   getDispatchedDistrictsForWeek,
   getTimelineMeta,
   selectPriorityBadgeDistrictIds,
+  type DistrictSpreadWavePlan,
 } from '../../lib/viewModels';
 import type { MobileMapStrategy, ThemeMode } from '../../store/useSimulationStore';
 import { DistrictInspector, DistrictWatchlistGrid } from './DistrictInspector';
@@ -31,6 +33,7 @@ const CARTO_DARK_STYLE_URL = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-st
 const BASEMAP_LOAD_TIMEOUT_MS = 4500;
 const SOURCE_ID = 'sennagrid-districts';
 const FLOWS_SOURCE_ID = 'sennagrid-flows';
+const FLASH_DURATION_MS = 440;
 
 function getBasemapStyleUrl(theme: ThemeMode): string {
   return theme === 'dark' ? CARTO_DARK_STYLE_URL : CARTO_POSITRON_STYLE_URL;
@@ -92,6 +95,18 @@ function getStressFillExpression(theme: ThemeMode): ExpressionSpecification {
   ];
 }
 
+function easeOutQuad(t: number): number {
+  const c = Math.max(0, Math.min(1, t));
+  return 1 - (1 - c) * (1 - c);
+}
+
+function stressTierRank(stress: number): number {
+  if (stress >= 1.0) return 3;
+  if (stress >= 0.6) return 2;
+  if (stress >= 0.42) return 1;
+  return 0;
+}
+
 interface HoverInfo {
   strategy: StrategyName;
   districtId: string;
@@ -104,6 +119,13 @@ interface MarkerHandle {
   marker: maplibregl.Marker;
   el: HTMLButtonElement;
   labelSpan: HTMLSpanElement;
+}
+
+interface StrategyAnimBuffer {
+  stress: number[];
+  treatedWeight: number[];
+  prevTargetStress: number[];
+  flashUntilMs: number[];
 }
 
 interface SplitMapViewProps {
@@ -194,7 +216,15 @@ function attachDistrictLayers(
       source: SOURCE_ID,
       paint: {
         'fill-color': getStressFillExpression(theme),
-        'fill-opacity': theme === 'dark' ? 0.84 : 0.78,
+        'fill-opacity': [
+          'interpolate',
+          ['linear'],
+          ['coalesce', ['feature-state', 'spreadFlash'], 0],
+          0,
+          theme === 'dark' ? 0.84 : 0.78,
+          1,
+          theme === 'dark' ? 0.94 : 0.88,
+        ],
       },
     });
   }
@@ -208,6 +238,36 @@ function attachDistrictLayers(
         'line-color': theme === 'dark' ? '#5c574f' : '#8c857b',
         'line-width': 0.9,
         'line-opacity': theme === 'dark' ? 0.75 : 0.68,
+      },
+    });
+  }
+
+  // One-shot arrival highlight as outbreak color spreads upward into a ward (invisible when settled)
+  if (!map.getLayer('districts-spread-flash')) {
+    map.addLayer({
+      id: 'districts-spread-flash',
+      type: 'line',
+      source: SOURCE_ID,
+      paint: {
+        'line-color': theme === 'dark' ? '#e06d4b' : '#b84322',
+        'line-width': [
+          'interpolate',
+          ['linear'],
+          ['coalesce', ['feature-state', 'spreadFlash'], 0],
+          0,
+          0,
+          1,
+          2.2,
+        ],
+        'line-opacity': [
+          'interpolate',
+          ['linear'],
+          ['coalesce', ['feature-state', 'spreadFlash'], 0],
+          0,
+          0,
+          1,
+          0.72,
+        ],
       },
     });
   }
@@ -252,14 +312,56 @@ function attachDistrictLayers(
       : theme === 'dark'
         ? '#2dd4bf'
         : '#0f766e';
+
+  // Soft outer glow fading cleanly in/out with treatedWeight (0..1)
+  if (!map.getLayer('districts-treated-glow')) {
+    map.addLayer({
+      id: 'districts-treated-glow',
+      type: 'line',
+      source: SOURCE_ID,
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
+      },
+      paint: {
+        'line-color': treatedColor,
+        'line-width': 5.8,
+        'line-blur': 2.6,
+        'line-opacity': [
+          'interpolate',
+          ['linear'],
+          ['coalesce', ['feature-state', 'treatedWeight'], 0],
+          0,
+          0,
+          1,
+          theme === 'dark' ? 0.26 : 0.20,
+        ],
+      },
+    });
+  }
+
+  // Smooth fade-in and fade-out on active red (left) & teal (right) dispatch marker boxes
   if (!map.getLayer('districts-treated-outline')) {
     map.addLayer({
       id: 'districts-treated-outline',
       type: 'line',
       source: SOURCE_ID,
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
+      },
       paint: {
         'line-color': treatedColor,
-        'line-width': ['case', ['==', ['feature-state', 'treated'], true], 2.6, 0],
+        'line-width': 2.6,
+        'line-opacity': [
+          'interpolate',
+          ['linear'],
+          ['coalesce', ['feature-state', 'treatedWeight'], 0],
+          0,
+          0,
+          1,
+          1,
+        ],
       },
     });
   }
@@ -312,8 +414,7 @@ function syncMarkersForMap(
   });
 }
 
-function applyFeatureStatesAndMarkers(
-  map: maplibregl.Map,
+function syncMarkerBadges(
   handles: readonly MarkerHandle[],
   output: OptimizationOutput,
   strategy: StrategyName,
@@ -322,7 +423,6 @@ function applyFeatureStatesAndMarkers(
   showLabels: boolean,
   showAllLabels: boolean,
 ): void {
-  const hasSource = Boolean(map.getSource(SOURCE_ID));
   const meta = getTimelineMeta(output, day);
   const stratResult = strategy === 'reactive' ? output.reactive : output.sennagrid;
   const n = output.districts.length;
@@ -335,33 +435,57 @@ function applyFeatureStatesAndMarkers(
 
   for (let i = 0; i < n; i++) {
     const district = output.districts[i];
-    if (!district) continue;
+    const handle = handles[i];
+    if (!district || !handle) continue;
     const icuDemand = stratResult.districtIcuDemand[rowBase + i] ?? 0;
     const stress = computeDistrictStress(icuDemand, district.icuBeds);
     const treated = (weekRow?.[i] ?? 0) === 1;
     const selected = district.id === selectedDistrictId;
 
-    if (hasSource) {
-      map.setFeatureState(
-        { source: SOURCE_ID, id: district.id },
-        { stress, treated, selected },
-      );
-    }
-
-    const handle = handles[i];
-    if (handle) {
-      const shouldShow =
-        showLabels && (showAllLabels || (visibleBadgeIds?.has(district.id) ?? false));
-      handle.el.style.display = shouldShow ? 'inline-flex' : 'none';
-      if (shouldShow) {
-        const pct = Math.round(stress * 100);
-        handle.labelSpan.textContent = `${compactDistrictLabel(district.name)} ${pct}%`;
-        handle.el.dataset.band = classifyStressBand(stress);
-        handle.el.dataset.treated = treated ? strategy : 'none';
-        handle.el.dataset.selected = selected ? 'true' : 'false';
-      }
+    const shouldShow =
+      showLabels && (showAllLabels || (visibleBadgeIds?.has(district.id) ?? false));
+    handle.el.style.display = shouldShow ? 'inline-flex' : 'none';
+    if (shouldShow) {
+      const pct = Math.round(stress * 100);
+      handle.labelSpan.textContent = `${compactDistrictLabel(district.name)} ${pct}%`;
+      handle.el.dataset.band = classifyStressBand(stress);
+      handle.el.dataset.treated = treated ? strategy : 'none';
+      handle.el.dataset.selected = selected ? 'true' : 'false';
     }
   }
+}
+
+function pushDistrictFeatureStates(
+  map: maplibregl.Map | null,
+  plan: DistrictSpreadWavePlan,
+  visualStress: readonly number[],
+  visualTreated: readonly number[],
+  flashes: readonly number[],
+  selectedDistrictId: string | null,
+): void {
+  if (!map || !map.getSource(SOURCE_ID)) return;
+  for (let i = 0; i < plan.cells.length; i++) {
+    const cell = plan.cells[i]!;
+    map.setFeatureState(
+      { source: SOURCE_ID, id: cell.districtId },
+      {
+        stress: visualStress[i] ?? cell.targetStress,
+        treatedWeight: visualTreated[i] ?? (cell.treated ? 1 : 0),
+        spreadFlash: flashes[i] ?? 0,
+        treated: cell.treated,
+        selected: cell.districtId === selectedDistrictId,
+      },
+    );
+  }
+}
+
+function makeEmptyBuffer(n: number): StrategyAnimBuffer {
+  return {
+    stress: new Array(n).fill(0),
+    treatedWeight: new Array(n).fill(0),
+    prevTargetStress: new Array(n).fill(0),
+    flashUntilMs: new Array(n).fill(0),
+  };
 }
 
 export function SplitMapView({
@@ -411,6 +535,11 @@ export function SplitMapView({
   latestThemeRef.current = theme;
   const prevThemeRef = useRef(theme);
   const lastRenderedRegionRef = useRef(output.params.regionId);
+  const prevCascadeContextRef = useRef<{ regionId: string; day: number; outputRef: OptimizationOutput }>({
+    regionId: output.params.regionId,
+    day: currentDay,
+    outputRef: output,
+  });
   const onSelectDistrictRef = useRef(onSelectDistrict);
   onSelectDistrictRef.current = onSelectDistrict;
 
@@ -422,10 +551,41 @@ export function SplitMapView({
   const latestPresetRef = useRef(preset);
   latestPresetRef.current = preset;
   const meta = getTimelineMeta(output, currentDay);
-  const flowsGeoJson = useMemo(
-    () => buildFlowsFeatureCollection(output),
-    [output.params.regionId, output.params.mobilityOutflow],
+
+  const flowsGeoJson = useMemo(() => buildFlowsFeatureCollection(output), [output]);
+  const latestFlowsGeoJsonRef = useRef(flowsGeoJson);
+  latestFlowsGeoJsonRef.current = flowsGeoJson;
+
+  const reactiveWavePlan = useMemo(
+    () => buildDistrictSpreadWavePlan(output, 'reactive', meta.day),
+    [output, meta.day],
   );
+  const sennagridWavePlan = useMemo(
+    () => buildDistrictSpreadWavePlan(output, 'sennagrid', meta.day),
+    [output, meta.day],
+  );
+
+  const latestPlansRef = useRef({
+    reactive: reactiveWavePlan,
+    sennagrid: sennagridWavePlan,
+  });
+  latestPlansRef.current = {
+    reactive: reactiveWavePlan,
+    sennagrid: sennagridWavePlan,
+  };
+
+  // Persistent GPU animation buffers (zero React re-renders per frame; sleeps completely when settled)
+  const animStateRef = useRef<{
+    reactive: StrategyAnimBuffer;
+    sennagrid: StrategyAnimBuffer;
+    cascadeStartMs: number;
+    cascadeActive: boolean;
+  }>({
+    reactive: makeEmptyBuffer(output.districts.length),
+    sennagrid: makeEmptyBuffer(output.districts.length),
+    cascadeStartMs: typeof performance !== 'undefined' ? performance.now() : 0,
+    cascadeActive: true,
+  });
 
   const fitBothToDistricts = useCallback(() => {
     const activePreset = latestPresetRef.current;
@@ -481,19 +641,17 @@ export function SplitMapView({
         if (disposed) return;
         const curOut = latestOutputRef.current;
         const curPreset = latestPresetRef.current;
-        const curFlows = buildFlowsFeatureCollection(curOut);
         lastRenderedRegionRef.current = curOut.params.regionId;
         attachDistrictLayers(
           map,
           curPreset.featureCollection,
-          curFlows,
+          latestFlowsGeoJsonRef.current,
           strategy,
           latestShowFlowsRef.current,
           latestThemeRef.current,
         );
         syncMarkersForMap(map, markersRef, curOut, (id) => onSelectDistrictRef.current(id));
-        applyFeatureStatesAndMarkers(
-          map,
+        syncMarkerBadges(
           markersRef.current,
           curOut,
           strategy,
@@ -502,21 +660,50 @@ export function SplitMapView({
           latestShowLabelsRef.current,
           latestShowAllLabelsRef.current,
         );
+        const plan =
+          strategy === 'reactive'
+            ? latestPlansRef.current.reactive
+            : latestPlansRef.current.sennagrid;
+        const buf =
+          strategy === 'reactive'
+            ? animStateRef.current.reactive
+            : animStateRef.current.sennagrid;
+        pushDistrictFeatureStates(
+          map,
+          plan,
+          buf.stress.length === plan.cells.length
+            ? buf.stress
+            : plan.cells.map((c) => c.targetStress),
+          buf.treatedWeight.length === plan.cells.length
+            ? buf.treatedWeight
+            : plan.cells.map((c) => (c.treated ? 1 : 0)),
+          plan.cells.map(() => 0),
+          latestSelectedRef.current,
+        );
         setStyleEpoch((epoch) => epoch + 1);
       });
 
-      // Keep GeoJSON feature states synced right after setData() finishes background worker tiling
       map.on('sourcedata', (ev) => {
         if (disposed || ev.sourceId !== SOURCE_ID || !ev.isSourceLoaded) return;
-        applyFeatureStatesAndMarkers(
+        const plan =
+          strategy === 'reactive'
+            ? latestPlansRef.current.reactive
+            : latestPlansRef.current.sennagrid;
+        const buf =
+          strategy === 'reactive'
+            ? animStateRef.current.reactive
+            : animStateRef.current.sennagrid;
+        pushDistrictFeatureStates(
           map,
-          markersRef.current,
-          latestOutputRef.current,
-          strategy,
-          latestDayRef.current,
+          plan,
+          buf.stress.length === plan.cells.length
+            ? buf.stress
+            : plan.cells.map((c) => c.targetStress),
+          buf.treatedWeight.length === plan.cells.length
+            ? buf.treatedWeight
+            : plan.cells.map((c) => (c.treated ? 1 : 0)),
+          plan.cells.map(() => 0),
           latestSelectedRef.current,
-          latestShowLabelsRef.current,
-          latestShowAllLabelsRef.current,
         );
       });
 
@@ -527,7 +714,6 @@ export function SplitMapView({
         if (errName === 'AbortError' || errMsg.toLowerCase().includes('abort')) {
           return;
         }
-        // Only fall back when initial style JSON fails before any layer attaches
         if (!map.getStyle()?.layers?.length && !mapErr.sourceId) {
           clearTimeout(styleTimer);
           activateFallback();
@@ -609,6 +795,7 @@ export function SplitMapView({
     };
   }, []);
 
+  // Sync GeoJSON geometry on region switches & update priority ward labels
   useEffect(() => {
     const activePreset = latestPresetRef.current;
     const regionChanged = lastRenderedRegionRef.current !== output.params.regionId;
@@ -617,7 +804,7 @@ export function SplitMapView({
       rightMarkersRef.current.length !== output.districts.length;
     const needsRegionSync = regionChanged || countMismatch;
 
-    const syncMapData = (
+    const syncMapGeometryAndBadges = (
       map: maplibregl.Map | null,
       handlesRef: { current: MarkerHandle[] },
       strategy: StrategyName,
@@ -641,8 +828,7 @@ export function SplitMapView({
         flowSrc?.setData(flowsGeoJson);
         syncMarkersForMap(map, handlesRef, output, (id) => onSelectDistrictRef.current(id));
       }
-      applyFeatureStatesAndMarkers(
-        map,
+      syncMarkerBadges(
         handlesRef.current,
         output,
         strategy,
@@ -653,8 +839,8 @@ export function SplitMapView({
       );
     };
 
-    syncMapData(leftMapRef.current, leftMarkersRef, 'reactive');
-    syncMapData(rightMapRef.current, rightMarkersRef, 'sennagrid');
+    syncMapGeometryAndBadges(leftMapRef.current, leftMarkersRef, 'reactive');
+    syncMapGeometryAndBadges(rightMapRef.current, rightMarkersRef, 'sennagrid');
 
     if (needsRegionSync) {
       lastRenderedRegionRef.current = output.params.regionId;
@@ -672,6 +858,7 @@ export function SplitMapView({
     fitBothToDistricts,
   ]);
 
+  // Swap Carto Dark Matter / Carto Positron basemaps cleanly on theme toggle
   useEffect(() => {
     if (prevThemeRef.current === theme) return;
     prevThemeRef.current = theme;
@@ -680,6 +867,7 @@ export function SplitMapView({
     rightMapRef.current?.setStyle(nextStyle);
   }, [theme, offlineFallback]);
 
+  // Toggle optional commuter corridor lines cleanly
   useEffect(() => {
     for (const map of [leftMapRef.current, rightMapRef.current]) {
       if (!map) continue;
@@ -694,6 +882,239 @@ export function SplitMapView({
       }
     }
   }, [flowsGeoJson, showCommuterFlows, styleEpoch]);
+
+  // Detect spread cascades and upward severity tier crossings
+  useEffect(() => {
+    const prev = prevCascadeContextRef.current;
+    const regionSwitched = prev.regionId !== output.params.regionId;
+    const runChanged = prev.outputRef !== output;
+    const jumpedFar = Math.abs(meta.day - prev.day) >= 5;
+
+    prevCascadeContextRef.current = {
+      regionId: output.params.regionId,
+      day: meta.day,
+      outputRef: output,
+    };
+
+    const nowMs = performance.now();
+    const anim = animStateRef.current;
+    const n = output.districts.length;
+
+    if (regionSwitched || anim.reactive.stress.length !== n) {
+      anim.reactive = makeEmptyBuffer(n);
+      anim.sennagrid = makeEmptyBuffer(n);
+      anim.reactive.prevTargetStress = reactiveWavePlan.cells.map((c) => c.targetStress);
+      anim.sennagrid.prevTargetStress = sennagridWavePlan.cells.map((c) => c.targetStress);
+      anim.cascadeStartMs = nowMs;
+      anim.cascadeActive = true;
+      return;
+    }
+
+    if (runChanged || jumpedFar) {
+      anim.cascadeStartMs = nowMs;
+      anim.cascadeActive = true;
+      for (let i = 0; i < n; i++) {
+        const rCell = reactiveWavePlan.cells[i];
+        const sCell = sennagridWavePlan.cells[i];
+        if (rCell && rCell.targetStress >= 0.42) {
+          anim.reactive.flashUntilMs[i] = nowMs + rCell.hop * 64 + FLASH_DURATION_MS;
+        }
+        if (sCell && sCell.targetStress >= 0.42) {
+          anim.sennagrid.flashUntilMs[i] = nowMs + sCell.hop * 64 + FLASH_DURATION_MS;
+        }
+        if (rCell) anim.reactive.prevTargetStress[i] = rCell.targetStress;
+        if (sCell) anim.sennagrid.prevTargetStress[i] = sCell.targetStress;
+      }
+      return;
+    }
+
+    // Smooth day-by-day playback / scrubbing: trigger subtle one-shot spread border highlight on upward tier crossing
+    const markCrossings = (plan: DistrictSpreadWavePlan, buf: StrategyAnimBuffer) => {
+      for (let i = 0; i < plan.cells.length; i++) {
+        const cell = plan.cells[i]!;
+        const prevStress = buf.prevTargetStress[i] ?? 0;
+        if (stressTierRank(cell.targetStress) > stressTierRank(prevStress)) {
+          buf.flashUntilMs[i] = nowMs + FLASH_DURATION_MS;
+        }
+        buf.prevTargetStress[i] = cell.targetStress;
+      }
+    };
+
+    markCrossings(reactiveWavePlan, anim.reactive);
+    markCrossings(sennagridWavePlan, anim.sennagrid);
+  }, [output, meta.day, reactiveWavePlan, sennagridWavePlan]);
+
+  // 60 FPS transition-only engine: smooth color glide + smooth fade-in/fade-out on red/teal marker boxes; sleeps when settled
+  useEffect(() => {
+    if (viewMode !== 'map') return;
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) {
+      const plans = latestPlansRef.current;
+      const anim = animStateRef.current;
+      anim.cascadeActive = false;
+      anim.reactive.stress = plans.reactive.cells.map((c) => c.targetStress);
+      anim.sennagrid.stress = plans.sennagrid.cells.map((c) => c.targetStress);
+      anim.reactive.treatedWeight = plans.reactive.cells.map((c) => (c.treated ? 1 : 0));
+      anim.sennagrid.treatedWeight = plans.sennagrid.cells.map((c) => (c.treated ? 1 : 0));
+      const zeros = plans.reactive.cells.map(() => 0);
+
+      pushDistrictFeatureStates(
+        leftMapRef.current,
+        plans.reactive,
+        anim.reactive.stress,
+        anim.reactive.treatedWeight,
+        zeros,
+        latestSelectedRef.current,
+      );
+      pushDistrictFeatureStates(
+        rightMapRef.current,
+        plans.sennagrid,
+        anim.sennagrid.stress,
+        anim.sennagrid.treatedWeight,
+        zeros,
+        latestSelectedRef.current,
+      );
+      return;
+    }
+
+    let rafId = 0;
+    let lastFrameMs = performance.now();
+
+    const stepStrategy = (
+      plan: DistrictSpreadWavePlan,
+      buf: StrategyAnimBuffer,
+      dtMs: number,
+      nowMs: number,
+      cascadeActive: boolean,
+      cascadeElapsed: number,
+    ): { flashes: number[]; settled: boolean } => {
+      const n = plan.cells.length;
+      if (buf.stress.length !== n) {
+        buf.stress = new Array(n).fill(0);
+        buf.treatedWeight = new Array(n).fill(0);
+        buf.prevTargetStress = new Array(n).fill(0);
+        buf.flashUntilMs = new Array(n).fill(0);
+      }
+
+      const flashes: number[] = new Array(n);
+      const stressAlpha = 1 - Math.exp(-Math.min(dtMs, 80) / 185);
+      // Gentle ~250ms exponential fade-in and fade-out for active dispatch marker boxes
+      const treatedFadeAlpha = 1 - Math.exp(-Math.min(dtMs, 80) / 250);
+      let settled = true;
+
+      for (let i = 0; i < n; i++) {
+        const cell = plan.cells[i]!;
+        let targetStress = cell.targetStress;
+
+        if (cascadeActive) {
+          const hopDelayMs = cell.hop * 64;
+          const gate = easeOutQuad((cascadeElapsed - hopDelayMs) / 280);
+          targetStress = cell.targetStress * gate;
+          if (gate < 1) {
+            settled = false;
+          }
+        }
+
+        const curStress = buf.stress[i] ?? 0;
+        const nextStress = curStress + (targetStress - curStress) * stressAlpha;
+        if (Math.abs(targetStress - nextStress) < 0.0015) {
+          buf.stress[i] = targetStress;
+        } else {
+          buf.stress[i] = nextStress;
+          settled = false;
+        }
+
+        const targetTreated = cell.treated ? 1 : 0;
+        const curTreated = buf.treatedWeight[i] ?? 0;
+        const nextTreated = curTreated + (targetTreated - curTreated) * treatedFadeAlpha;
+        if (Math.abs(targetTreated - nextTreated) < 0.004) {
+          buf.treatedWeight[i] = targetTreated;
+        } else {
+          buf.treatedWeight[i] = nextTreated;
+          settled = false;
+        }
+
+        const remainingFlashMs = (buf.flashUntilMs[i] ?? 0) - nowMs;
+        if (remainingFlashMs > 0 && remainingFlashMs <= FLASH_DURATION_MS) {
+          const progress = 1 - remainingFlashMs / FLASH_DURATION_MS;
+          flashes[i] = Math.sin(progress * Math.PI) * (1 - progress * 0.35);
+          settled = false;
+        } else if (remainingFlashMs > FLASH_DURATION_MS) {
+          flashes[i] = 0;
+          settled = false;
+        } else {
+          flashes[i] = 0;
+        }
+      }
+
+      return { flashes, settled };
+    };
+
+    const tick = (nowMs: number) => {
+      const dtMs = Math.max(8, nowMs - lastFrameMs);
+      lastFrameMs = nowMs;
+
+      if (!document.hidden) {
+        const plans = latestPlansRef.current;
+        const anim = animStateRef.current;
+        const cascadeElapsed = nowMs - anim.cascadeStartMs;
+
+        const leftStep = stepStrategy(
+          plans.reactive,
+          anim.reactive,
+          dtMs,
+          nowMs,
+          anim.cascadeActive,
+          cascadeElapsed,
+        );
+        const rightStep = stepStrategy(
+          plans.sennagrid,
+          anim.sennagrid,
+          dtMs,
+          nowMs,
+          anim.cascadeActive,
+          cascadeElapsed,
+        );
+
+        pushDistrictFeatureStates(
+          leftMapRef.current,
+          plans.reactive,
+          anim.reactive.stress,
+          anim.reactive.treatedWeight,
+          leftStep.flashes,
+          latestSelectedRef.current,
+        );
+        pushDistrictFeatureStates(
+          rightMapRef.current,
+          plans.sennagrid,
+          anim.sennagrid.stress,
+          anim.sennagrid.treatedWeight,
+          rightStep.flashes,
+          latestSelectedRef.current,
+        );
+
+        if (leftStep.settled && rightStep.settled) {
+          anim.cascadeActive = false;
+          return;
+        }
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [
+    viewMode,
+    styleEpoch,
+    selectedDistrictId,
+    reactiveWavePlan,
+    sennagridWavePlan,
+  ]);
 
   useEffect(() => {
     if (viewMode !== 'map') return;
@@ -747,7 +1168,7 @@ export function SplitMapView({
           left: Math.min(Math.max(10, hoverInfo.x + 12), 230),
           top: Math.max(10, hoverInfo.y - 12),
         }}
-        className="pointer-events-none absolute z-30 w-56 rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-surface)]/95 p-3 text-[13px] shadow-md"
+        className="pointer-events-none absolute z-30 w-56 rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-surface)]/95 p-3 text-[13px] shadow-lg backdrop-blur-xs"
       >
         <div className="flex items-center justify-between gap-2">
           <span className="font-bold text-[var(--sg-text-primary)]">{district.name}</span>

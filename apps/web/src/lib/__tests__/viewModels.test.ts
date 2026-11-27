@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { HARBOR_CORRIDOR_PRESET, METRO_TROPICA_PRESET } from '../../data/regions';
 import {
   buildDailyChartSeries,
+  buildDistrictSpreadWavePlan,
   buildDistrictWatchlist,
   buildExecutiveNarrative,
   buildKpiViewModel,
@@ -221,5 +222,19 @@ describe('viewModels deterministic transformations', () => {
 
     expect(formatPopulationCompact(METRO_TROPICA_PRESET.districts)).toMatch(/M pop$/);
     expect(formatPopulationCompact(HARBOR_CORRIDOR_PRESET.districts)).toMatch(/K pop$/);
+  });
+
+  it('builds deterministic ring-by-ring spread order from epicenter outward', () => {
+    const crisisDay = findCrisisFocusDay(harborOut);
+    const reactiveWave = buildDistrictSpreadWavePlan(harborOut, 'reactive', crisisDay);
+    const optWave = buildDistrictSpreadWavePlan(harborOut, 'sennagrid', crisisDay);
+
+    expect(reactiveWave.cells).toHaveLength(harborOut.districts.length);
+    expect(optWave.cells).toHaveLength(harborOut.districts.length);
+    expect(reactiveWave.epicenterId).toBe(optWave.epicenterId);
+    expect(reactiveWave.maxHop).toBeGreaterThanOrEqual(2);
+    expect(reactiveWave.cells.some((c) => c.hop === 0)).toBe(true);
+    expect(reactiveWave.cells.some((c) => c.breached && c.targetStress >= 1.0)).toBe(true);
+    expect(optWave.cells.some((c) => c.treated)).toBe(true);
   });
 });

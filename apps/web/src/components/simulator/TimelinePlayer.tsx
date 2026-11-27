@@ -1,5 +1,5 @@
 import type { OptimizationOutput } from '@sennagrid/engine';
-import { Flame, Pause, Play } from 'lucide-react';
+import { Flame, Pause, Play, RotateCcw } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { findCrisisFocusDay, getTimelineMeta } from '../../lib/viewModels';
 import type { PlaybackSpeed } from '../../store/useSimulationStore';
@@ -71,7 +71,14 @@ export function TimelinePlayer({
       {/* Play / Pause Circular Button */}
       <button
         type="button"
-        onClick={onTogglePlaying}
+        onClick={() => {
+          if (!isPlaying && meta.day >= meta.maxDay) {
+            onSetCurrentDay(0);
+            onSetPlaying(true);
+            return;
+          }
+          onTogglePlaying();
+        }}
         aria-label={isPlaying ? 'Pause outbreak replay' : 'Play outbreak replay'}
         className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--sg-teal-fill)] text-[var(--sg-teal-fill-ink)] transition-colors hover:bg-[var(--sg-teal-fill-hover)] min-[720px]:h-9 min-[720px]:w-9"
       >
@@ -105,8 +112,21 @@ export function TimelinePlayer({
         />
       </div>
 
-      {/* Peak Surge Jump + Speed Selector */}
-      <div className="flex shrink-0 items-center gap-2.5">
+      {/* Replay Spread + Peak Surge Jump + Speed Selector */}
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            onSetCurrentDay(0);
+            onSetPlaying(true);
+          }}
+          title="Replay outbreak color & ward spread from Day 0"
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[var(--sg-border-control)] bg-[var(--sg-inset)] px-2.5 py-1.5 text-[13px] font-medium text-[var(--sg-text-primary)] shadow-2xs transition-colors hover:bg-[var(--sg-hover)] active:scale-[0.99] min-[720px]:min-h-[34px]"
+        >
+          <RotateCcw className="h-3.5 w-3.5 shrink-0 text-[var(--sg-teal)]" aria-hidden="true" />
+          <span>Replay D0</span>
+        </button>
+
         <button
           type="button"
           onClick={onJumpToPeak}
